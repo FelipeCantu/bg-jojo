@@ -51,6 +51,7 @@ const NavContent = styled.div `
   padding: 10px 20px;
   font-size: 16px;
   display: flex;
+  
   &:hover {
     text-decoration: underline;
     color: white;

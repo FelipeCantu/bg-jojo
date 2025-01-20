@@ -26,8 +26,9 @@ const Ul = styled.ul`
   }
   @media (max-width: 768px) {
     flex-flow: column nowrap;
-    background-color: #fff;
+    background-color: orange;
     position: fixed;
+    z-index: 3;
     transform: ${({ open }) => open ? 'translateX(0)' : 'translateX(100%)'};
     top: 0;
     right: -100px;
@@ -46,6 +47,7 @@ const StyledLink = styled(Link)`
   text-decoration: none;
   font-family: Arial, Helvetica, 
     sans-serif;
+    
   :hover {
     color: white;
   }
