@@ -25,6 +25,7 @@ const Navbar = () => {
 
 const Nav = styled.div`
   position: sticky;
+  top: 0;
   display: flex;
   justify-content: center;
   align-items: center;
