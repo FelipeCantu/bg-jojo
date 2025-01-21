@@ -64,7 +64,6 @@ const TextContainer = styled.div`
 const Content = styled.div`
   max-width: 600px;
   text-align: left;
-
   h2 {
     font-size: 2.5rem;
     font-weight: bold;

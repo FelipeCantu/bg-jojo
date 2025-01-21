@@ -51,7 +51,7 @@ const Content = styled.div`
   color: pink;
   padding: 20px;
   font-size: 2rem;
-  z-index: -1;
+  // z-index: -1;
   text-align: center;
   left: 0;
   right: 0;
