@@ -3,7 +3,7 @@ import Menu from './Menu'
 import styled from 'styled-components'
 import {
   UserCircleIcon
-} from '@heroicons/react/24/outline'
+} from '@heroicons/react/24/solid'
 
 
 const Navbar = () => {
@@ -13,10 +13,10 @@ const Navbar = () => {
       <Logo src={require('../../assets/jojologo.png')} alt="Logo" />
         <Menu />
         <Icons>
-          <div>
+          <LoginButton>
             <UserCircleIcon />
             <p>Login</p>
-          </div>
+          </LoginButton>
         </Icons>
       </NavContent>
     </Nav>
@@ -66,20 +66,31 @@ const Logo = styled.img`
 `
 
 const Icons = styled.div`
-  // background-color: red;
-  // width: 50px;
-  height: 50px;
-  div {
-    width: auto;
-    height: 45px;
-    padding: 5px;
-    color: black;
-    display: flex;
-        &:hover {
-    color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+`;
 
+const LoginButton = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  color: black;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  transition: all 0.3s ease-in-out;
+
+  &:hover {
+    color: white;
   }
+
+  svg {
+    width: 20px;
+    height: 20px;
   }
-`
+`;
 
 export default Navbar;

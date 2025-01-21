@@ -1,33 +1,39 @@
 import React from 'react'
 import styled from 'styled-components';
 import { ChevronRightIcon } from '@heroicons/react/24/solid'
+import Mission from './Mission'
 
 
 function Home() {
   return (
-    <VideoWrapper>
-      <VideoBackground autoPlay loop muted>
-        <source src={require('../assets/cloud.mp4')} type='video/mp4' alt='clouds' />
-        Your browser does not support the video tag.
-      </VideoBackground>
-      <Content>
-        <h1>Reach Out For Help</h1>
-        <p>You Are Not Alone</p>
-        <Button>
-          <div>
-            <p> Hotlines</p>
+    <MainSection>
+      <VideoWrapper>
+        <VideoBackground autoPlay loop muted>
+          <source src={require('../assets/cloud.mp4')} type='video/mp4' alt='clouds' />
+          Your browser does not support the video tag.
+        </VideoBackground>
+        <Content>
+          <h1>Reach Out For Help</h1>
+          <p>You Are Not Alone</p>
+          <Button>
+            <div>
+              <p> Hotlines</p>
               <ChevronRightIcon />
-          </div>
-        </Button>
-      </Content>
-    </VideoWrapper>
+            </div>
+          </Button>
+        </Content>
+      </VideoWrapper>
+        <Mission />
+    </MainSection>
   )
 }
 
-
-const VideoWrapper = styled.div`
+const MainSection = styled.div`
   width: 100%;
-  height: 100px;
+  height: 100%;`
+  
+const VideoWrapper = styled.div`
+  height: 90vh;
 `;
 
 const VideoBackground = styled.video`
@@ -54,6 +60,13 @@ const Content = styled.div`
   h1 {
     font-size: 5em;
   }
+     @media (max-width: 768px) {
+    font-size: 1.5rem;
+    width: 90%;
+    
+    h1 {
+      font-size: 2.5em;
+    }
 `;
 
 const Button = styled.button`
@@ -76,6 +89,5 @@ const Button = styled.button`
   display: flex;
   }
 `
-
 
 export default Home
