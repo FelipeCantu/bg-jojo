@@ -5,6 +5,7 @@ import GetInvolved from './components/GetInvolved';
 import About from './components/About';
 import Hotlines from './components/Hotlines';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import Footer from './components/Footer'
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
           <Route path="/Hotlines" element={<Hotlines />} />
           <Route path="/GetInvolved" element={<GetInvolved />} />
         </Routes>
+        <Footer />
       </Router>
     </div>
   );
