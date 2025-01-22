@@ -7,13 +7,13 @@ const Footer = () => {
   return (
     <FooterContainer>
       <SocialMedia>
-        <SocialLink href="https://facebook.com" target="_blank" aria-label="Facebook">
+        <SocialLink href="https://www.facebook.com/profile.php?id=61564086892164" target="_blank" aria-label="Facebook">
           <FontAwesomeIcon icon={faFacebookF} />
         </SocialLink>
-        <SocialLink href="https://instagram.com" target="_blank" aria-label="Instagram">
+        <SocialLink href="https://www.instagram.com/givebackjojo/" target="_blank" aria-label="Instagram">
           <FontAwesomeIcon icon={faInstagram} />
         </SocialLink>
-        <SocialLink href="https://youtube.com" target="_blank" aria-label="YouTube">
+        <SocialLink href="https://www.youtube.com/watch?v=bqnwdX3x_l0" target="_blank" aria-label="YouTube">
           <FontAwesomeIcon icon={faYoutube} />
         </SocialLink>
       </SocialMedia>
