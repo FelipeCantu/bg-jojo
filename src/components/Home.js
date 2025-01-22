@@ -8,7 +8,7 @@ function Home() {
   return (
     <MainSection>
       <VideoWrapper>
-        <VideoBackground autoPlay loop muted>
+        <VideoBackground autoPlay loop muted playsInline disablePictureInPicture controlsList='nodownload nofullscreen noremoteplayback'>
           <source src={require('../assets/cloud.mp4')} type='video/mp4' alt='clouds' />
           Your browser does not support the video tag.
         </VideoBackground>
@@ -45,6 +45,7 @@ const VideoBackground = styled.video`
   object-fit: cover; 
   z-index: -1;
   pointer-events: none;
+  user-select: none;
 `;
 
 const Content = styled.div`

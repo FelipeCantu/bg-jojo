@@ -5,7 +5,7 @@ const Hotlines = () => {
   return (
     <>
       <VideoBackground>
-        <video autoPlay loop muted>
+        <video autoPlay loop muted playsInline disablePictureInPicture controlsList='nodownload nofullscreen noremoteplayback'>
         <source src={require('../assets/cloud.mp4')} type='video/mp4' alt='clouds' />
         Your browser does not support the video tag.
         </video>
@@ -89,7 +89,8 @@ const VideoBackground = styled.div`
   height: 100%;
   z-index: -1;
   overflow: hidden;
-  
+  pointer-events: none;
+  user-select: none;
   video {
     width: 100%;
     height: 100%;

@@ -20,6 +20,8 @@ const BackgroundVideo = styled.video`
   height: 50vh;
   object-fit: cover;
   z-index: -1;
+  pointer-events: none;
+  user-select: none;
 `;
 
 const TitleContainer = styled.div`
@@ -91,7 +93,7 @@ const StyledImage = styled.img`
 const AboutSection = () => {
   return (
     <SectionContainer>
-      <BackgroundVideo autoPlay loop muted>
+      <BackgroundVideo autoPlay loop muted playsInline disablePictureInPicture controlsList='nodownload nofullscreen noremoteplayback'>
       <source src={require('../assets/flamingos.mp4')} type='video/mp4' alt='clouds' />
       Your browser does not support the video tag.
       </BackgroundVideo>

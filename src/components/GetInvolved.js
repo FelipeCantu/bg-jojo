@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import styled from "styled-components";
+import emailjs from "emailjs-com";
 
 const PageContainer = styled.div`
   background: url('https://static.wixstatic.com/media/08854068a2e04004a83a1b525ba62365.jpg/v1/crop/x_0,y_235,w_5472,h_1966/fill/w_980,h_352,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/Flamingos%20and%20Macaroons.jpg') no-repeat center center/cover;
@@ -70,17 +71,91 @@ const Button = styled.button`
 `;
 
 const VolunteerForm = () => {
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    message: "",
+  });
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const sendEmail = (e) => {
+    e.preventDefault();
+
+    emailjs
+      .send(
+        "service_v16er92", // Replace with your EmailJS Service ID
+        "template_t1orqok", // Replace with your EmailJS Template ID
+        formData,
+        "eD3rUTM3Ymr_H6rcQ" // Replace with your EmailJS Public Key
+      )
+      .then(
+        (result) => {
+          alert("Message sent successfully!");
+          setFormData({
+            firstName: "",
+            lastName: "",
+            email: "",
+            phone: "",
+            message: "",
+          });
+        },
+        (error) => {
+          alert("Failed to send message, please try again.");
+        }
+      );
+  };
+
   return (
     <PageContainer>
       <FormContainer>
         <Title>Volunteer</Title>
         <Description>Get in touch so we can start working together.</Description>
-        <Form>
-          <Input type="text" placeholder="First Name" required />
-          <Input type="text" placeholder="Last Name" required />
-          <Input type="email" placeholder="Email" required />
-          <Input type="tel" placeholder="Phone" required />
-          <TextArea placeholder="Message" rows="4" required></TextArea>
+        <Form onSubmit={sendEmail}>
+          <Input
+            type="text"
+            name="firstName"
+            placeholder="First Name"
+            value={formData.firstName}
+            onChange={handleChange}
+            required
+          />
+          <Input
+            type="text"
+            name="lastName"
+            placeholder="Last Name"
+            value={formData.lastName}
+            onChange={handleChange}
+            required
+          />
+          <Input
+            type="email"
+            name="email"
+            placeholder="Email"
+            value={formData.email}
+            onChange={handleChange}
+            required
+          />
+          <Input
+            type="tel"
+            name="phone"
+            placeholder="Phone"
+            value={formData.phone}
+            onChange={handleChange}
+            required
+          />
+          <TextArea
+            name="message"
+            placeholder="Message"
+            rows="4"
+            value={formData.message}
+            onChange={handleChange}
+            required
+          />
           <Button type="submit">Submit</Button>
         </Form>
       </FormContainer>
