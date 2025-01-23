@@ -88,10 +88,10 @@ const VolunteerForm = () => {
 
     emailjs
       .send(
-        "service_v16er92", // Replace with your EmailJS Service ID
-        "template_t1orqok", // Replace with your EmailJS Template ID
+        "service_fyv9d18", // Replace with your EmailJS Service ID
+        "template_l6tqa0l", // Replace with your EmailJS Template ID
         formData,
-        "eD3rUTM3Ymr_H6rcQ" // Replace with your EmailJS Public Key
+        "oauDokO6GGZB-3gT1" // Replace with your EmailJS Public Key
       )
       .then(
         (result) => {
