@@ -2,8 +2,9 @@ import React, { useState } from "react";
 import styled from "styled-components";
 import emailjs from "emailjs-com";
 import Swal from "sweetalert2";
+import withReactContent from "sweetalert2-react-content";
 
-
+const MySwal = withReactContent(Swal);
 const PageContainer = styled.div`
   background: url('https://static.wixstatic.com/media/08854068a2e04004a83a1b525ba62365.jpg/v1/crop/x_0,y_235,w_5472,h_1966/fill/w_980,h_352,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/Flamingos%20and%20Macaroons.jpg') no-repeat center center/cover;
   min-height: 100vh;
@@ -96,12 +97,22 @@ const VolunteerForm = () => {
         "oauDokO6GGZB-3gT1" // Replace with your EmailJS Public Key
       )
       .then(
-        (result) => {
-          Swal.fire({
-            title: "Success!",
-            text: "Your message has been sent successfully.",
+        () => {
+          MySwal.fire({
+            title: "<h2 style='color:#1d4ed8;'>Success!</h2>",
+            html: "<p style='color:#374151; font-size:1.1rem;'>Your message has been sent successfully.</p>",
             icon: "success",
+            background: "#f3f4f6",
             confirmButtonColor: "#1d4ed8",
+            confirmButtonText: "<b>OK</b>",
+            timer: 3000,
+            timerProgressBar: true,
+            showClass: {
+              popup: "animate__animated animate__fadeInDown",
+            },
+            hideClass: {
+              popup: "animate__animated animate__fadeOutUp",
+            },
           });
   
           setFormData({
@@ -112,12 +123,14 @@ const VolunteerForm = () => {
             message: "",
           });
         },
-        (error) => {
-          Swal.fire({
-            title: "Error!",
-            text: "Failed to send message. Please try again.",
+        () => {
+          MySwal.fire({
+            title: "<h2 style='color:#d32f2f;'>Error!</h2>",
+            html: "<p style='color:#374151; font-size:1.1rem;'>Failed to send message. Please try again.</p>",
             icon: "error",
+            background: "#fef2f2",
             confirmButtonColor: "#d32f2f",
+            confirmButtonText: "<b>Try Again</b>",
           });
         }
       );
