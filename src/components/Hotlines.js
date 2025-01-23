@@ -46,14 +46,15 @@ const Hotlines = () => {
 export default Hotlines;
 
 const Container = styled.div`
-  background-color: #f3f4f6;
-  padding: 1.5rem;
+  background-color: rgba(243, 244, 246, 0.9); /* Semi-transparent background */
+  padding: 0rem 1.5rem 1.5rem; /* Increased top padding to avoid navbar overlap */
   border-radius: 0.5rem;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   max-width: 32rem;
-  margin: 0 auto;
+  margin: 6rem auto; /* Pushes content down */
+  position: relative; /* Keeps it above the video */
+  z-index: 1;
 `;
-
 const Title = styled.h2`
   font-size: 1.5rem;
   font-weight: bold;
@@ -82,18 +83,18 @@ const HotlineText = styled.p`
 `;
 
 const VideoBackground = styled.div`
-  position: fixed;
+  position: fixed; /* Keeps it in the background */
   top: 0;
   left: 0;
   width: 100%;
-  height: 100%;
-  z-index: -1;
+  height: 100vh; /* Ensure it fills the screen */
+  z-index: -1; /* Push it behind everything */
   overflow: hidden;
-  pointer-events: none;
-  user-select: none;
+  pointer-events: none; /* Prevents clicking */
+
   video {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: cover; /* Ensures it covers the whole area */
   }
 `;
