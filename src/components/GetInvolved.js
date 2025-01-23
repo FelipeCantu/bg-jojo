@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import styled from "styled-components";
 import emailjs from "emailjs-com";
+import Swal from "sweetalert2";
+
 
 const PageContainer = styled.div`
   background: url('https://static.wixstatic.com/media/08854068a2e04004a83a1b525ba62365.jpg/v1/crop/x_0,y_235,w_5472,h_1966/fill/w_980,h_352,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/Flamingos%20and%20Macaroons.jpg') no-repeat center center/cover;
@@ -95,7 +97,13 @@ const VolunteerForm = () => {
       )
       .then(
         (result) => {
-          alert("Message sent successfully!");
+          Swal.fire({
+            title: "Success!",
+            text: "Your message has been sent successfully.",
+            icon: "success",
+            confirmButtonColor: "#1d4ed8",
+          });
+  
           setFormData({
             firstName: "",
             lastName: "",
@@ -105,7 +113,12 @@ const VolunteerForm = () => {
           });
         },
         (error) => {
-          alert("Failed to send message, please try again.");
+          Swal.fire({
+            title: "Error!",
+            text: "Failed to send message. Please try again.",
+            icon: "error",
+            confirmButtonColor: "#d32f2f",
+          });
         }
       );
   };
