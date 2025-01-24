@@ -24,7 +24,7 @@ function MissionSection() {
       </TextContainer>
 
       <VideoContainer>
-        <VideoBackground autoPlay loop muted>
+        <VideoBackground autoPlay loop muted playsInline disablePictureInPicture controlsList='nodownload nofullscreen noremoteplayback'>
         <source src={require('../assets/flamingo.mp4')} type='video/mp4' alt='clouds' />
         Your browser does not support the video tag.
         </VideoBackground>
@@ -111,6 +111,8 @@ const VideoBackground = styled.video`
   width: 100%;
   height: 100%;
   object-fit: cover;
+  pointer-events: none;
+  user-select: none;
 `;
 
 export default MissionSection;

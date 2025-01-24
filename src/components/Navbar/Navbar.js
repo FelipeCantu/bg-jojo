@@ -115,26 +115,39 @@ const MoreLink = styled.div`
 `;
 
 const DropdownMenu = styled.div`
-  display: none; /* Hide by default */
+  display: block;
   position: absolute;
-  top: 100%; /* Position directly below the "More" link */
+  top: 100%;
   left: 0;
   background-color: orange;
   box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
-  z-index: 99999; /* Ensure dropdown is above other content */
-  width: max-content; /* Make the dropdown width adjust to the content */
-  
+  z-index: 99999;
+  width: max-content;
+  opacity: 0;
+  transform: translateY(-15px);
+  visibility: hidden;
+  transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s ease-in-out, visibility 0.4s linear;
+
+  ${MoreLink}:hover & {
+    opacity: 1;
+    transform: translateY(0);
+    visibility: visible;
+  }
+
   a {
     display: block;
-    padding: 10px 20px;
+    padding: 12px 20px;
     color: black;
     text-decoration: none;
+    transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
+
     &:hover {
-      background-color: #ddd; /* Add hover effect to dropdown links */
+      background-color: black;
       color: white;
     }
   }
 `;
+
 
 const MobileMenu = styled.div`
   @media (min-width: 769px) {
