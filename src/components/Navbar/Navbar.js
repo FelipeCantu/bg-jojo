@@ -8,7 +8,10 @@ const Navbar = () => {
   return (
     <Nav>
       <NavContent>
-        <Logo src={require('../../assets/jojologo.png')} alt="Logo" />
+        {/* Wrap the Logo with Link for navigation */}
+        <LogoLink to="/Home">
+          <Logo src={require('../../assets/jojologo.png')} alt="Logo" />
+        </LogoLink>
         
         {/* Links are shown only on larger screens */}
         <NavLinks>
@@ -44,6 +47,7 @@ const Navbar = () => {
   );
 };
 
+// Styled components
 const Nav = styled.div`
   position: sticky;
   top: 0;
@@ -69,6 +73,11 @@ const NavContent = styled.div`
     flex-direction: column; /* Stack elements on smaller screens */
     align-items: flex-start; /* Align to left */
   }
+`;
+
+const LogoLink = styled(Link)`
+  text-decoration: none; /* Remove default link styling */
+  cursor: pointer;
 `;
 
 const Logo = styled.img`
@@ -147,7 +156,6 @@ const DropdownMenu = styled.div`
     }
   }
 `;
-
 
 const MobileMenu = styled.div`
   @media (min-width: 769px) {

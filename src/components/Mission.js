@@ -1,5 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
+import { Link } from 'react-router-dom'
 
 function MissionSection() {
   return (
@@ -19,14 +20,16 @@ function MissionSection() {
             to those in need. Our goal is to make a positive impact on individuals' lives and contribute
             to a healthier, more supportive society.
           </p>
-          <Button>Learn More</Button>
+          <MoreLink to='/About'>
+            <Button>Learn More</Button>
+          </MoreLink>
         </Content>
       </TextContainer>
 
       <VideoContainer>
         <VideoBackground autoPlay loop muted playsInline disablePictureInPicture controlsList='nodownload nofullscreen noremoteplayback'>
-        <source src={require('../assets/flamingo.mp4')} type='video/mp4' alt='clouds' />
-        Your browser does not support the video tag.
+          <source src={require('../assets/flamingo.mp4')} type='video/mp4' alt='clouds' />
+          Your browser does not support the video tag.
         </VideoBackground>
       </VideoContainer>
     </SectionWrapper>
@@ -94,6 +97,11 @@ const Button = styled.button`
     color: black;
     border: black solid 2px;
   }
+`;
+
+const MoreLink = styled(Link)`
+  text-decoration: none; /* Remove default link styling */
+  cursor: pointer;
 `;
 
 const VideoContainer = styled.div`

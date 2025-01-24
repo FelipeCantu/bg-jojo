@@ -2,6 +2,7 @@ import React from 'react'
 import styled from 'styled-components';
 import { ChevronRightIcon } from '@heroicons/react/24/solid'
 import Mission from './Mission'
+import { Link } from 'react-router-dom'
 
 
 function Home() {
@@ -15,15 +16,17 @@ function Home() {
         <Content>
           <h1>Reach Out For Help</h1>
           <p>You Are Not Alone</p>
-          <Button>
-            <div>
-              <p> Hotlines</p>
-              <ChevronRightIcon />
-            </div>
-          </Button>
+          <HotLink to='/Hotlines'>
+            <Button>
+              <div>
+                <p> Hotlines</p>
+                <ChevronRightIcon />
+              </div>
+            </Button>
+          </HotLink>
         </Content>
       </VideoWrapper>
-        <Mission />
+      <Mission />
     </MainSection>
   )
 }
@@ -31,7 +34,7 @@ function Home() {
 const MainSection = styled.div`
   width: 100%;
   height: 100%;`
-  
+
 const VideoWrapper = styled.div`
   height: 90vh;
 `;
@@ -90,6 +93,11 @@ const Button = styled.button`
   div {
   display: flex;
   }
+`
+
+const HotLink = styled(Link)`
+  text-decoration: none; /* Remove default link styling */
+  cursor: pointer;
 `
 
 export default Home
