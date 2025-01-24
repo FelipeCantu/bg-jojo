@@ -1,11 +1,15 @@
 .App {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    
-  }
-  
-  .App > * {
-    flex-grow: 1;
-    overflow: hidden;
-  }
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Remove overflow: hidden from all children */
+.App > * {
+  flex-grow: 1;
+}
+
+/* Optional: Apply overflow: visible to specific components if necessary */
+.Nav, .DropdownMenu {
+  overflow: visible;
+}
