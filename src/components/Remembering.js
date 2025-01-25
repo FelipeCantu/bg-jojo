@@ -1,21 +1,32 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import styled from "styled-components";
 
+const Remembering = ({ name, imageUrl, slug }) => {
+  console.log("Rendering tribute:", name, imageUrl); // Log props being passed
+
+  return (
+    <Link to={`/tribute/${slug}`}>
+      <TributeContainer>
+        <ImageContainer>
+          <TributeImage
+            src={imageUrl} // Use the passed image URL
+            alt={name}
+          />
+          <Overlay>
+            <h3>{name}</h3>
+          </Overlay>
+        </ImageContainer>
+      </TributeContainer>
+    </Link>
+  );
+};
+
+// Styled Components
 const TributeContainer = styled.div`
   text-align: center;
   padding: 20px;
-`;
-
-const Title = styled.h2`
-  font-size: 24px;
-  font-weight: bold;
-  margin-bottom: 10px;
-`;
-
-const Description = styled.p`
-  font-size: 16px;
-  color: #666;
-  margin-bottom: 20px;
+  cursor: pointer;
 `;
 
 const ImageContainer = styled.div`
@@ -30,7 +41,7 @@ const TributeImage = styled.img`
   height: auto;
   display: block;
   transition: all 0.3s ease-in-out;
-  
+
   &:hover {
     filter: grayscale(50%) brightness(80%);
   }
@@ -50,24 +61,14 @@ const Overlay = styled.div`
   opacity: 0;
   transition: opacity 0.3s ease-in-out;
 
-  ${ImageContainer}:hover & {
+  &:hover {
     opacity: 1;
   }
-`;
 
-const Remembering = ({ name, imageUrl }) => {
-  return (
-    <TributeContainer>
-      <Title>In Memory Of</Title>
-      <Description>
-        These individuals brought light into our lives and will always be remembered. We honor their memory and the impact they had on those around them.
-      </Description>
-      <ImageContainer>
-        <TributeImage src={imageUrl} alt={name} />
-        <Overlay>{name}</Overlay>
-      </ImageContainer>
-    </TributeContainer>
-  );
-};
+  h3 {
+    margin: 0;
+    font-size: 20px;
+  }
+`;
 
 export default Remembering;

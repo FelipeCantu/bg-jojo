@@ -26,7 +26,7 @@ const Navbar = () => {
             More
             <DropdownMenu>
               <StyledLink to="/Articles">Articles</StyledLink>
-              <StyledLink to="/Remembering">Remembering Loved Ones</StyledLink>
+              <StyledLink to="/Tributes">Remembering Loved Ones</StyledLink>
             </DropdownMenu>
           </MoreLink>
         </NavLinks>

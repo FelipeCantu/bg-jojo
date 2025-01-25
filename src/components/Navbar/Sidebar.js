@@ -16,7 +16,7 @@ const Sidebar = ({ open }) => {
 
           {/* Add the new dropdown links */}
           <li><StyledLink to="/Articles">Articles</StyledLink></li>
-          <li><StyledLink to="/Remembering">Remembering Loved Ones</StyledLink></li>
+          <li><StyledLink to="/Tributes">Remembering Loved Ones</StyledLink></li>
         </Ul>
       </nav>
     </SidebarWrapper>

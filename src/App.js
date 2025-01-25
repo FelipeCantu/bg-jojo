@@ -7,9 +7,10 @@ import Hotlines from './components/Hotlines';
 import Events from './components/Events';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import Footer from './components/Footer';
-import NotFound from './components/NotFound'; // Add this component
-import Articles from './components/Articles'
-import Remembering from './components/Remembering'
+import NotFound from './components/NotFound';
+import Articles from './components/Articles';
+import TributeGallery from "./components/TributeGallery";
+import TributeDetail from "./components/TributeDetail";
 
 function App() {
   return (
@@ -17,15 +18,20 @@ function App() {
       <Router>
         <Navbar />
         <Routes>
-          <Route path="/" element={<Navigate to="/Home" />} />
-          <Route path="/Home" element={<Home />} />
-          <Route path="/About" element={<About />} />
-          <Route path="/Hotlines" element={<Hotlines />} />
-          <Route path="/GetInvolved" element={<GetInvolved />} />
-          <Route path="/Events" element={<Events />} />
-          <Route path="/Articles" element={<Articles />} />
-          <Route path="/Remembering" element={<Remembering />} />
-          {/* Add a fallback route for undefined paths */}
+          {/* Redirect / to /home */}
+          <Route path="/" element={<Navigate to="/home" />} />
+          
+          {/* Define main routes */}
+          <Route path="/home" element={<Home />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/hotlines" element={<Hotlines />} />
+          <Route path="/getinvolved" element={<GetInvolved />} />
+          <Route path="/events" element={<Events />} />
+          <Route path="/articles" element={<Articles />} />
+          <Route path="/tributes" element={<TributeGallery />} />
+          <Route path="/tribute/:slug" element={<TributeDetail />} />
+          
+          {/* Catch-all route for 404 */}
           <Route path="*" element={<NotFound />} />
         </Routes>
         <Footer />
