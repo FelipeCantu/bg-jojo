@@ -3,15 +3,14 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/
 
 // 🔹 Your Firebase config (Replace with your actual Firebase config values)
 const firebaseConfig = {
-  apiKey: "AIzaSyDnqK-Vg7IIYiRaVChp5SKok67ivWicWm4",
-  authDomain: "bg-jojo.firebaseapp.com",
-  projectId: "bg-jojo",
-  storageBucket: "bg-jojo.firebasestorage.app",
-  messagingSenderId: "54933048786",
-  appId: "1:54933048786:web:5ac5ce26988b539b860c0b",
-  measurementId: "G-CYD44ZLF28"
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.REACT_APP_FIREBASE_APP_ID,
+  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID
 };
-
 // 🔹 Initialize Firebase
 const app = initializeApp(firebaseConfig);  // Now the app is initialized with the config
 const auth = getAuth(app);  // Initialize the authentication service
