@@ -1,8 +1,8 @@
 import React from 'react';
 import Menu from './Menu';
 import styled from 'styled-components';
-import { UserCircleIcon } from '@heroicons/react/24/solid';
 import { Link } from 'react-router-dom';
+import LoginButton from './LoginButton';  // Import LoginButton
 
 const Navbar = () => {
   return (
@@ -37,10 +37,7 @@ const Navbar = () => {
         </MobileMenu>
 
         <Icons>
-          <LoginButton>
-            <UserCircleIcon />
-            <p>Login</p>
-          </LoginButton>
+          <LoginButton />  {/* Use LoginButton here */}
         </Icons>
       </NavContent>
     </Nav>
@@ -167,27 +164,6 @@ const Icons = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-`;
-
-const LoginButton = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  color: black;
-  cursor: pointer;
-  font-size: 16px;
-  font-weight: 500;
-  transition: all 0.3s ease-in-out;
-
-  &:hover {
-    color: white;
-  }
-
-  svg {
-    width: 20px;
-    height: 20px;
-  }
 `;
 
 export default Navbar;
