@@ -1,56 +1,80 @@
 import React from 'react';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
+import LoginButton from './LoginButton'
 
-const Sidebar = ({ open }) => {
+const Sidebar = ({ open, setOpen }) => {
+  const handleLinkClick = () => {
+    setOpen(false); // Close the sidebar when a link is clicked
+  };
+
   return (
-    <SidebarWrapper open={open}>
-      <nav>
-        <Ul>
-          {/* Add the original links here */}
-          <li><StyledLink to="/Home">Home</StyledLink></li>
-          <li><StyledLink to="/About">About</StyledLink></li>
-          <li><StyledLink to="/Hotlines">Hotlines</StyledLink></li>
-          <li><StyledLink to="/GetInvolved">Get Involved</StyledLink></li>
-          <li><StyledLink to="/Events">Events</StyledLink></li>
-
-          {/* Add the new dropdown links */}
-          <li><StyledLink to="/Articles">Articles</StyledLink></li>
-          <li><StyledLink to="/Tributes">Remembering Loved Ones</StyledLink></li>
-        </Ul>
-      </nav>
-    </SidebarWrapper>
+    <SidebarContainer open={open}>
+      <SidebarContent>
+      <SidebarLoginContainer>
+          <LoginButton hideInNavbar={false} />
+        </SidebarLoginContainer>
+        <NavLinks>
+          <StyledLink to="/Home" onClick={handleLinkClick}>Home</StyledLink>
+          <StyledLink to="/About" onClick={handleLinkClick}>About</StyledLink>
+          <StyledLink to="/Hotlines" onClick={handleLinkClick}>Hotlines</StyledLink>
+          <StyledLink to="/GetInvolved" onClick={handleLinkClick}>Get Involved</StyledLink>
+          <StyledLink to="/Events" onClick={handleLinkClick}>Events</StyledLink>
+          <StyledLink to="/Articles" onClick={handleLinkClick}>Articles</StyledLink>
+          <StyledLink to="/Tributes" onClick={handleLinkClick}>Remembering Loved Ones</StyledLink>
+        </NavLinks>
+      </SidebarContent>
+    </SidebarContainer>
   );
 };
 
-const SidebarWrapper = styled.div`
+const SidebarContainer = styled.div`
   position: fixed;
   top: 0;
-  right: 0;
-  background-color: orange;
-  height: 100%;
-  width: 300px;
-  transform: ${({ open }) => (open ? 'translateX(0)' : 'translateX(100%)')}; /* Slide in/out */
-  transition: transform 0.3s ease-in-out;
+  left: ${({ open }) => (open ? '0' : '-150%')}; /* Sidebar is off-screen when closed */
+  width: 100%;
+  height: 100vh;
+  background-color: #fff;
+  box-shadow: 2px 0px 5px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  transition: left 0.3s ease; /* Smooth transition */
   z-index: 999;
 `;
 
-const Ul = styled.ul`
-  list-style: none;
-  padding-top: 50px; /* Add some padding for better positioning */
+const SidebarContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+`;
+
+const NavLinks = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 30px;
+  justify-content: center;
+  align-items: center;
 `;
 
 const StyledLink = styled(Link)`
-  display: block;
-  margin: 15px;
-  padding: 10px;
   color: black;
   text-decoration: none;
-  font-family: Arial, Helvetica, sans-serif;
+  padding: 10px;
   font-size: 16px;
-  :hover {
+  border-bottom: 1px solid #f0f0f0;
+  width: 100%;
+  text-align: center;
+  &:hover {
     color: white;
+    background-color: #333;
   }
 `;
+
+const SidebarLoginContainer = styled.div`
+  top: 0;
+  margin-bottom: 20px;
+`;
+
 
 export default Sidebar;

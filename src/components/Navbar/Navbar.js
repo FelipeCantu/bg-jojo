@@ -12,7 +12,7 @@ const Navbar = () => {
         <LogoLink to="/Home">
           <Logo src={require('../../assets/jojologo.png')} alt="Logo" />
         </LogoLink>
-        
+
         {/* Links are shown only on larger screens */}
         <NavLinks>
           <StyledLink to="/Home">Home</StyledLink>
@@ -36,9 +36,11 @@ const Navbar = () => {
           <Menu />
         </MobileMenu>
 
-        <Icons>
-          <LoginButton />  {/* Use LoginButton here */}
-        </Icons>
+        {/* Show LoginButton only on desktop */}
+        <NavbarLoginContainer>
+          <LoginButton hideInNavbar={false} />  {/* Show on desktop */}
+        </NavbarLoginContainer>
+
       </NavContent>
     </Nav>
   );
@@ -160,10 +162,14 @@ const MobileMenu = styled.div`
   }
 `;
 
-const Icons = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
+const NavbarLoginContainer = styled.div`
+  display: none;  /* Hide on small screens */
+
+  @media (min-width: 769px) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 `;
 
 export default Navbar;

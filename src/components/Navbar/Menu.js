@@ -3,27 +3,32 @@ import styled from 'styled-components';
 import Sidebar from './Sidebar';
 
 const Menu = () => {
-    const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(false);
 
-    return (
-        <>
-            <StyledMenu open={open} onClick={() => setOpen(!open)}>
-                <div />
-                <div />
-                <div />
-            </StyledMenu>
-            <Sidebar open={open} />
-        </>
-    );
+  const toggleMenu = () => {
+    setOpen(!open);
+    console.log('Sidebar is open:', !open); // Check if the state is toggling correctly
+  };
+
+  return (
+    <>
+      <StyledMenu open={open} onClick={toggleMenu}>
+        <div />
+        <div />
+        <div />
+      </StyledMenu>
+      <Sidebar open={open} setOpen={setOpen} />
+    </>
+  );
 };
 
 const StyledMenu = styled.div`
   width: 2rem;
   height: 2rem;
-  position: fixed; /* Fixes the position to stay on screen */
-  top: 10px; /* Keeps it at the top */
-  right: 15px; /* Keeps it on the right */
-  z-index: 9999; /* Ensures it stays above everything */
+  position: fixed;
+  top: 10px;
+  right: 15px;
+  z-index: 9999;
   display: flex;
   flex-direction: column;
   justify-content: space-around;

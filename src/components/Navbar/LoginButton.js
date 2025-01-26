@@ -5,7 +5,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../../firebaseconfig';
 import styled from 'styled-components';
 
-const LoginButton = () => {
+const LoginButton = ({ hideInNavbar }) => {
   const [user, setUser] = useState(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -33,10 +33,12 @@ const LoginButton = () => {
           )}
         </UserProfile>
       ) : (
-        <LoginContainer onClick={signInWithGoogle}>
-          <UserCircleIcon style={{ width: '20px', height: '20px', marginRight: '8px' }} />
-          <p>Login</p>
-        </LoginContainer>
+        !hideInNavbar && (  // Only render the Login button in the Navbar if not logged in
+          <LoginContainer onClick={signInWithGoogle}>
+            <UserCircleIcon style={{ width: '20px', height: '20px', marginRight: '8px' }} />
+            <p>Login</p>
+          </LoginContainer>
+        )
       )}
     </Icons>
   );
