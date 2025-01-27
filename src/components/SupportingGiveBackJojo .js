@@ -55,7 +55,6 @@ const Wrapper = styled.div`
     align-items: center;
     justify-content: center;
     width: 100%;
-    padding: 20px;
 `;
 
 const Container = styled.div`
@@ -65,6 +64,11 @@ const Container = styled.div`
     border-radius: 10px;
     max-width: 60%;
     box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    @media (max-width: 768px) {
+        max-width: 100%;
+        height: 100vh;
+        border-radius: 0;
+    }
 `;
 
 const Title = styled.h2`
