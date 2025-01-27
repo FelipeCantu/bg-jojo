@@ -27,7 +27,7 @@ function Home() {
         </Content>
       </VideoWrapper>
       <Mission />
-    </MainSection>
+      </MainSection>
   )
 }
 
@@ -37,10 +37,14 @@ const MainSection = styled.div`
   min-height: 100vh;
   margin-bottom: 0;
   padding-bottom: 0;
+  gap: 0;
 `;
 
 const VideoWrapper = styled.div`
   height: 90vh;
+   @media (max-width: 768px) {
+    height: 60vh; /* Allow it to adjust dynamically */
+  }
 `;
 
 const VideoBackground = styled.video`
@@ -60,22 +64,22 @@ const Content = styled.div`
   color: pink;
   padding: 20px;
   font-size: 2rem;
-  // z-index: -1;
   text-align: center;
-  left: 0;
-  right: 0;
   margin: 0 auto;
   width: 70%;
+
   h1 {
     font-size: 5em;
   }
-     @media (max-width: 768px) {
+
+  @media (max-width: 768px) {
     font-size: 1.5rem;
     width: 90%;
     
     h1 {
       font-size: 2.5em;
     }
+  }
 `;
 
 const Button = styled.button`

@@ -43,7 +43,7 @@ const SectionWrapper = styled.section`
   width: 100%;
   height: 100vh;
   overflow: hidden;
-
+  top: 0;
   @media (max-width: 1024px) {
     flex-direction: column;
     height: auto;
@@ -70,14 +70,10 @@ const Content = styled.div`
   h2 {
     font-size: 2.5rem;
     font-weight: bold;
-    border-top: 3px solid black;
-    padding-top: 10px;
     margin-bottom: 20px;
   }
-
   p {
     font-size: 1.1rem;
-    line-height: 1.6;
     color: #333;
     margin-bottom: 20px;
   }
@@ -100,9 +96,16 @@ const Button = styled.button`
 `;
 
 const MoreLink = styled(Link)`
-  text-decoration: none; /* Remove default link styling */
+  text-decoration: none; 
   cursor: pointer;
+  
+  @media (max-width: 1024px) {
+    display: flex;
+    justify-content: center; /* Centers the button horizontally */
+    width: 100%; /* Ensure full width to center content */
+  }
 `;
+
 
 const VideoContainer = styled.div`
   flex: 1;
