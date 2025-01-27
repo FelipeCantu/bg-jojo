@@ -13,6 +13,7 @@ import TributeGallery from "./components/TributeGallery";
 import TributeDetail from "./components/TributeDetail";
 import Donate from './components/Donate'
 import YourGift from './components/YourGift';
+import SupportingGiveBackJojo from './components/SupportingGiveBackJojo '
 
 function App() {
   return (
@@ -34,7 +35,8 @@ function App() {
           <Route path='/YourGift' element={<YourGift />} />
           <Route path="/tribute/:slug" element={<TributeDetail />} />
           <Route path='/Donate' element={<Donate />} />
-          
+          <Route path='/SupportingGiveBackJojo' element={<SupportingGiveBackJojo />} />
+
           {/* Catch-all route for 404 */}
           <Route path="*" element={<NotFound />} />
         </Routes>

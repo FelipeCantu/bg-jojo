@@ -16,10 +16,10 @@ const Navbar = () => {
         {/* Links are shown only on larger screens */}
         <NavLinks>
           <StyledLink to="/Home">Home</StyledLink>
+          <StyledLink to="/Donate">Donate</StyledLink>
           <StyledLink to="/About">About</StyledLink>
           <StyledLink to="/Hotlines">Hotlines</StyledLink>
           <StyledLink to="/GetInvolved">Get Involved</StyledLink>
-          <StyledLink to="/Donate">Donate</StyledLink>
 
           {/* "More" dropdown */}
           <MoreLink>

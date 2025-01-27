@@ -20,7 +20,7 @@ const Donate = () => {
             <Container>
                 <Title>Donate</Title>
                 <Subtitle>Empowering Jojo to Prevent Suicide and Elevate Mental Health Awareness</Subtitle>
-                <Button>Start Today</Button>
+                <StartButton to="/SupportingGiveBackJojo">Start Today</StartButton>
                 <DonationList>
                     {donationOptions.map((option, index) => (
                         <DonationItem key={index}>
@@ -68,7 +68,7 @@ const Subtitle = styled.p`
   margin: 10px 0 20px;
 `;
 
-const Button = styled.button`
+const StartButton = styled(Link)`  /* Styled as a Link component */
   background: #cc4200;
   color: white;
   padding: 10px 20px;
@@ -77,6 +77,8 @@ const Button = styled.button`
   font-size: 16px;
   cursor: pointer;
   transition: background 0.3s;
+  display: inline-block;
+  text-decoration: none;
   &:hover {
     background: #003f52;
   }
@@ -121,6 +123,7 @@ const LearnMore = styled(Link)`
     text-decoration: underline;
   }
 `;
+
 // Divider Bar
 const Divider = styled.div`
   width: 100%;
