@@ -16,6 +16,7 @@ const Sidebar = ({ open, setOpen }) => {
         </SidebarLoginContainer>
         <NavLinks>
           <StyledLink to="/Home" onClick={handleLinkClick}>Home</StyledLink>
+          <StyledLink to="/Donate" onClick={handleLinkClick}>Donate</StyledLink>
           <StyledLink to="/About" onClick={handleLinkClick}>About</StyledLink>
           <StyledLink to="/Hotlines" onClick={handleLinkClick}>Hotlines</StyledLink>
           <StyledLink to="/GetInvolved" onClick={handleLinkClick}>Get Involved</StyledLink>
