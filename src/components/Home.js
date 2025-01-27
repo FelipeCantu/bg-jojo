@@ -32,8 +32,12 @@ function Home() {
 }
 
 const MainSection = styled.div`
-  width: 100%;
-  height: 100%;`
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  margin-bottom: 0;
+  padding-bottom: 0;
+`;
 
 const VideoWrapper = styled.div`
   height: 90vh;

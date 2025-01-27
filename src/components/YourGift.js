@@ -59,6 +59,10 @@ const Container = styled.div`
   max-width: 80%;
   margin: auto;
   box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+   @media (max-width: 768px) {
+        max-width: 100%;
+        border-radius: 0;
+    }
 `;
 
 const Title = styled.h2`

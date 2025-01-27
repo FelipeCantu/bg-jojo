@@ -119,8 +119,10 @@ const VideoBackground = styled.video`
   width: 100%;
   height: 100%;
   object-fit: cover;
+  margin-bottom: 0; /* Ensure no extra space */
   pointer-events: none;
   user-select: none;
+  display: block; /* Prevent inline whitespace issues */
 `;
 
 export default MissionSection;
