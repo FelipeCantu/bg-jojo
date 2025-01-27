@@ -46,6 +46,7 @@ const SidebarContent = styled.div`
   flex-direction: column;
   align-items: center;
   height: 100%;
+  margin-right: 10%;
 `;
 
 const NavLinks = styled.div`

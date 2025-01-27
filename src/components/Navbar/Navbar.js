@@ -19,7 +19,7 @@ const Navbar = () => {
           <StyledLink to="/About">About</StyledLink>
           <StyledLink to="/Hotlines">Hotlines</StyledLink>
           <StyledLink to="/GetInvolved">Get Involved</StyledLink>
-          <StyledLink to="/Events">Events</StyledLink>
+          <StyledLink to="/Donate">Donate</StyledLink>
 
           {/* "More" dropdown */}
           <MoreLink>
@@ -27,6 +27,8 @@ const Navbar = () => {
             <DropdownMenu>
               <StyledLink to="/Articles">Articles</StyledLink>
               <StyledLink to="/Tributes">Remembering Loved Ones</StyledLink>
+              <StyledLink to="/GetInvolved">Get Involved</StyledLink>
+
             </DropdownMenu>
           </MoreLink>
         </NavLinks>

@@ -11,6 +11,8 @@ import NotFound from './components/NotFound';
 import Articles from './components/Articles';
 import TributeGallery from "./components/TributeGallery";
 import TributeDetail from "./components/TributeDetail";
+import Donate from './components/Donate'
+import YourGift from './components/YourGift';
 
 function App() {
   return (
@@ -29,7 +31,9 @@ function App() {
           <Route path="/events" element={<Events />} />
           <Route path="/articles" element={<Articles />} />
           <Route path="/tributes" element={<TributeGallery />} />
+          <Route path='/YourGift' element={<YourGift />} />
           <Route path="/tribute/:slug" element={<TributeDetail />} />
+          <Route path='/Donate' element={<Donate />} />
           
           {/* Catch-all route for 404 */}
           <Route path="*" element={<NotFound />} />
