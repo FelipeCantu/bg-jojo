@@ -1,3 +1,4 @@
-import tribute from "./tribute";
+import { article } from './article';
+import { tribute } from './tribute';
 
-export const schemaTypes = [tribute];
+export const schemaTypes = [article, tribute];

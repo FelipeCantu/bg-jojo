@@ -10,3 +10,18 @@ export const client = createClient({
 
 const builder = imageUrlBuilder(client);
 export const urlFor = (source) => builder.image(source);  // Ensure this is correct
+
+export const fetchArticles = async () => {
+  const query = '*[_type == "article"]';  // Query to fetch all articles
+  const articles = await client.fetch(query);
+  return articles;
+};
+
+// Fetch a single article by its ID
+export const fetchArticleById = async (id) => {
+  const query = `*[_type == "article" && _id == $id][0]`;  // Query to fetch the article by ID
+  const params = { id };
+  const article = await client.fetch(query, params);
+  return article;
+};
+export default client;

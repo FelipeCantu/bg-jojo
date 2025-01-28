@@ -1,5 +1,6 @@
 import { initializeApp } from "firebase/app"; // Import initializeApp
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
+import { getDatabase } from 'firebase/database';
 
 // 🔹 Your Firebase config (Replace with your actual Firebase config values)
 const firebaseConfig = {
@@ -14,6 +15,7 @@ const firebaseConfig = {
 // 🔹 Initialize Firebase
 const app = initializeApp(firebaseConfig);  // Now the app is initialized with the config
 const auth = getAuth(app);  // Initialize the authentication service
+const db = getDatabase(app);
 
 const signInWithGoogle = async () => {
   const provider = new GoogleAuthProvider();
@@ -35,4 +37,4 @@ export const logOut = async () => {
   }
 };
 
-export { signInWithGoogle, auth };  // Export necessary methods and variables
+export { signInWithGoogle, auth, db };  // Export necessary methods and variables

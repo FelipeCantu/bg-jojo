@@ -8,12 +8,13 @@ import Events from './components/Events';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import Footer from './components/Footer';
 import NotFound from './components/NotFound';
-import Articles from './components/Articles';
+import ArticleList from './components/ArticleList'
+import ArticleDetail from './components/ArticleDetail';
 import TributeGallery from "./components/TributeGallery";
 import TributeDetail from "./components/TributeDetail";
 import Donate from './components/Donate'
 import YourGift from './components/YourGift';
-import SupportingGiveBackJojo from './components/SupportingGiveBackJojo '
+import SupportingGiveBackJojo from './components/SupportingGiveBackJojo'
 
 function App() {
   return (
@@ -30,7 +31,8 @@ function App() {
           <Route path="/hotlines" element={<Hotlines />} />
           <Route path="/getinvolved" element={<GetInvolved />} />
           <Route path="/events" element={<Events />} />
-          <Route path="/articles" element={<Articles />} />
+          <Route path="/articles" element={<ArticleList />} />
+          <Route path="/article/:id" element={<ArticleDetail />} />
           <Route path="/tributes" element={<TributeGallery />} />
           <Route path='/YourGift' element={<YourGift />} />
           <Route path="/tribute/:slug" element={<TributeDetail />} />
