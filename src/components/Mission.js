@@ -7,6 +7,7 @@ function MissionSection() {
     <SectionWrapper>
       <TextContainer>
         <Content>
+          <Divider />
           <h2>Our Mission</h2>
           <p>
             Give Back Jojo is dedicated to raising awareness about mental health and preventing suicide.
@@ -63,6 +64,12 @@ const TextContainer = styled.div`
     padding: 40px 20px;
   }
 `;
+
+const Divider = styled.hr`
+  width: 10%;
+  margin-left: 0;
+  border: solid black 3px;
+`
 
 const Content = styled.div`
   max-width: 600px;
