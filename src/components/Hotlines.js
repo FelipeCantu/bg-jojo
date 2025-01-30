@@ -3,7 +3,7 @@ import styled from "styled-components";
 
 const Hotlines = () => {
   return (
-    <>
+    <PageContainer>
       <VideoBackground>
         <video autoPlay loop muted playsInline disablePictureInPicture controlsList='nodownload nofullscreen noremoteplayback'>
         <source src={require('../assets/cloud.mp4')} type='video/mp4' alt='clouds' />
@@ -39,11 +39,23 @@ const Hotlines = () => {
           <HotlineText>Call (801) 587-3000 (local) or 1-800-273-8255</HotlineText>
         </HotlineContainer>
       </Container>
-    </>
+    </PageContainer>
   );
 };
 
 export default Hotlines;
+
+const PageContainer = styled.div`
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 4rem 2rem;
+  overflow: hidden;
+`;
+
 
 const Container = styled.div`
   background-color: rgba(243, 244, 246, 0.9); /* Semi-transparent background */
