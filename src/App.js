@@ -15,6 +15,10 @@ import TributeDetail from "./components/TributeDetail";
 import Donate from './components/Donate'
 import YourGift from './components/YourGift';
 import SupportingGiveBackJojo from './components/SupportingGiveBackJojo'
+import AccountSettings from './components/Navbar/AccountSettings';
+import Profile from './components/Navbar/Profile';
+import Notifications from './components/Navbar/Notifications';
+import Subscriptions from './components/Navbar/Subscriptions';
 
 function App() {
   return (
@@ -38,6 +42,10 @@ function App() {
           <Route path="/tribute/:slug" element={<TributeDetail />} />
           <Route path='/Donate' element={<Donate />} />
           <Route path='/SupportingGiveBackJojo' element={<SupportingGiveBackJojo />} />
+          <Route path="/account-settings" element={<AccountSettings />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/notifications" element={<Notifications />} /> 
+          <Route path="/subscriptions" element={<Subscriptions />} />
 
           {/* Catch-all route for 404 */}
           <Route path="*" element={<NotFound />} />

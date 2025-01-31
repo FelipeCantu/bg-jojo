@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app"; // Import initializeApp
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, updateProfile  } from "firebase/auth";
 import { getDatabase } from 'firebase/database';
 
 // 🔹 Your Firebase config (Replace with your actual Firebase config values)
@@ -38,3 +38,16 @@ export const logOut = async () => {
 };
 
 export { signInWithGoogle, auth, db };  // Export necessary methods and variables
+
+
+export const updateUserProfile = async (user, { displayName, photoURL }) => {
+  try {
+    await updateProfile(user, {
+      displayName: displayName,
+      photoURL: photoURL,
+    });
+    console.log('User profile updated!');
+  } catch (error) {
+    console.error('Error updating profile:', error);
+  }
+};
