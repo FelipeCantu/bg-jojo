@@ -156,9 +156,10 @@ const ArticleContainer = styled.div`
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  padding: 4rem 2rem;
   overflow: hidden;
   background: #feedfd;
+  padding-right: 2.5rem;
+  padding-left: 0;
 `;
 
 
