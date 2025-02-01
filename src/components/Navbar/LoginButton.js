@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { UserCircleIcon, ChevronDownIcon } from '@heroicons/react/24/solid';
 import { signInWithGoogle, logOut } from '../../firebaseconfig';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom'; // Use useNavigate for navigatio
 const LoginButton = ({ hideInNavbar }) => {
   const [user, setUser] = useState(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null); // Reference for dropdown menu
   const navigate = useNavigate(); // Hook for navigation
 
   // Listen for authentication state changes
@@ -20,7 +21,24 @@ const LoginButton = ({ hideInNavbar }) => {
     return () => unsubscribe(); // Cleanup the listener when component is unmounted
   }, []);
 
-  const toggleDropdown = () => setDropdownOpen(!dropdownOpen);
+  const toggleDropdown = () => setDropdownOpen((prev) => !prev);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    };
+
+    if (dropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [dropdownOpen]);
 
   const navigateToProfile = () => {
     navigate('/profile'); // Navigate to Profile page
@@ -40,7 +58,7 @@ const LoginButton = ({ hideInNavbar }) => {
   return (
     <Icons>
       {user ? (
-        <UserProfile>
+        <UserProfile ref={dropdownRef}>
           <UserImage src={user.photoURL} alt="User" onClick={toggleDropdown} />
           <UserName>{user.displayName}</UserName>
           <ChevronDownIcon
@@ -54,8 +72,8 @@ const LoginButton = ({ hideInNavbar }) => {
           />
           {dropdownOpen && (
             <DropdownMenu>
-              <DropdownItem onClick={navigateToProfile}>Profile</DropdownItem> {/* Profile Link */}
-              <DropdownItem onClick={navigateToNotifications}>Notifications</DropdownItem> {/* New Notifications Link */}
+              <DropdownItem onClick={navigateToProfile}>Profile</DropdownItem>
+              <DropdownItem onClick={navigateToNotifications}>Notifications</DropdownItem>
               <DropdownItem onClick={navigateToSettings}>Account Settings</DropdownItem>
               <DropdownItem onClick={() => { navigate('/subscriptions'); setDropdownOpen(false); }}>
                 Subscriptions
@@ -66,7 +84,7 @@ const LoginButton = ({ hideInNavbar }) => {
           )}
         </UserProfile>
       ) : (
-        !hideInNavbar && (  // Only render the Login button in the Navbar if not logged in
+        !hideInNavbar && (
           <LoginContainer onClick={signInWithGoogle}>
             <UserCircleIcon style={{ width: '20px', height: '20px', marginRight: '8px' }} />
             <p>Login</p>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { auth, updateUserProfile } from '../../firebaseconfig'; // Import firebase functions
-import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../../firebaseconfig';
+import { onAuthStateChanged, updateProfile } from 'firebase/auth';
 import styled from 'styled-components';
 
 const AccountSettings = () => {
@@ -8,8 +8,8 @@ const AccountSettings = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [photoURL, setPhotoURL] = useState('');
+  const [selectedImage, setSelectedImage] = useState(null);
 
-  // Fetch user data when the component mounts
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
@@ -26,8 +26,15 @@ const AccountSettings = () => {
   const handleSave = async (e) => {
     e.preventDefault();
     if (user) {
-      await updateUserProfile(user, { displayName: name, photoURL });
-      alert('Profile updated successfully');
+      try {
+        await updateProfile(user, {
+          displayName: name,
+          photoURL: selectedImage || photoURL, // Use selected image if uploaded
+        });
+        alert('Profile updated successfully');
+      } catch (error) {
+        console.error('Error updating profile:', error);
+      }
     }
   };
 
@@ -39,21 +46,16 @@ const AccountSettings = () => {
           <Form onSubmit={handleSave}>
             <Field>
               <Label>Profile Picture</Label>
-              <ProfileImagePreview src={photoURL || 'https://via.placeholder.com/150'} alt="Profile" />
+              <ProfileImagePreview src={selectedImage || photoURL || 'https://via.placeholder.com/150'} alt="Profile" />
               <Input
                 type="file"
                 accept="image/*"
-                onChange={(e) => setPhotoURL(URL.createObjectURL(e.target.files[0]))}
+                onChange={(e) => setSelectedImage(URL.createObjectURL(e.target.files[0]))}
               />
             </Field>
             <Field>
               <Label>Name</Label>
-              <Input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Enter your name"
-              />
+              <Input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter your name" />
             </Field>
             <Field>
               <Label>Email</Label>
@@ -69,24 +71,35 @@ const AccountSettings = () => {
   );
 };
 
+// Styled Components
 const ContainerWrapper = styled.div`
-   position: relative;
-   min-height: 100vh;
-   display: flex;
-   flex-direction: column;
-   align-items: center;
-   justify-content: flex-start;
-   overflow: hidden;
-`
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: url(https://i.pinimg.com/736x/ac/62/36/ac623639e4368a63a9442e558cdadc06.jpg) no-repeat bottom center/cover;
+  
+  &:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6); /* Dark overlay */
+  }
+`;
 
-// Styled Components for AccountSettings
 const Container = styled.div`
   padding: 2rem;
   max-width: 600px;
   margin: 0 auto;
-  background: #f9f9f9;
+  background: rgba(255, 255, 255, 0.95);
   border-radius: 8px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 1;
 `;
 
 const Title = styled.h2`
@@ -117,7 +130,6 @@ const Input = styled.input`
   border: 1px solid #ccc;
   border-radius: 5px;
   font-size: 1rem;
-  margin-bottom: 10px;
   background-color: #fff;
 `;
 
