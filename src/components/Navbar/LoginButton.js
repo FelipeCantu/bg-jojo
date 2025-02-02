@@ -6,7 +6,7 @@ import { auth } from '../../firebaseconfig';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom'; // Use useNavigate for navigation
 
-const LoginButton = ({ hideInNavbar }) => {
+const LoginButton = ({ hideInNavbar, closeSidebar }) => {  // Add closeSidebar as a prop
   const [user, setUser] = useState(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null); // Reference for dropdown menu
@@ -41,18 +41,21 @@ const LoginButton = ({ hideInNavbar }) => {
   }, [dropdownOpen]);
 
   const navigateToProfile = () => {
-    navigate('/profile'); // Navigate to Profile page
-    setDropdownOpen(false); // Close dropdown
+    navigate('/profile');
+    setDropdownOpen(false);
+    if (closeSidebar) closeSidebar();
   };
 
   const navigateToNotifications = () => {
-    navigate('/notifications'); // Navigate to Notifications page
+    navigate('/notifications');
     setDropdownOpen(false);
+    if (closeSidebar) closeSidebar();
   };
 
   const navigateToSettings = () => {
-    navigate('/account-settings'); // Navigate to Account Settings
+    navigate('/account-settings');
     setDropdownOpen(false);
+    if (closeSidebar) closeSidebar();
   };
 
   return (
@@ -66,7 +69,7 @@ const LoginButton = ({ hideInNavbar }) => {
               width: '16px',
               height: '16px',
               transition: 'transform 0.3s',
-              transform: dropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)', // Rotate when dropdown is open
+              transform: dropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
             }}
             onClick={toggleDropdown}
           />
@@ -75,11 +78,13 @@ const LoginButton = ({ hideInNavbar }) => {
               <DropdownItem onClick={navigateToProfile}>Profile</DropdownItem>
               <DropdownItem onClick={navigateToNotifications}>Notifications</DropdownItem>
               <DropdownItem onClick={navigateToSettings}>Account Settings</DropdownItem>
-              <DropdownItem onClick={() => { navigate('/subscriptions'); setDropdownOpen(false); }}>
+              <DropdownItem onClick={() => { navigate('/subscriptions'); setDropdownOpen(false); if (closeSidebar) closeSidebar(); }}>
                 Subscriptions
               </DropdownItem>
               <Divider />
-              <DropdownItem onClick={logOut}>Logout</DropdownItem>
+              <DropdownItem onClick={() => { logOut(); setDropdownOpen(false); }}>
+                Logout
+              </DropdownItem>
             </DropdownMenu>
           )}
         </UserProfile>

@@ -1,18 +1,19 @@
 import React from 'react';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
-import LoginButton from './LoginButton'
+import LoginButton from './LoginButton';
 
 const Sidebar = ({ open, setOpen }) => {
+  // Close the sidebar when a link is clicked
   const handleLinkClick = () => {
-    setOpen(false); // Close the sidebar when a link is clicked
+    setOpen(false); // Close the sidebar
   };
 
   return (
     <SidebarContainer open={open}>
       <SidebarContent>
-      <SidebarLoginContainer>
-          <LoginButton hideInNavbar={false} />
+        <SidebarLoginContainer>
+          <LoginButton hideInNavbar={false} closeSidebar={handleLinkClick} />
         </SidebarLoginContainer>
         <NavLinks>
           <StyledLink to="/Home" onClick={handleLinkClick}>Home</StyledLink>
@@ -77,6 +78,5 @@ const SidebarLoginContainer = styled.div`
   top: 0;
   margin-bottom: 20px;
 `;
-
 
 export default Sidebar;

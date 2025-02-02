@@ -3,9 +3,11 @@ import Menu from './Menu';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
 import LoginButton from './LoginButton';  // Import LoginButton
+import { useState } from 'react';
 
 const Navbar = () => {
   return (
+    
     <Nav>
       <NavContent>
         {/* Wrap the Logo with Link for navigation */}
@@ -40,7 +42,7 @@ const Navbar = () => {
 
         {/* Show LoginButton only on desktop */}
         <NavbarLoginContainer>
-          <LoginButton hideInNavbar={false} />  {/* Show on desktop */}
+        <LoginButton hideInNavbar={false} />
         </NavbarLoginContainer>
 
       </NavContent>
