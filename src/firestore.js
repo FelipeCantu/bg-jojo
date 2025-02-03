@@ -1,7 +1,8 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, doc, setDoc, getDocs, addDoc } from "firebase/firestore";
+import { getFirestore, collection, doc, setDoc, getDocs, addDoc, getDoc, updateDoc, increment, arrayUnion, arrayRemove } from "firebase/firestore";  // Include arrayUnion and arrayRemove
 import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 
+// Your Firebase config here...
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
   authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
@@ -17,4 +18,4 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
-export { db, auth, provider, collection, doc, setDoc, getDocs, addDoc, signInWithPopup, onAuthStateChanged };
+export { db, auth, provider, collection, doc, setDoc, getDocs, addDoc, getDoc, updateDoc, increment, arrayUnion, arrayRemove, signInWithPopup, onAuthStateChanged };
