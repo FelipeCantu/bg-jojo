@@ -1,20 +1,17 @@
-// src/components/ArticleDetail.js
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { db, auth, onAuthStateChanged, collection, addDoc, getDocs } from "../firestore";
 import { fetchArticleById } from "../sanityClient";
 import { urlFor } from "../sanityClient";
 import BlockContent from "@sanity/block-content-to-react";
 import styled from "styled-components";
 import ArticleCounters from "./ArticleCounters"; // Import the ArticleCounters component
+import CommentSection from "./CommentSection";
+import { auth, onAuthStateChanged } from '../firestore';
 
 const ArticleDetail = () => {
   const { id } = useParams();
   const [article, setArticle] = useState(null);
-  const [comments, setComments] = useState([]);
-  const [newComment, setNewComment] = useState("");
   const [user, setUser] = useState(null);
-  const [isCommentBoxExpanded, setIsCommentBoxExpanded] = useState(false);
 
   // Fetch the article data
   useEffect(() => {
@@ -34,37 +31,6 @@ const ArticleDetail = () => {
       } : null);
     });
   }, [id]);
-
-  // Fetch the comments for this article
-  useEffect(() => {
-    const fetchComments = async () => {
-      const commentsRef = collection(db, "articles", id, "comments");
-      const commentsSnapshot = await getDocs(commentsRef);
-      setComments(commentsSnapshot.docs.map((doc) => doc.data()));
-    };
-
-    fetchComments();
-  }, [id]);
-
-  // Submit a new comment
-  const handleCommentSubmit = async (e) => {
-    e.preventDefault();
-    if (!newComment.trim() || !user) return;
-
-    const commentsRef = collection(db, "articles", id, "comments");
-    await addDoc(commentsRef, {
-      userName: user.name,
-      userPhoto: user.photo,
-      text: newComment,
-      timestamp: new Date().toISOString(),
-    });
-
-    setNewComment("");
-    setIsCommentBoxExpanded(false);
-    // Refresh comment list
-    const commentsSnapshot = await getDocs(commentsRef);
-    setComments(commentsSnapshot.docs.map((doc) => doc.data()));
-  };
 
   if (!article) return <p>Loading...</p>;
 
@@ -88,38 +54,8 @@ const ArticleDetail = () => {
       {/* Reusable Counters Component */}
       <ArticleCounters articleId={id} user={user} />
 
-      {/* Comment Section */}
-      <CommentSection>
-        <h3>Comments</h3>
-        {user ? (
-          <CommentForm onSubmit={handleCommentSubmit}>
-            <CommentBox
-              placeholder="Add a comment..."
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              onFocus={() => setIsCommentBoxExpanded(true)}
-              expanded={isCommentBoxExpanded}
-            />
-            {isCommentBoxExpanded && (
-              <ButtonContainer>
-                <CancelButton type="button" onClick={() => setIsCommentBoxExpanded(false)}>Cancel</CancelButton>
-                <PublishButton type="submit">Publish</PublishButton>
-              </ButtonContainer>
-            )}
-          </CommentForm>
-        ) : (
-          <p>Please log in to comment.</p>
-        )}
-        {comments.map((comment, index) => (
-          <Comment key={index}>
-            <UserPhoto src={comment.userPhoto} alt={comment.userName} />
-            <CommentContent>
-              <strong>{comment.userName}</strong>
-              <p>{comment.text}</p>
-            </CommentContent>
-          </Comment>
-        ))}
-      </CommentSection>
+      {/* Reusable Comment Section Component */}
+      <CommentSection articleId={id} user={user} />
     </ArticleDetailContainer>
   );
 };
@@ -179,73 +115,6 @@ const AuthorName = styled.p`
   font-size: 16px;
   font-weight: bold;
   color: #333;
-`;
-
-const CommentSection = styled.div`
-  margin-top: 20px;
-  margin-bottom: 50px;
-`;
-
-const CommentForm = styled.form`
-  display: flex;
-  flex-direction: column;
-  margin-top: 15px;
-  position: relative;
-`;
-
-const CommentBox = styled.textarea`
-  width: 100%;
-  height: ${(props) => (props.expanded ? "100px" : "40px")};
-  transition: height 0.3s ease;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  position: relative;
-`;
-
-const ButtonContainer = styled.div`
-  position: absolute;
-  bottom: -40px;
-  right: 0;
-  display: flex;
-  gap: 10px;
-`;
-
-const PublishButton = styled.button`
-  background-color: #024a47;
-  color: white;
-  border: none;
-  padding: 10px 15px;
-  cursor: pointer;
-  transition: opacity 0.2s ease-in-out;
-
-  &:hover {
-    opacity: 0.8;
-  }
-`;
-
-const CancelButton = styled.button`
-  color: #024a47;
-  padding: 5px 10px;
-  border: none;
-  cursor: pointer;
-`;
-
-const Comment = styled.div`
-  display: flex;
-  align-items: flex-start;
-  margin-top: 10px;
-`;
-
-const UserPhoto = styled.img`
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  margin-right: 10px;
-`;
-
-const CommentContent = styled.div`
-  margin-left: 10px;
 `;
 
 export default ArticleDetail;
