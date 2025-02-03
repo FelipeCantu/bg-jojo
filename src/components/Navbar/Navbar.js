@@ -3,7 +3,6 @@ import Menu from './Menu';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
 import LoginButton from './LoginButton';  // Import LoginButton
-import { useState } from 'react';
 
 const Navbar = () => {
   return (
