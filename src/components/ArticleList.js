@@ -1,18 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { fetchArticles } from '../sanityClient';
-import { urlFor } from '../sanityClient';
+import { fetchArticles } from '../sanityClient'; // Fetch articles from Sanity
+import { urlFor } from '../sanityClient'; // URL function for Sanity images
+import ArticleCounters from './ArticleCounters'; // Import the ArticleCounters component
 import styled from 'styled-components';
-import { EyeIcon, ChatBubbleLeftIcon, HeartIcon } from '@heroicons/react/24/outline';
-import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
-import { EllipsisVerticalIcon } from "@heroicons/react/24/outline";
 
-const ArticleList = () => {
+const ArticleList = ({ user }) => {
   const [articles, setArticles] = useState([]);
-
+  
   useEffect(() => {
     const getArticles = async () => {
-      const fetchedArticles = await fetchArticles();
+      const fetchedArticles = await fetchArticles(); // Fetching articles from Sanity
       setArticles(fetchedArticles);
     };
     getArticles();
@@ -26,80 +24,6 @@ const ArticleList = () => {
         {articles.map((article) => (
           <LinkWrapper to={`/article/${article._id}`} key={article._id}>
             <ArticleCard>
-              <Menu as="div" style={{ position: "absolute", top: "10px", right: "10px" }}>
-                <MenuButton
-                  style={{
-                    background: "none", // No background
-                    border: "none", // No border
-                    padding: 0, // Remove any default padding
-                    cursor: "pointer", // Ensures the cursor changes on hover
-                  }}
-                >
-                  <EllipsisVerticalIcon
-                    style={{
-                      width: "24px",
-                      height: "30px",
-                      cursor: "pointer",
-                      color: "#333", // Icon color
-                      background: "none", // No background
-                      border: "none", // No border
-                      boxShadow: "none", // No shadow
-                      padding: "0", // Remove any internal padding
-                    }}
-                  />
-                </MenuButton>
-                <MenuItems
-                  style={{
-                    position: "absolute",
-                    right: 0,
-                    background: "white",
-                    border: "1px solid #ccc",
-                    // borderRadius: "5px",
-                    padding: "5px 15px", // Added padding to make the menu items wider
-                    width: "180px", // Adjusted width to make the menu wider
-                    boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
-                    zIndex: 10,
-                  }}
-                >
-                  <MenuItem>
-                    {({ active }) => (
-                      <button
-                        style={{
-                          padding: "8px 12px",
-                          width: "100%",
-                          textAlign: "left",
-                          background: active ? "#f0f0f0" : "white",
-                          border: "none",
-                          cursor: "pointer",
-                        }}
-                        onClick={() => alert("Follow Post clicked")}
-                      >
-                        Follow Post
-                      </button>
-                    )}
-                  </MenuItem>
-
-                  {/* Share Post */}
-                  <MenuItem>
-                    {({ active }) => (
-                      <button
-                        style={{
-                          padding: "8px 12px",
-                          width: "100%",
-                          textAlign: "left",
-                          background: active ? "#f0f0f0" : "white",
-                          border: "none",
-                          cursor: "pointer",
-                        }}
-                        onClick={() => alert("Share Post clicked")}
-                      >
-                        Share Post
-                      </button>
-                    )}
-                  </MenuItem>
-                </MenuItems>
-
-              </Menu>
               <TopLeftSection>
                 {article.authorImage && (
                   <AuthorInfo>
@@ -108,7 +32,6 @@ const ArticleList = () => {
                   </AuthorInfo>
                 )}
 
-                {/* Display Date and Reading Time in one row, with a dot in between */}
                 <DateAndTime>
                   {article.publishedDate && (
                     <PublishedDate>{new Date(article.publishedDate).toLocaleDateString()}</PublishedDate>
@@ -117,7 +40,7 @@ const ArticleList = () => {
                   {article.readingTime ? (
                     <ReadingTime>Estimated Reading Time: {article.readingTime} minutes</ReadingTime>
                   ) : (
-                    <ReadingTime>Estimated Reading Time: N/A</ReadingTime> // Fallback text if reading time is missing
+                    <ReadingTime>Estimated Reading Time: N/A</ReadingTime>
                   )}
                 </DateAndTime>
               </TopLeftSection>
@@ -132,15 +55,8 @@ const ArticleList = () => {
               <Divider />
               <ArticleTitle>{article.title}</ArticleTitle>
 
-              <Engagement>
-                <HeartWrapper>
-                  <HeartIcon style={{ width: '20px', height: '20px', color: 'red' }} /> {article.likes || 0}
-                </HeartWrapper>
-                <IconWrapper>
-                  <IconItem><EyeIcon style={{ width: '20px', height: '20px' }} /> {article.views || 0}</IconItem>
-                  <IconItem><ChatBubbleLeftIcon style={{ width: '20px', height: '20px' }} /> {article.comments || 0}</IconItem>
-                </IconWrapper>
-              </Engagement>
+              {/* Add the ArticleCounters Component here */}
+              <ArticleCounters articleId={article._id} user={user} />
             </ArticleCard>
           </LinkWrapper>
         ))}
@@ -162,11 +78,10 @@ const ArticleContainer = styled.div`
   padding-left: 0;
 `;
 
-
 const ArticleGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); /* Slightly larger cards */
-  gap: 100px; /* Increased gap between listings */
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 100px;
   padding: 30px;
 `;
 
@@ -177,7 +92,6 @@ const LinkWrapper = styled(Link)`
 const ArticleCard = styled.div`
   background: #f8d8a5;
   padding: 30px 20px 20px;
-  // border-radius: 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -187,7 +101,7 @@ const ArticleCard = styled.div`
   height: 550px;
   width: 100%;
   overflow: hidden;
-  margin-bottom: 20px; /* Extra space if needed */
+  margin-bottom: 20px;
   &:hover {
     transform: translateY(-5px);
   }
@@ -199,7 +113,7 @@ const TopLeftSection = styled.div`
   align-items: flex-start;
   gap: 10px;
   margin-bottom: 15px;
-  width: 100%; /* Ensure the section takes up the full width */
+  width: 100%;
 `;
 
 const AuthorInfo = styled.div`
@@ -244,7 +158,7 @@ const ReadingTime = styled.span`
 
 const ArticleImageWrapper = styled.div`
   width: 100%;
-  height: 250px; /* Increased image height for a bigger feel */
+  height: 250px;
   margin-bottom: 15px;
   display: flex;
   align-items: center;
@@ -258,7 +172,6 @@ const ArticleImage = styled.img`
   border-radius: 10px;
 `;
 
-
 const Divider = styled.div`
   width: 100%;
   height: 2px;
@@ -267,7 +180,7 @@ const Divider = styled.div`
 `;
 
 const ArticleTitle = styled.h2`
-  font-size: 1.8rem; /* Bigger text */
+  font-size: 1.8rem;
   font-weight: 500;
   color: black;
   margin: 15px 0;
@@ -276,33 +189,6 @@ const ArticleTitle = styled.h2`
   align-items: center;
   justify-content: center;
   text-align: center;
-`;
-
-const Engagement = styled.div`
-display: flex;
-justify-content: space-between;
-align-items: center;
-width: 100%;
-font-size: 1.2rem; /* Bigger icons and numbers */
-color: #444;
-`;
-
-const HeartWrapper = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 5px;
-`;
-
-const IconWrapper = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 15px;
-`;
-
-const IconItem = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 5px;
 `;
 
 export default ArticleList;
