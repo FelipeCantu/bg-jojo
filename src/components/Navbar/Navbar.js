@@ -20,7 +20,7 @@ const Navbar = () => {
           <StyledLink to="/Donate">Donate</StyledLink>
           <StyledLink to="/About">About</StyledLink>
           <StyledLink to="/Hotlines">Hotlines</StyledLink>
-          <StyledLink to="/GetInvolved">Get Involved</StyledLink>
+          <StyledLink to="/events">Events</StyledLink>
 
           {/* "More" dropdown */}
           <MoreLink>

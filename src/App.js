@@ -5,6 +5,7 @@ import GetInvolved from './components/GetInvolved';
 import About from './components/About';
 import Hotlines from './components/Hotlines';
 import Events from './components/Events';
+import EventDetail from './components/EventDetail';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import Footer from './components/Footer';
 import NotFound from './components/NotFound';
@@ -35,6 +36,7 @@ function App() {
           <Route path="/hotlines" element={<Hotlines />} />
           <Route path="/getinvolved" element={<GetInvolved />} />
           <Route path="/events" element={<Events />} />
+          <Route path="/events/:id" element={<EventDetail />} />
           <Route path="/articles" element={<ArticleList />} />
           <Route path="/article/:id" element={<ArticleDetail />} />
           <Route path="/tributes" element={<TributeGallery />} />

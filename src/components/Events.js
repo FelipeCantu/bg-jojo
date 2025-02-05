@@ -1,29 +1,44 @@
-import React from "react";
-import styled from "styled-components";
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';  // Importing React Router for navigation
+import styled from 'styled-components';
+import client from '../sanityClient';  // Import your Sanity client
 
+const Events = () => {
+  const [events, setEvents] = useState([]);
 
-// Main Component
-const Events = ({ events = [] }) => {
+  useEffect(() => {
+    // Query to fetch events from Sanity
+    client
+      .fetch('*[_type == "event"]{_id, title, location, date}')  // Fetching necessary fields
+      .then((data) => {
+        setEvents(data);
+      })
+      .catch((error) => {
+        console.error('Error fetching events:', error);
+      });
+  }, []);
+
   return (
     <PageContainer>
       <ContentWrapper>
         {events.length > 0 ? (
-          <Grid>
-            {events.map((event, index) => (
-              <EventCard key={index} image={event.image} aria-label={event.title}>
-                <EventOverlay />
-                <EventContent>
+          <EventList>
+            {events.map((event) => (
+              <EventItem key={event._id}>
+                <Link to={`/events/${event._id}`}>
                   <EventTitle>{event.title}</EventTitle>
-                  <EventDate>{event.date}</EventDate>
-                  <EventDescription>{event.description}</EventDescription>
-                </EventContent>
-              </EventCard>
+                  <EventLocation>
+                    {event.location.city}, {event.location.state}
+                  </EventLocation>
+                  <EventDate>{new Date(event.date).toLocaleDateString()}</EventDate>
+                </Link>
+              </EventItem>
             ))}
-          </Grid>
+          </EventList>
         ) : (
           <NoEventsMessage>
-            <h1>Coming Soon...</h1>
-            <p>Stay tuned for the launch of new charitable activities!</p>
+            <h1>No Events Found</h1>
+            <p>Stay tuned for upcoming events!</p>
           </NoEventsMessage>
         )}
       </ContentWrapper>
@@ -50,58 +65,61 @@ const ContentWrapper = styled.div`
   max-width: 1200px;
 `;
 
-const Grid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 24px;
+const EventList = styled.ul`
+  list-style: none;
+  padding: 0;
+`;
 
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
+const EventItem = styled.li`
+  margin-bottom: 16px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 8px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+
+  a {
+    text-decoration: none;
+    color: #333;
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 1);
   }
 `;
 
-const EventCard = styled.div`
-  position: relative;
-  height: 320px;
-  border-radius: 12px;
-  overflow: hidden;
-  background: ${(props) => `url(${props.image}) center/cover no-repeat`};
-  backdrop-filter: blur(10px);
-  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
-`;
-
-const EventOverlay = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.2));
-  z-index: 1;
-`;
-
-const EventContent = styled.div`
-  position: absolute;
-  bottom: 0;
-  padding: 16px;
-  color: white;
-  z-index: 2;
-`;
-
-const EventTitle = styled.h2`
+const EventTitle = styled.h3`
   font-size: 20px;
   font-weight: bold;
+  color: #333;
+`;
+
+const EventLocation = styled.p`
+  font-size: 14px;
+  color: #777;
 `;
 
 const EventDate = styled.p`
   font-size: 14px;
-  opacity: 0.9;
+  color: #555;
 `;
 
-const EventDescription = styled.p`
-  font-size: 14px;
+const EventDetails = styled.div`
   margin-top: 8px;
-  opacity: 0.8;
+`;
+
+const EventAge = styled.p`
+  font-size: 14px;
+  color: #333;
+`;
+
+const EventRunningTime = styled.p`
+  font-size: 14px;
+  color: #333;
+`;
+
+const EventDoorOpen = styled.p`
+  font-size: 14px;
+  color: #333;
 `;
 
 const NoEventsMessage = styled.div`
@@ -135,6 +153,5 @@ const NoEventsMessage = styled.div`
     margin-top: 5px;
   }
 `;
-
 
 export default Events;
