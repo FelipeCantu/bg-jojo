@@ -9,7 +9,7 @@ const Events = () => {
   useEffect(() => {
     // Query to fetch events from Sanity
     client
-      .fetch('*[_type == "event"]{_id, title, location, date}')  // Fetching necessary fields
+      .fetch('*[_type == "event"]{_id, title, location, date, venue}')  // Fetching necessary fields
       .then((data) => {
         setEvents(data);
       })
@@ -28,10 +28,11 @@ const Events = () => {
                 <Link to={`/events/${event._id}`}>
                   <EventTitle>{event.title}</EventTitle>
                   <EventLocation>
+                    <EventVenue>{event.venue}</EventVenue> {/* Displaying the venue */}
                     {event.location.city}, {event.location.state}
                   </EventLocation>
-                  <EventDate>{new Date(event.date).toLocaleDateString()}</EventDate>
                 </Link>
+                <EventDate>{new Date(event.date).toLocaleDateString()}</EventDate> {/* Date should now be centered to the right */}
               </EventItem>
             ))}
           </EventList>
@@ -63,6 +64,7 @@ const PageContainer = styled.div`
 const ContentWrapper = styled.div`
   width: 100%;
   max-width: 1200px;
+  padding: 20px;
 `;
 
 const EventList = styled.ul`
@@ -71,26 +73,36 @@ const EventList = styled.ul`
 `;
 
 const EventItem = styled.li`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;  // Ensures vertical centering of content
   margin-bottom: 16px;
-  padding: 12px;
+  padding: 20px;
   background: rgba(255, 255, 255, 0.8);
-  border-radius: 8px;
-  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1);
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+  position: relative;  // Needed to position the date correctly
 
   a {
     text-decoration: none;
     color: #333;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
   }
 
   &:hover {
     background: rgba(255, 255, 255, 1);
+    box-shadow: 0px 6px 24px rgba(0, 0, 0, 0.2);
   }
 `;
 
 const EventTitle = styled.h3`
-  font-size: 20px;
+  font-size: 22px;
   font-weight: bold;
   color: #333;
+  margin-bottom: 8px;
 `;
 
 const EventLocation = styled.p`
@@ -98,9 +110,21 @@ const EventLocation = styled.p`
   color: #777;
 `;
 
+const EventVenue = styled.p`
+  font-size: 16px;
+  color: #333;
+  font-weight: bold;
+  margin-top: 10px;
+`;
+
 const EventDate = styled.p`
   font-size: 14px;
   color: #555;
+  font-weight: bold;
+  position: absolute;  // Absolutely position the date
+  right: 20px;         // Place the date towards the right
+  top: 50%;            // Align the date vertically to the center
+  transform: translateY(-50%);  // Center the date vertically
 `;
 
 const NoEventsMessage = styled.div`

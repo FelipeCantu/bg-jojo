@@ -1,4 +1,3 @@
-// schemas/event.js
 import { defineType, defineField } from 'sanity';
 
 export const event = defineType({
@@ -62,7 +61,13 @@ export const event = defineType({
     defineField({
       name: 'doorOpenTime',
       title: 'Door Open Time',
-      type: 'datetime',
+      type: 'string',  // Changed to string to accept custom time format
+      description: 'Enter time in format "hh:mm AM/PM"',
+    }),
+    defineField({
+      name: 'venue',
+      title: 'Venue',
+      type: 'string',  // Simple string for venue name
     }),
   ],
 });

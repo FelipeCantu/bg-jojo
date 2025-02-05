@@ -5,26 +5,31 @@ import client from '../sanityClient';  // Import your Sanity client
 
 const EventDetail = () => {
   const [event, setEvent] = useState(null);
+  const [error, setError] = useState(null); // New state to handle errors
   const { id } = useParams();  // Getting the event ID from the URL
 
   useEffect(() => {
-    // Query to fetch the event details from Sanity by ID
+    // Query to fetch the event details from Sanity by ID, including the venue
     client
-      .fetch(`*[_type == "event" && _id == $id]{title, location, date, description, image{asset->{url}}, age, approximateRunningTime, doorOpenTime}`, { id })
+      .fetch(`*[_type == "event" && _id == $id]{title, location, date, description, image{asset->{url}}, age, approximateRunningTime, doorOpenTime, venue}`, { id })
       .then((data) => {
         setEvent(data[0]);
+        setError(null); // Clear error on successful fetch
       })
       .catch((error) => {
         console.error('Error fetching event details:', error);
+        setError('Failed to load event details.');
       });
   }, [id]);
 
+  if (error) return <ErrorMessage>{error}</ErrorMessage>; // Display error message
   if (!event) return <div>Loading...</div>;
 
   return (
     <PageContainer>
       <ContentWrapper>
         <EventTitle>{event.title}</EventTitle>
+        <EventVenue>{event.venue}</EventVenue> {/* Displaying the venue */}
         <EventLocation>{event.location.city}, {event.location.state}</EventLocation>
         <EventDate>{new Date(event.date).toLocaleDateString()}</EventDate>
         {event.image && <EventImage src={event.image.asset.url} alt={event.title} />}
@@ -32,7 +37,7 @@ const EventDetail = () => {
         <EventDetails>
           <EventAge>Age: {event.age}</EventAge>
           <EventRunningTime>Running Time: {event.approximateRunningTime}</EventRunningTime>
-          <EventDoorOpen>Doors Open: {new Date(event.doorOpenTime).toLocaleTimeString()}</EventDoorOpen>
+          <EventDoorOpen>Doors Open: {event.doorOpenTime}</EventDoorOpen> {/* Displaying doorOpenTime directly */}
         </EventDetails>
       </ContentWrapper>
     </PageContainer>
@@ -108,6 +113,20 @@ const EventRunningTime = styled.p`
 const EventDoorOpen = styled.p`
   font-size: 16px;
   color: #333;
+`;
+
+const EventVenue = styled.p`
+  font-size: 16px;
+  color: #333;
+  font-weight: bold;
+  margin-top: 10px;
+`;
+
+const ErrorMessage = styled.div`
+  color: red;
+  font-size: 18px;
+  text-align: center;
+  margin-top: 20px;
 `;
 
 export default EventDetail;
