@@ -11,7 +11,7 @@ const EventDetail = () => {
   useEffect(() => {
     // Query to fetch the event details from Sanity by ID, including the venue
     client
-      .fetch(`*[_type == "event" && _id == $id]{title, location, date, description, image{asset->{url}}, age, approximateRunningTime, doorOpenTime, venue}`, { id })
+      .fetch(`*[_type == "event" && _id == $id]{title, location, date, description, image{asset->{url}}, age, doorOpenTime, venue}`, { id })
       .then((data) => {
         setEvent(data[0]);
         setError(null); // Clear error on successful fetch
@@ -36,7 +36,6 @@ const EventDetail = () => {
         <EventDescription>{event.description}</EventDescription>
         <EventDetails>
           <EventAge>Age: {event.age}</EventAge>
-          <EventRunningTime>Running Time: {event.approximateRunningTime}</EventRunningTime>
           <EventDoorOpen>Doors Open: {event.doorOpenTime}</EventDoorOpen> {/* Displaying doorOpenTime directly */}
         </EventDetails>
       </ContentWrapper>
@@ -101,11 +100,6 @@ const EventDetails = styled.div`
 `;
 
 const EventAge = styled.p`
-  font-size: 16px;
-  color: #333;
-`;
-
-const EventRunningTime = styled.p`
   font-size: 16px;
   color: #333;
 `;
