@@ -178,7 +178,6 @@ const Divider = styled.div`
   background: black;
   margin: 10px 0;
 `;
-
 const ArticleTitle = styled.h2`
   font-size: 1.8rem;
   font-weight: 500;
@@ -189,6 +188,14 @@ const ArticleTitle = styled.h2`
   align-items: center;
   justify-content: center;
   text-align: center;
+
+  @media (max-width: 768px) {
+    font-size: 1.5rem; /* Tablets */
+  }
+
+  @media (max-width: 480px) {
+    font-size: 1.2rem; /* Mobile devices */
+  }
 `;
 
 export default ArticleList;

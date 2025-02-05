@@ -2,33 +2,46 @@ import React, { useState, useEffect } from "react";
 import { HeartIcon } from "@heroicons/react/24/outline"; // Import outline heart icon
 import { HeartIcon as HeartIconSolid } from "@heroicons/react/24/solid"; // Import solid heart icon
 import styled from "styled-components";
-import { db, collection, doc, getDocs, getDoc, updateDoc, increment, arrayUnion, arrayRemove  } from "../firestore";
+import { db, collection, doc, getDocs, getDoc, updateDoc, increment, arrayUnion, arrayRemove, setDoc  } from "../firestore";
 
 const ArticleCounters = ({ articleId, user }) => {
   const [viewCount, setViewCount] = useState(0);
   const [commentCount, setCommentCount] = useState(0);
   const [likeCount, setLikeCount] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
-  // const incrementViewCount = async () => {
-  //   try {
-  //     const articleRef = doc(db, "articles", articleId);
-  //     const articleSnapshot = await getDoc(articleRef);
-      
-  //     if (!articleSnapshot.exists()) {
-  //       console.error(`Article with ID ${articleId} does not exist`);
-  //       // Optionally, create the article document if it doesn't exist (if you want to ensure it exists)
-  //       await setDoc(articleRef, { viewCount: 0, likeCount: 0, likedBy: [] });
-  //     }
+
+  const handleIncrementViewCount = async (articleId) => {
+    const articleRef = doc(db, 'articles', articleId);
   
-  //     await updateDoc(articleRef, {
-  //       viewCount: increment(1),  // Increment view count by 1
-  //     });
-  //     setViewCount((prev) => prev + 1);  // Update local view count
-  //   } catch (error) {
-  //     console.error("Error incrementing view count:", error);
-  //   }
-  // };
+    try {
+      // Check if the article exists
+      const docSnap = await getDoc(articleRef);
+      if (docSnap.exists()) {
+        // If the document exists, increment the view count
+        await updateDoc(articleRef, {
+          views: increment(1)  // Increment the views field by 1
+        });
+        console.log("View count incremented.");
+      } else {
+        // If the document doesn't exist, handle this case
+        console.log(`Article with ID ${articleId} does not exist. Creating new article document.`);
+        
+        // Optionally, you can create the document with an initial view count
+        await setDoc(articleRef, {
+          views: 1  // Initialize views with 1
+        });
+        console.log("New article document created with initial view count.");
+      }
+    } catch (error) {
+      console.error("Error incrementing view count:", error);
+    }
+  };
   
+  // Call the function when needed, e.g., in useEffect or click handler
+  useEffect(() => {
+    handleIncrementViewCount(articleId);  // Assuming articleId is available
+  }, [articleId]);
+
  useEffect(() => {
   const fetchCounts = async () => {
     if (!articleId) return;
