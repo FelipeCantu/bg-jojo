@@ -103,25 +103,6 @@ const EventDate = styled.p`
   color: #555;
 `;
 
-const EventDetails = styled.div`
-  margin-top: 8px;
-`;
-
-const EventAge = styled.p`
-  font-size: 14px;
-  color: #333;
-`;
-
-const EventRunningTime = styled.p`
-  font-size: 14px;
-  color: #333;
-`;
-
-const EventDoorOpen = styled.p`
-  font-size: 14px;
-  color: #333;
-`;
-
 const NoEventsMessage = styled.div`
   display: flex;
   flex-direction: column;
