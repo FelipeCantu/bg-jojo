@@ -85,6 +85,7 @@ const ContainerWrapper = styled.div`
   background: url(https://i.pinimg.com/736x/ac/62/36/ac623639e4368a63a9442e558cdadc06.jpg) no-repeat bottom center/cover;
   background-size: cover;
   padding: 0 15px;
+  overflow: hidden;
 
   &:before {
     content: '';
@@ -106,6 +107,7 @@ const Container = styled.div`
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   position: relative;
   z-index: 1;
+  // overflow: hidden;
 `;
 
 const NavbarWrapper = styled.div`
@@ -114,6 +116,7 @@ const NavbarWrapper = styled.div`
   justify-content: center;
   position: relative;
   width: 100%;
+  // overflow: hidden;
 `;
 
 const Navbar = styled.nav`
