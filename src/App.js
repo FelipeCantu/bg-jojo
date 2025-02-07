@@ -44,7 +44,7 @@ function App() {
           <Route path="/tribute/:slug" element={<TributeDetail />} />
           <Route path='/Donate' element={<Donate />} />
           <Route path='/SupportingGiveBackJojo' element={<SupportingGiveBackJojo />} />
-          <Route path="/account-settings" element={<AccountSettings />} />
+          <Route path="/account-settings/*" element={<AccountSettings />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/notifications" element={<Notifications />} /> 
           <Route path="/subscriptions" element={<Subscriptions />} />
