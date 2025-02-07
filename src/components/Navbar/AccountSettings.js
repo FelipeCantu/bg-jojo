@@ -86,7 +86,7 @@ const ContainerWrapper = styled.div`
   background-size: cover;
   padding: 0 15px;
   overflow: hidden;
-
+  
   &:before {
     content: '';
     position: absolute;
@@ -101,7 +101,7 @@ const ContainerWrapper = styled.div`
 const Container = styled.div`
   padding: 2rem;
   width: 100%;
-  max-width: 1400px;
+  max-width: 1200px;
   margin: 0 auto;
   background: rgba(255, 255, 255, 0.95);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
