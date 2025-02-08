@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { auth } from '../../firebaseconfig';
 import { onAuthStateChanged, updateProfile } from 'firebase/auth';
 import styled from 'styled-components';
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+
 
 const MyAccount = () => {
   const [user, setUser] = useState(null);
@@ -23,21 +25,38 @@ const MyAccount = () => {
     return () => unsubscribe();
   }, []);
 
+  const storage = getStorage();
+
   const handleSave = async (e) => {
     e.preventDefault();
     if (user) {
       try {
+        let imageURL = photoURL; // Default to existing photoURL
+        
+        // Upload the image if a new one is selected
+        if (selectedImage) {
+          const file = document.querySelector('input[type="file"]').files[0];
+          if (file) {
+            const storageRef = ref(storage, `profile_pictures/${user.uid}`);
+            await uploadBytes(storageRef, file);
+            imageURL = await getDownloadURL(storageRef);
+          }
+        }
+  
+        // Update profile in Firebase Auth
         await updateProfile(user, {
           displayName: name,
-          photoURL: selectedImage || photoURL, // Use selected image if uploaded
+          photoURL: imageURL,
         });
-        alert('Profile updated successfully');
+  
+        setPhotoURL(imageURL); // Update UI with new photo URL
+        alert("Profile updated successfully");
       } catch (error) {
-        console.error('Error updating profile:', error);
+        console.error("Error updating profile:", error);
       }
     }
   };
-
+  
   return (
     <Container>
       {user ? (
