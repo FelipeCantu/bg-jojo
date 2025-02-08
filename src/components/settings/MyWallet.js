@@ -144,12 +144,6 @@ const Description = styled.p`
   margin-bottom: 20px;
 `;
 
-const Message = styled.p`
-  font-size: 0.9rem;
-  color: #888;
-  margin-bottom: 20px;
-`;
-
 const AddButton = styled.button`
   background-color: #024a47;
   color: white;
