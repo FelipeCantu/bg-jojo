@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, doc, setDoc, getDocs, addDoc, getDoc, updateDoc, increment, arrayUnion, arrayRemove } from "firebase/firestore";  // Include arrayUnion and arrayRemove
+import { getFirestore, collection, doc, setDoc, getDocs, addDoc, getDoc, updateDoc, increment, arrayUnion, arrayRemove, deleteDoc  } from "firebase/firestore";  // Include arrayUnion and arrayRemove
 import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 
 // Your Firebase config here...
@@ -18,4 +18,5 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
-export { db, auth, provider, collection, doc, setDoc, getDocs, addDoc, getDoc, updateDoc, increment, arrayUnion, arrayRemove, signInWithPopup, onAuthStateChanged };
+
+export { db, auth, provider, collection, doc, setDoc, getDocs, addDoc, getDoc, updateDoc, increment, arrayUnion, arrayRemove, signInWithPopup, onAuthStateChanged, deleteDoc  };

@@ -1,7 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components";
+import { db, collection, doc, addDoc, getDocs, deleteDoc } from "../../firestore"; // Import Firestore methods
+import useCurrentUser from "../../hook/useCurrentUser"
 
 const Wallet = () => {
+  const currentUser = useCurrentUser();  // Access current user
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [defaultCardId, setDefaultCardId] = useState(null);
@@ -9,43 +12,123 @@ const Wallet = () => {
   const [cardNumber, setCardNumber] = useState("");
   const [expiry, setExpiry] = useState("");
   const [cvv, setCvv] = useState("");
+  const [errors, setErrors] = useState({
+    cardholderName: "",
+    cardNumber: "",
+    expiry: "",
+    cvv: "",
+  });
 
-  const handleSave = () => {
-    if (cardholderName && cardNumber && expiry && cvv) {
+  const fetchPaymentMethods = async () => {
+    if (currentUser) {
+      const userRef = doc(db, "users", currentUser.uid);
+      const paymentMethodsRef = collection(userRef, "paymentMethods");
+
+      const snapshot = await getDocs(paymentMethodsRef);
+      const methods = snapshot.docs.map((doc) => ({
+        ...doc.data(),
+        id: doc.id,
+      }));
+      setPaymentMethods(methods);
+
+      if (methods.length > 0) {
+        setDefaultCardId(methods[0].id); // Set the first card as default
+      }
+    }
+  };
+
+  // Fetch payment methods whenever currentUser changes
+  useEffect(() => {
+    fetchPaymentMethods();
+  }, [currentUser]);  // Run whenever currentUser changes
+
+  const validateForm = () => {
+    const newErrors = { cardholderName: "", cardNumber: "", expiry: "", cvv: "" };
+    let isValid = true;
+
+    if (!cardholderName || !/^[a-zA-Z\s]+$/.test(cardholderName)) {
+      newErrors.cardholderName = "Cardholder Name is required and must contain only letters and spaces.";
+      isValid = false;
+    }
+
+    if (!cardNumber || !/^\d{16}$/.test(cardNumber)) {
+      newErrors.cardNumber = "Card Number must be 16 digits.";
+      isValid = false;
+    }
+
+    if (!expiry || !/^(0[1-9]|1[0-2])\/\d{2}$/.test(expiry)) {
+      newErrors.expiry = "Expiry must be in MM/YY format.";
+      isValid = false;
+    }
+
+    if (!cvv || !/^\d{3}$/.test(cvv)) {
+      newErrors.cvv = "CVV must be 3 digits.";
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
+  const handleSave = async () => {
+    if (validateForm()) {
       const newMethod = {
-        id: Date.now(),
         cardholderName,
         cardNumber: `**** **** **** ${cardNumber.slice(-4)}`,
         expiry,
       };
 
-      setPaymentMethods([...paymentMethods, newMethod]);
+      try {
+        // Add new payment method to Firestore
+        const userRef = doc(db, "users", currentUser.uid); 
+        const paymentMethodsRef = collection(userRef, "paymentMethods");
 
-      if (paymentMethods.length === 0) {
-        setDefaultCardId(newMethod.id); // Set the first card as default
+        const docRef = await addDoc(paymentMethodsRef, newMethod);
+        console.log("Document written with ID: ", docRef.id);
+
+        setPaymentMethods([...paymentMethods, { ...newMethod, id: docRef.id }]);
+
+        if (paymentMethods.length === 0) {
+          setDefaultCardId(docRef.id); // Set the first card as default
+        }
+
+        // Clear form & close modal
+        setCardholderName("");
+        setCardNumber("");
+        setExpiry("");
+        setCvv("");
+        setIsModalOpen(false);
+      } catch (error) {
+        console.error("Error adding document: ", error);
       }
-
-      // Clear form & close modal
-      setCardholderName("");
-      setCardNumber("");
-      setExpiry("");
-      setCvv("");
-      setIsModalOpen(false);
     }
   };
 
-  const handleDelete = (id) => {
-    setPaymentMethods(paymentMethods.filter((method) => method.id !== id));
+  const handleDelete = async (id) => {
+    try {
+      const userRef = doc(db, "users", currentUser.uid); 
+      const paymentMethodsRef = doc(userRef, "paymentMethods", id);
 
-    // If deleting default card, reset default
-    if (defaultCardId === id) {
-      setDefaultCardId(paymentMethods.length > 1 ? paymentMethods[1].id : null);
+      await deleteDoc(paymentMethodsRef);
+      setPaymentMethods(paymentMethods.filter((method) => method.id !== id));
+
+      // If deleting default card, reset default
+      if (defaultCardId === id) {
+        setDefaultCardId(paymentMethods.length > 1 ? paymentMethods[1].id : null);
+      }
+    } catch (error) {
+      console.error("Error deleting document: ", error);
     }
   };
 
   const handleSetDefault = (id) => {
     setDefaultCardId(id);
   };
+
+  // Return early if no user is logged in
+  if (!currentUser) {
+    return <div>Please log in to manage your payment methods.</div>;
+  }
 
   return (
     <WalletContainer>
@@ -89,12 +172,16 @@ const Wallet = () => {
                 value={cardholderName}
                 onChange={(e) => setCardholderName(e.target.value)}
               />
+              {errors.cardholderName && <Error>{errors.cardholderName}</Error>}
+
               <Input
                 type="text"
                 placeholder="Card Number"
                 value={cardNumber}
                 onChange={(e) => setCardNumber(e.target.value)}
               />
+              {errors.cardNumber && <Error>{errors.cardNumber}</Error>}
+
               <Row>
                 <Input
                   type="text"
@@ -102,13 +189,16 @@ const Wallet = () => {
                   value={expiry}
                   onChange={(e) => setExpiry(e.target.value)}
                 />
+                {errors.expiry && <Error>{errors.expiry}</Error>}
                 <Input
                   type="text"
                   placeholder="CVV"
                   value={cvv}
                   onChange={(e) => setCvv(e.target.value)}
                 />
+                {errors.cvv && <Error>{errors.cvv}</Error>}
               </Row>
+
               <ButtonContainer>
                 <SaveButton onClick={handleSave}>Save</SaveButton>
                 <CancelButton onClick={() => setIsModalOpen(false)}>Cancel</CancelButton>
@@ -121,7 +211,7 @@ const Wallet = () => {
   );
 };
 
-// Styles
+// Styles (unchanged)
 const WalletContainer = styled.div`
   max-width: 95%;
   margin: auto;
@@ -149,7 +239,6 @@ const AddButton = styled.button`
   color: white;
   padding: 10px 15px;
   border: none;
-  // border-radius: 5px;
   font-size: 1rem;
   cursor: pointer;
   transition: background 0.3s;
@@ -159,7 +248,6 @@ const AddButton = styled.button`
   }
 `;
 
-// Saved Payment Methods
 const SavedMethods = styled.div`
   margin-top: 20px;
   text-align: left;
@@ -194,7 +282,6 @@ const Expiry = styled.p`
   color: #777;
 `;
 
-// Modal
 const ModalOverlay = styled.div`
   position: fixed;
   top: 0;
@@ -233,16 +320,15 @@ const Form = styled.div`
 const Input = styled.input`
   width: 100%;
   padding: 12px;
-  margin: 8px 0;
-  border: 1px solid #ccc;
+  margin: 10px 0;
+  border: 1px solid #ddd;
   border-radius: 5px;
   font-size: 1rem;
-  box-sizing: border-box;
 `;
 
 const Row = styled.div`
   display: flex;
-  gap: 10px;
+  justify-content: space-between;
 `;
 
 const ButtonContainer = styled.div`
@@ -257,11 +343,8 @@ const SaveButton = styled.button`
   color: white;
   padding: 10px 15px;
   border: none;
-  border-radius: 5px;
   font-size: 1rem;
   cursor: pointer;
-  flex: 1;
-  margin-right: 5px;
 
   &:hover {
     background-color: #013d3b;
@@ -270,60 +353,61 @@ const SaveButton = styled.button`
 
 const CancelButton = styled.button`
   background-color: #ccc;
-  color: black;
+  color: #333;
   padding: 10px 15px;
   border: none;
-  border-radius: 5px;
   font-size: 1rem;
   cursor: pointer;
-  flex: 1;
 
   &:hover {
-    background-color: #aaa;
+    background-color: #bbb;
   }
 `;
 
 const DefaultTag = styled.span`
-  background-color: #024a47;
-  color: white;
-  font-size: 0.8rem;
-  padding: 2px 6px;
-  border-radius: 3px;
-  margin-left: 8px;
-`;
-
-const SetDefaultButton = styled.button`
-  background-color: #007bff;
+  background-color: #ff9800;
   color: white;
   padding: 5px 10px;
-  border: none;
-  border-radius: 5px;
+  border-radius: 10px;
   font-size: 0.9rem;
-  cursor: pointer;
-
-  &:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-  }
-
-  &:hover:not(:disabled) {
-    background-color: #0056b3;
-  }
+  margin-left: 10px;
 `;
 
 const DeleteButton = styled.button`
-  background-color: #ff4d4d;
+  background-color: #e74c3c;
   color: white;
-  padding: 5px 10px;
+  padding: 6px 10px;
   border: none;
-  border-radius: 5px;
   font-size: 0.9rem;
   cursor: pointer;
 
   &:hover {
-    background-color: #cc0000;
+    background-color: #c0392b;
   }
 `;
 
+const SetDefaultButton = styled.button`
+  background-color: #3498db;
+  color: white;
+  padding: 6px 10px;
+  border: none;
+  font-size: 0.9rem;
+  cursor: pointer;
+
+  &:hover {
+    background-color: #2980b9;
+  }
+
+  &:disabled {
+    background-color: #7f8c8d;
+    cursor: not-allowed;
+  }
+`;
+
+const Error = styled.p`
+  color: red;
+  font-size: 0.9rem;
+  margin-top: 5px;
+`;
 
 export default Wallet;

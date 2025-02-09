@@ -1,45 +1,68 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 
+import { db, doc, getDoc, updateDoc } from "../../firestore";
+import { useAuth } from "../../AuthContext"; // Assuming you have auth context for user
+
 const MyAddresses = () => {
+  const { currentUser } = useAuth(); // Get logged-in user
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingIndex, setEditingIndex] = useState(null);
   const [addresses, setAddresses] = useState([]);
   const [form, setForm] = useState({ street: "", city: "", zip: "", isDefault: false });
 
-  const toggleModal = () => {
-    setIsModalOpen(!isModalOpen);
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prevForm) => ({
-      ...prevForm,
-      [name]: value,
-    }));
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (isEditing) {
-      // Update the existing address
-      const updatedAddresses = [...addresses];
-      updatedAddresses[editingIndex] = form;
-      setAddresses(updatedAddresses);
-    } else {
-      // Add a new address
-      setAddresses([...addresses, form]);
+  useEffect(() => {
+    if (currentUser) {
+      loadAddresses();
     }
+  }, [currentUser]);
+
+  const loadAddresses = async () => {
+    try {
+      const userRef = doc(db, "users", currentUser.uid);
+      const docSnap = await getDoc(userRef);
+
+      if (docSnap.exists()) {
+        setAddresses(docSnap.data().addresses || []);
+      }
+    } catch (error) {
+      console.error("Error loading addresses:", error);
+    }
+  };
+
+  const saveToFirestore = async (updatedAddresses) => {
+    try {
+      const userRef = doc(db, "users", currentUser.uid);
+      await updateDoc(userRef, { addresses: updatedAddresses });
+      setAddresses(updatedAddresses);
+    } catch (error) {
+      console.error("Error saving address:", error);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    let updatedAddresses;
+
+    if (isEditing) {
+      updatedAddresses = [...addresses];
+      updatedAddresses[editingIndex] = form;
+    } else {
+      updatedAddresses = [...addresses, form];
+    }
+
+    await saveToFirestore(updatedAddresses);
+
     setForm({ street: "", city: "", zip: "", isDefault: false });
     setIsModalOpen(false);
     setIsEditing(false);
     setEditingIndex(null);
   };
 
-  const handleDelete = (index) => {
+  const handleDelete = async (index) => {
     const updatedAddresses = addresses.filter((_, i) => i !== index);
-    setAddresses(updatedAddresses);
+    await saveToFirestore(updatedAddresses);
   };
 
   const handleEdit = (index) => {
@@ -49,15 +72,12 @@ const MyAddresses = () => {
     setIsModalOpen(true);
   };
 
-  const handleSetDefault = (index) => {
-    const updatedAddresses = addresses.map((address, i) => {
-      if (i === index) {
-        return { ...address, isDefault: true };
-      } else {
-        return { ...address, isDefault: false };
-      }
-    });
-    setAddresses(updatedAddresses);
+  const handleSetDefault = async (index) => {
+    const updatedAddresses = addresses.map((address, i) => ({
+      ...address,
+      isDefault: i === index, // Only the selected one becomes default
+    }));
+    await saveToFirestore(updatedAddresses);
   };
 
   return (
@@ -84,7 +104,7 @@ const MyAddresses = () => {
           ))}
         </AddressList>
       )}
-      <AddButton onClick={toggleModal}>Add New Address</AddButton>
+      <AddButton onClick={() => setIsModalOpen(true)}>Add New Address</AddButton>
 
       {isModalOpen && (
         <Modal>
@@ -96,8 +116,7 @@ const MyAddresses = () => {
                 type="text"
                 name="street"
                 value={form.street}
-                onChange={handleInputChange}
-                placeholder="Enter street address"
+                onChange={(e) => setForm({ ...form, street: e.target.value })}
                 required
               />
               <Label>City</Label>
@@ -105,8 +124,7 @@ const MyAddresses = () => {
                 type="text"
                 name="city"
                 value={form.city}
-                onChange={handleInputChange}
-                placeholder="Enter city"
+                onChange={(e) => setForm({ ...form, city: e.target.value })}
                 required
               />
               <Label>Zip Code</Label>
@@ -114,12 +132,11 @@ const MyAddresses = () => {
                 type="text"
                 name="zip"
                 value={form.zip}
-                onChange={handleInputChange}
-                placeholder="Enter zip code"
+                onChange={(e) => setForm({ ...form, zip: e.target.value })}
                 required
               />
               <ModalActions>
-                <CancelButton type="button" onClick={toggleModal}>Cancel</CancelButton>
+                <CancelButton type="button" onClick={() => setIsModalOpen(false)}>Cancel</CancelButton>
                 <SaveButton type="submit">{isEditing ? "Save Changes" : "Save Address"}</SaveButton>
               </ModalActions>
             </Form>
