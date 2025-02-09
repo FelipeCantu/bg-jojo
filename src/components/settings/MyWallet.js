@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import styled from "styled-components";
 import { db, collection, doc, addDoc, getDocs, deleteDoc } from "../../firestore"; // Import Firestore methods
 import useCurrentUser from "../../hook/useCurrentUser"
@@ -19,28 +19,26 @@ const Wallet = () => {
     cvv: "",
   });
 
-  const fetchPaymentMethods = async () => {
-    if (currentUser) {
-      const userRef = doc(db, "users", currentUser.uid);
+  const fetchPaymentMethods = useCallback(async () => {
+    try {
+      const userRef = doc(db, "users", "USER_ID"); // Replace with actual user ID
       const paymentMethodsRef = collection(userRef, "paymentMethods");
 
-      const snapshot = await getDocs(paymentMethodsRef);
-      const methods = snapshot.docs.map((doc) => ({
-        ...doc.data(),
+      const querySnapshot = await getDocs(paymentMethodsRef);
+      const methods = querySnapshot.docs.map(doc => ({
         id: doc.id,
+        ...doc.data(),
       }));
+
       setPaymentMethods(methods);
-
-      if (methods.length > 0) {
-        setDefaultCardId(methods[0].id); // Set the first card as default
-      }
+    } catch (error) {
+      console.error("Error fetching payment methods: ", error);
     }
-  };
+  }, []);
 
-  // Fetch payment methods whenever currentUser changes
   useEffect(() => {
     fetchPaymentMethods();
-  }, [currentUser]);  // Run whenever currentUser changes
+  }, [fetchPaymentMethods]); 
 
   const validateForm = () => {
     const newErrors = { cardholderName: "", cardNumber: "", expiry: "", cvv: "" };
