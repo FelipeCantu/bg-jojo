@@ -48,6 +48,7 @@ const AboutSection = () => {
           </ImageContainer>
         </ContentWrapper>
       </ContentContainer>
+      <CarouselTitle>Get to Know Us</CarouselTitle>
       <Carousel />
     </SectionContainer>
   );
@@ -81,6 +82,13 @@ const TitleContainer = styled.div`
   text-align: center;
   margin-top: 0;
 `;
+
+ const CarouselTitle = styled.h1`
+  font-size: 3rem; 
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 1rem;
+ `
 
 const Title = styled.h2`
   font-size: 3rem;

@@ -3,11 +3,13 @@ import { auth, db } from '../../firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import styled from 'styled-components';
+import { FaCamera } from 'react-icons/fa';
 
 const Profile = () => {
   const [user, setUser] = useState(null);
   const [joinDate, setJoinDate] = useState('');
   const [bio, setBio] = useState('');
+  const [banner, setBanner] = useState('');
   const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
@@ -23,12 +25,12 @@ const Profile = () => {
           })
         );
 
-        // Fetch bio from Firestore
         const userRef = doc(db, 'users', currentUser.uid);
         const userSnap = await getDoc(userRef);
 
         if (userSnap.exists()) {
           setBio(userSnap.data().bio || '');
+          setBanner(userSnap.data().banner || '');
         }
       }
     });
@@ -45,11 +47,26 @@ const Profile = () => {
 
     try {
       const userRef = doc(db, 'users', user.uid);
-      await setDoc(userRef, { bio }, { merge: true });
+      await setDoc(userRef, { bio, banner }, { merge: true });
       console.log('Bio saved successfully');
       setIsEditing(false);
     } catch (error) {
       console.error('Error saving bio:', error);
+    }
+  };
+
+  const handleBannerChange = async (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        setBanner(reader.result);
+        if (user) {
+          const userRef = doc(db, 'users', user.uid);
+          await setDoc(userRef, { banner: reader.result }, { merge: true });
+        }
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -59,6 +76,14 @@ const Profile = () => {
 
   return (
     <ProfileContainer>
+      <Banner style={{ backgroundImage: `url(${banner})` }}>
+        <BannerEditIcon>
+          <label htmlFor="banner-upload">
+            <FaCamera />
+          </label>
+          <input id="banner-upload" type="file" accept="image/*" onChange={handleBannerChange} hidden />
+        </BannerEditIcon>
+      </Banner>
       <ProfileCard>
         <ProfileContent>
           <ProfileImage src={user.photoURL} alt="User" />
@@ -93,10 +118,34 @@ const Profile = () => {
 
 const ProfileContainer = styled.div`
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
-  height: 100vh;
   background: #f4f4f4;
+  min-height: 100vh;
+`;
+
+const Banner = styled.div`
+  width: 100%;
+  height: 200px;
+  background: #d3d3d3;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+`;
+
+const BannerEditIcon = styled.div`
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 10px;
+  border-radius: 50%;
+  cursor: pointer;
+  color: white;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.8);
+  }
 `;
 
 const ProfileCard = styled.div`
@@ -107,6 +156,8 @@ const ProfileCard = styled.div`
   text-align: center;
   max-width: 400px;
   width: 100%;
+  margin-top: -50px;
+  position: relative;
 `;
 
 const ProfileContent = styled.div`

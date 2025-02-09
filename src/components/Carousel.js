@@ -1,8 +1,53 @@
-import React from 'react';
-import Slider from 'react-slick';
-import styled from 'styled-components';
+import React, { useEffect, useState } from "react";
+import Slider from "react-slick";
+import styled from "styled-components";
+import sanityClient from "../sanityClient"; // Adjust path based on your setup
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
+
+const settings = {
+  dots: true,
+  infinite: true,
+  speed: 500,
+  slidesToShow: 1,
+  slidesToScroll: 1,
+  autoplay: true,
+  autoplaySpeed: 3000,
+};
+
+const CarouselComponent = () => {
+  const [carouselItems, setCarouselItems] = useState([]);
+
+  useEffect(() => {
+    sanityClient
+      .fetch(
+        `*[_type == "carousel"]{
+          image{asset->{url}},
+          text
+        }`
+      )
+      .then((data) => {
+        setCarouselItems(data.map((item) => ({
+          image: item.image.asset.url,
+          text: item.text,
+        })));
+      })
+      .catch(console.error);
+  }, []);
+
+  return (
+    <CarouselWrapper>
+      <StyledSlider {...settings}>
+        {carouselItems.map((item, index) => (
+          <CarouselItem key={index}>
+            <CarouselImage src={item.image} alt={`carousel image ${index + 1}`} />
+            <Text>{item.text}</Text>
+          </CarouselItem>
+        ))}
+      </StyledSlider>
+    </CarouselWrapper>
+  );
+};
 
 const CarouselWrapper = styled.div`
   width: 100%;
@@ -91,45 +136,4 @@ const Text = styled.div`
   max-width: 600px;
   margin: 0 auto;
 `;
-
-const carouselItems = [
-  {
-    image: "https://static.wixstatic.com/media/1db9c9_fb823f3259474a15be2974e1218347ca~mv2.jpg/v1/fill/w_327,h_371,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/IMG_3810_Original_edited.jpg",
-    text: "Cheryl and Delilah are sisters from Saratoga Springs, UT. They love gaming, art, and singing."
-  },
-  {
-    image: "https://static.wixstatic.com/media/1db9c9_ac28fd7586fa445bb7abc887bb939f23~mv2.jpg/v1/fill/w_473,h_409,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/1db9c9_ac28fd7586fa445bb7abc887bb939f23~mv2.jpg",
-    text: "Cheryl enjoys dancing with her rabbit. She likes music, spending time with loved ones, and eating good food."
-  },
-  {
-    image: "https://static.wixstatic.com/media/1db9c9_fcf96e491db845ab90baabfd32b4eef3~mv2.jpg/v1/crop/x_0,y_0,w_1238,h_1582/fill/w_337,h_430,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/1db9c9_fcf96e491db845ab90baabfd32b4eef3~mv2.jpg",
-    text: "Delilah loves doodling and watching movies. She has three guinea pigs and plays the violin.​"
-  },
-];
-
-const settings = {
-  dots: true,
-  infinite: true,
-  speed: 500,
-  slidesToShow: 1,
-  slidesToScroll: 1,
-  autoplay: true,
-  autoplaySpeed: 3000,
-};
-
-const CarouselComponent = () => {
-  return (
-    <CarouselWrapper>
-      <StyledSlider {...settings}>
-        {carouselItems.map((item, index) => (
-          <CarouselItem key={index}>
-            <CarouselImage src={item.image} alt={`carousel image ${index + 1}`} />
-            <Text>{item.text}</Text>
-          </CarouselItem>
-        ))}
-      </StyledSlider>
-    </CarouselWrapper>
-  );
-};
-
 export default CarouselComponent;
