@@ -149,7 +149,7 @@ const AddButton = styled.button`
   color: white;
   padding: 10px 15px;
   border: none;
-  border-radius: 5px;
+  // border-radius: 5px;
   font-size: 1rem;
   cursor: pointer;
   transition: background 0.3s;
