@@ -186,6 +186,7 @@ const Modal = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
+  z-index: 3;
 `;
 
 const ModalContent = styled.div`
