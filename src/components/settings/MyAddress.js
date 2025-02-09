@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import styled from "styled-components";
 
 import { db, doc, getDoc, updateDoc } from "../../firestore";
@@ -12,13 +12,7 @@ const MyAddresses = () => {
   const [addresses, setAddresses] = useState([]);
   const [form, setForm] = useState({ street: "", city: "", zip: "", isDefault: false });
 
-  useEffect(() => {
-    if (currentUser) {
-      loadAddresses();
-    }
-  }, [currentUser]);
-
-  const loadAddresses = async () => {
+  const loadAddresses = useCallback(async () => {
     try {
       const userRef = doc(db, "users", currentUser.uid);
       const docSnap = await getDoc(userRef);
@@ -29,7 +23,13 @@ const MyAddresses = () => {
     } catch (error) {
       console.error("Error loading addresses:", error);
     }
-  };
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (currentUser) {
+      loadAddresses();
+    }
+  }, [currentUser, loadAddresses]);
 
   const saveToFirestore = async (updatedAddresses) => {
     try {
@@ -79,7 +79,6 @@ const MyAddresses = () => {
     }));
     await saveToFirestore(updatedAddresses);
   };
-
   return (
     <Container>
       <Title>My Addresses</Title>
