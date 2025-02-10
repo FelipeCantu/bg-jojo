@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { db, collection, doc, addDoc, getDocs, deleteDoc } from "../../firestore"; // Import Firestore methods
 import useCurrentUser from "../../hook/useCurrentUser"
 
 const Wallet = () => {
-  const currentUser = useCurrentUser();  // Access current user
+  const { currentUser, loading } = useCurrentUser();  // Access current user with loading and error
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [defaultCardId, setDefaultCardId] = useState(null);
@@ -19,26 +19,34 @@ const Wallet = () => {
     cvv: "",
   });
 
-  const fetchPaymentMethods = useCallback(async () => {
-    try {
-      const userRef = doc(db, "users", "USER_ID"); // Replace with actual user ID
-      const paymentMethodsRef = collection(userRef, "paymentMethods");
-
-      const querySnapshot = await getDocs(paymentMethodsRef);
-      const methods = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      setPaymentMethods(methods);
-    } catch (error) {
-      console.error("Error fetching payment methods: ", error);
-    }
-  }, []);
-
+  // UseEffect to fetch payment methods
   useEffect(() => {
+    if (!currentUser) return;  // Exit early if currentUser is not available
+
+    const fetchPaymentMethods = async () => {
+      try {
+        const userRef = doc(db, "users", currentUser.uid);
+        const paymentMethodsRef = collection(userRef, "paymentMethods");
+
+        const querySnapshot = await getDocs(paymentMethodsRef);
+        const methods = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        setPaymentMethods(methods);
+      } catch (error) {
+        console.error("Error fetching payment methods: ", error);
+      }
+    };
+
     fetchPaymentMethods();
-  }, [fetchPaymentMethods]); 
+  }, [currentUser]);  // Add currentUser as dependency
+
+  // Prevent action if user is still loading
+  if (loading) {
+    return <div>Loading user data...</div>;  // Optional: show loading state
+  }
 
   const validateForm = () => {
     const newErrors = { cardholderName: "", cardNumber: "", expiry: "", cvv: "" };
@@ -69,6 +77,11 @@ const Wallet = () => {
   };
 
   const handleSave = async () => {
+    if (!currentUser) {
+      console.error("No user is logged in.");
+      return; // Return early if no user is found
+    }
+
     if (validateForm()) {
       const newMethod = {
         cardholderName,
@@ -77,8 +90,7 @@ const Wallet = () => {
       };
 
       try {
-        // Add new payment method to Firestore
-        const userRef = doc(db, "users", currentUser.uid); 
+        const userRef = doc(db, "users", currentUser.uid);
         const paymentMethodsRef = collection(userRef, "paymentMethods");
 
         const docRef = await addDoc(paymentMethodsRef, newMethod);
@@ -90,7 +102,6 @@ const Wallet = () => {
           setDefaultCardId(docRef.id); // Set the first card as default
         }
 
-        // Clear form & close modal
         setCardholderName("");
         setCardNumber("");
         setExpiry("");
@@ -104,13 +115,12 @@ const Wallet = () => {
 
   const handleDelete = async (id) => {
     try {
-      const userRef = doc(db, "users", currentUser.uid); 
+      const userRef = doc(db, "users", currentUser.uid);
       const paymentMethodsRef = doc(userRef, "paymentMethods", id);
 
       await deleteDoc(paymentMethodsRef);
       setPaymentMethods(paymentMethods.filter((method) => method.id !== id));
 
-      // If deleting default card, reset default
       if (defaultCardId === id) {
         setDefaultCardId(paymentMethods.length > 1 ? paymentMethods[1].id : null);
       }
@@ -123,7 +133,6 @@ const Wallet = () => {
     setDefaultCardId(id);
   };
 
-  // Return early if no user is logged in
   if (!currentUser) {
     return <div>Please log in to manage your payment methods.</div>;
   }
