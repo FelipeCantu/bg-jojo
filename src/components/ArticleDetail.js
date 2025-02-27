@@ -1,28 +1,38 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { fetchArticleById } from "../sanityClient";
-import { urlFor } from "../sanityClient";
-import BlockContent from "@sanity/block-content-to-react";
+import { fetchArticleById, urlFor, client } from "../sanityClient";
+import { PortableText } from "@portabletext/react";
 import styled from "styled-components";
-import ArticleCounters from "./ArticleCounters"; // Import the ArticleCounters component
+import ArticleCounters from "./ArticleCounters";
 import CommentSection from "./CommentSection";
 import { auth, onAuthStateChanged } from '../firestore';
 
 const ArticleDetail = () => {
   const { id } = useParams();
   const [article, setArticle] = useState(null);
+  const [author, setAuthor] = useState(null);
   const [user, setUser] = useState(null);
 
-  // Fetch the article data
   useEffect(() => {
     const getArticle = async () => {
-      const fetchedArticle = await fetchArticleById(id);
-      setArticle(fetchedArticle);
+      try {
+        const fetchedArticle = await fetchArticleById(id);
+        if (fetchedArticle) {
+          setArticle(fetchedArticle);
+          // Fetch the author data from Sanity using the author reference
+          const authorData = await fetchAuthorData(fetchedArticle.author._ref);
+          setAuthor(authorData);
+        } else {
+          console.error("Article not found");
+        }
+      } catch (error) {
+        console.error("Error fetching article:", error);
+      }
     };
 
     getArticle();
 
-    // Listen for the authentication state to get the current user
+    // Listen for user authentication status change
     onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser ? {
         name: currentUser.displayName,
@@ -32,34 +42,64 @@ const ArticleDetail = () => {
     });
   }, [id]);
 
+  const fetchAuthorData = async (authorRef) => {
+    try {
+      const authorData = await client.fetch(`*[_type == "user" && _id == $id][0]`, { id: authorRef });
+      return authorData;
+    } catch (error) {
+      console.error("Error fetching author data:", error);
+    }
+  };
+
   if (!article) return <p>Loading...</p>;
+
+  const isAuthor = user && author && article.authorUid === user.uid;
 
   return (
     <ArticleDetailContainer>
       <Title>{article.title}</Title>
-      {article.image && <ArticleImage src={urlFor(article.image).url()} alt={article.title} />}
-      {article.authorImage && (
+
+      {article.mainImage?.asset ? (
+        <ArticleImage
+          src={urlFor(article.mainImage.asset).url()}
+          alt={article.title}
+        />
+      ) : (
+        <ArticleImage src="fallback-image-url.jpg" alt="No image available" />
+      )}
+
+      {author && (
         <AuthorInfo>
-          <AuthorImage src={urlFor(article.authorImage).url()} alt={article.authorName} />
-          <AuthorName>{article.authorName}</AuthorName>
+          <AuthorImage src={author.photoURL || "https://via.placeholder.com/40"} alt={author.name} />
+          <AuthorName>{author.name}</AuthorName>
         </AuthorInfo>
       )}
+
       <PublishedDate>Published on: {new Date(article.publishedDate).toLocaleDateString()}</PublishedDate>
       <ReadingTime>Estimated Reading Time: {article.readingTime} minutes</ReadingTime>
-      {article.content && Array.isArray(article.content) && (
-        <BlockContent blocks={article.content} serializers={{ types: {} }} />
-      )}
-      <Divider />
-      
-      {/* Reusable Counters Component */}
-      <ArticleCounters articleId={id} user={user} />
 
-      {/* Reusable Comment Section Component */}
+      {/* Content Handling with fallback */}
+      {article.content && Array.isArray(article.content) && article.content.length > 0 ? (
+        <PortableText value={article.content} />
+      ) : (
+        <p>No content available for this article.</p>
+      )}
+
+      <Divider />
+      <ArticleCounters articleId={id} user={user} />
       <CommentSection articleId={id} user={user} />
+
+      {isAuthor && user && (
+        <UserInfo>
+          <UserImage src={user.photo} alt={user.name} />
+          <UserName>{user.name}</UserName>
+        </UserInfo>
+      )}
     </ArticleDetailContainer>
   );
 };
 
+// Styled Components
 const ArticleDetailContainer = styled.div`
   padding: 20px;
   max-width: 900px;
@@ -112,6 +152,25 @@ const ArticleImage = styled.img`
 `;
 
 const AuthorName = styled.p`
+  font-size: 16px;
+  font-weight: bold;
+  color: #333;
+`;
+
+const UserInfo = styled.div`
+  display: flex;
+  align-items: center;
+  margin-top: 30px;
+`;
+
+const UserImage = styled.img`
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  margin-right: 10px;
+`;
+
+const UserName = styled.p`
   font-size: 16px;
   font-weight: bold;
   color: #333;

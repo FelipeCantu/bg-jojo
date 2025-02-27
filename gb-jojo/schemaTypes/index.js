@@ -1,6 +1,6 @@
-import { article } from './article';
-import { tribute } from './tribute';
+ import { tribute } from './tribute';
 import { event } from './event'
 import { carousel } from './carousel';
-
-export const schemaTypes = [article, tribute, event, carousel];
+import { article } from './article';
+import { user } from './user';
+export const schemaTypes = [ tribute, event, carousel, article, user];

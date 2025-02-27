@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
-import { HeartIcon } from "@heroicons/react/24/outline"; // Import outline heart icon
-import { HeartIcon as HeartIconSolid } from "@heroicons/react/24/solid"; // Import solid heart icon
+import React, { useState, useEffect, useCallback } from "react";
+import { HeartIcon } from "@heroicons/react/24/outline"; 
+import { HeartIcon as HeartIconSolid } from "@heroicons/react/24/solid"; 
 import styled from "styled-components";
-import { db, collection, doc, getDocs, getDoc, updateDoc, increment, arrayUnion, arrayRemove, setDoc  } from "../firestore";
+import { db, collection, doc, getDocs, getDoc, updateDoc, increment, arrayUnion, arrayRemove, setDoc } from "../firestore";
 
 const ArticleCounters = ({ articleId, user }) => {
   const [viewCount, setViewCount] = useState(0);
@@ -10,74 +10,53 @@ const ArticleCounters = ({ articleId, user }) => {
   const [likeCount, setLikeCount] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
 
-  const handleIncrementViewCount = async (articleId) => {
-    const articleRef = doc(db, 'articles', articleId);
-  
-    try {
-      // Check if the article exists
-      const docSnap = await getDoc(articleRef);
-      if (docSnap.exists()) {
-        // If the document exists, increment the view count
-        await updateDoc(articleRef, {
-          views: increment(1)  // Increment the views field by 1
-        });
-        console.log("View count incremented.");
-      } else {
-        // If the document doesn't exist, handle this case
-        console.log(`Article with ID ${articleId} does not exist. Creating new article document.`);
-        
-        // Optionally, you can create the document with an initial view count
-        await setDoc(articleRef, {
-          views: 1  // Initialize views with 1
-        });
-        console.log("New article document created with initial view count.");
-      }
-    } catch (error) {
-      console.error("Error incrementing view count:", error);
-    }
-  };
-  
-  // Call the function when needed, e.g., in useEffect or click handler
-  useEffect(() => {
-    handleIncrementViewCount(articleId);  // Assuming articleId is available
-  }, [articleId]);
-
- useEffect(() => {
-  const fetchCounts = async () => {
+  // Function to increment views
+  const incrementViewCount = useCallback(async () => {
     if (!articleId) return;
 
     const articleRef = doc(db, "articles", articleId);
-    const articleSnapshot = await getDoc(articleRef);
-    if (articleSnapshot.exists()) {
-      const articleData = articleSnapshot.data();
-      setViewCount(articleData.viewCount || 0);
-      setLikeCount(articleData.likeCount || 0);
-      setIsLiked(articleData.likedBy && articleData.likedBy.includes(user?.uid)); // Check if the user already liked the article
-      const commentsRef = collection(db, "articles", articleId, "comments");
-      const commentsSnapshot = await getDocs(commentsRef);
-      setCommentCount(commentsSnapshot.size); // Set the comment count
-    }
-  };
 
-  // Increment view count only once when the component is mounted
-  const incrementViewCount = async () => {
     try {
-      const articleRef = doc(db, "articles", articleId);
-      await updateDoc(articleRef, {
-        viewCount: increment(1),  // Increment view count by 1
-      });
-      setViewCount((prev) => prev + 1);  // Update local view count
+      const articleSnapshot = await getDoc(articleRef);
+
+      if (articleSnapshot.exists()) {
+        await updateDoc(articleRef, { views: increment(1) });
+      } else {
+        await setDoc(articleRef, { views: 1 }); // Create article with initial view count
+      }
     } catch (error) {
-      console.error("Error incrementing view count:", error);
+      console.error("❌ Error incrementing view count:", error);
     }
-  };
+  }, [articleId]);
 
-  fetchCounts();
-  incrementViewCount();  // Increment the view count when the article is loaded
+  useEffect(() => {
+    if (!articleId) return;
 
-}, [articleId, user]);  // Only run when articleId or user changes
+    const fetchCounts = async () => {
+      try {
+        const articleRef = doc(db, "articles", articleId);
+        const articleSnapshot = await getDoc(articleRef);
 
-  // Toggle like and update Firestore
+        if (articleSnapshot.exists()) {
+          const articleData = articleSnapshot.data();
+          setViewCount(articleData.views || 0);
+          setLikeCount(articleData.likeCount || 0);
+          setIsLiked(articleData.likedBy?.includes(user?.uid) || false);
+
+          const commentsRef = collection(db, "articles", articleId, "comments");
+          const commentsSnapshot = await getDocs(commentsRef);
+          setCommentCount(commentsSnapshot.size);
+        }
+      } catch (error) {
+        console.error("❌ Error fetching article data:", error);
+      }
+    };
+
+    fetchCounts();
+    incrementViewCount();
+  }, [articleId, user, incrementViewCount]); // Ensure incrementViewCount is included
+
+  // Handle likes
   const toggleLike = async () => {
     if (!user) return;
 
@@ -86,14 +65,14 @@ const ArticleCounters = ({ articleId, user }) => {
       const newIsLiked = !isLiked;
       setIsLiked(newIsLiked);
 
-      // Update the like count and likedBy field
       await updateDoc(articleRef, {
         likeCount: newIsLiked ? increment(1) : increment(-1),
         likedBy: newIsLiked ? arrayUnion(user.uid) : arrayRemove(user.uid),
       });
-      setLikeCount((prev) => (newIsLiked ? prev + 1 : prev - 1)); // Update local like count
+
+      setLikeCount((prev) => (newIsLiked ? prev + 1 : prev - 1));
     } catch (error) {
-      console.error("Error updating like count:", error);
+      console.error("❌ Error updating like count:", error);
     }
   };
 
@@ -116,7 +95,7 @@ const CountersSection = styled.div`
   display: flex;
   gap: 20px;
   align-items: center;
-  width: 100%; /* Ensure it spans the full width of the container */
+  width: 100%;
 `;
 
 const CounterItem = styled.h4`
@@ -129,7 +108,7 @@ const HeartIconWrapper = styled.div`
   align-items: center;
   gap: 5px;
   font-size: 20px;
-  margin-left: auto; /* Push the heart icon to the far right */
+  margin-left: auto;
   
   span {
     color: red;

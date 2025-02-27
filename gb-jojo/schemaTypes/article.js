@@ -1,4 +1,3 @@
-// schemaTypes/article.js
 import { defineField, defineType } from 'sanity';
 
 export const article = defineType({
@@ -12,12 +11,10 @@ export const article = defineType({
       type: 'string',
     }),
     defineField({
-      name: 'image',
-      title: 'Image',
-      type: 'image',
-      options: {
-        hotspot: true,
-      },
+      name: "mainImage",
+      title: "Main Image",
+      type: "image",
+      options: { hotspot: true },
     }),
     defineField({
       name: 'content',
@@ -36,18 +33,12 @@ export const article = defineType({
       ],
     }),
     defineField({
-      name: 'authorName',
-      title: 'Author Name',
-      type: 'string',
-    }),
-    defineField({
-      name: 'authorImage',
-      title: 'Author Image',
-      type: 'image',
-      options: {
-        hotspot: true,
-      },
-    }),
+      name: 'author',
+      title: 'Author',
+      type: 'reference',
+      to: [{ type: 'user' }],
+      validation: (Rule) => Rule.required(), // ✅ Ensure every article has an author
+    }),    
     defineField({
       name: 'publishedDate',
       title: 'Published Date',
