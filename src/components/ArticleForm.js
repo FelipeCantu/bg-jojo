@@ -196,15 +196,28 @@ const AddButton = styled.button`
     position: fixed;
     bottom: 20px;
     right: 20px;
-    width: 50px;
-    height: 50px;
+    width: 60px;  /* Increase size for mobile */
+    height: 60px;  /* Increase size for mobile */
     border-radius: 50%;
     background: #ff5733;
     color: white;
-    font-size: 24px;
+    font-size: 32px;  /* Larger icon for mobile */
     border: none;
     cursor: pointer;
+
+    @media (max-width: 600px) {
+        width: 50px;  /* Slightly smaller on mobile */
+        height: 50px;  /* Slightly smaller on mobile */
+        font-size: 28px;  /* Adjust icon size on mobile */
+    }
+
+    @media (max-width: 375px) {
+        width: 45px;  /* Even smaller on smaller screens */
+        height: 45px;  /* Even smaller on smaller screens */
+        font-size: 24px;  /* Adjust icon size on small screens */
+    }
 `;
+
 
 const ModalOverlay = styled.div`
     position: fixed;
