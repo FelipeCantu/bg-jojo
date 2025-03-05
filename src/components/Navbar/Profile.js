@@ -4,6 +4,8 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import styled from 'styled-components';
 import { FaCamera } from 'react-icons/fa';
+import UserArticles from './UserArticles';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const Profile = () => {
   const [user, setUser] = useState(null);
@@ -11,11 +13,11 @@ const Profile = () => {
   const [bio, setBio] = useState('');
   const [banner, setBanner] = useState('');
   const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false); // For handling bio save button state
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
-        console.log("User:", currentUser); // Debugging: Check user data
         setUser(currentUser);
         const creationDate = new Date(currentUser.metadata.creationTime);
         setJoinDate(
@@ -31,7 +33,7 @@ const Profile = () => {
 
         if (userSnap.exists()) {
           setBio(userSnap.data().bio || '');
-          setBanner(userSnap.data().banner || ''); // Ensure banner is fetched correctly
+          setBanner(userSnap.data().banner || '');
         } else {
           console.error('User data not found in Firestore');
         }
@@ -44,10 +46,8 @@ const Profile = () => {
   const handleBioChange = (e) => setBio(e.target.value);
 
   const handleSaveBio = async () => {
-    if (!user || !user.uid) {
-      console.error('User or user.uid is undefined');
-      return;
-    }
+    if (!user || !user.uid || isSaving) return;
+    setIsSaving(true);
 
     try {
       const userRef = doc(db, 'users', user.uid);
@@ -55,36 +55,33 @@ const Profile = () => {
       setIsEditing(false);
     } catch (error) {
       console.error('Error saving bio:', error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleBannerChange = async (event) => {
-    if (!user || !user.uid) {
-      console.error('User or user.uid is undefined');
-      return;
-    }
+    if (!user || !user.uid) return;
 
     const file = event.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        setBanner(reader.result);
-        try {
-          const userRef = doc(db, 'users', user.uid);
-          await setDoc(userRef, { banner: reader.result }, { merge: true });
-        } catch (error) {
-          console.error('Error updating banner:', error);
-        }
-      };
-      reader.readAsDataURL(file);
+      const storage = getStorage();
+      const fileRef = ref(storage, `user_banners/${user.uid}_${file.name}`);
+
+      try {
+        await uploadBytes(fileRef, file);
+        const fileURL = await getDownloadURL(fileRef);
+        setBanner(fileURL);
+        const userRef = doc(db, 'users', user.uid);
+        await setDoc(userRef, { banner: fileURL }, { merge: true });
+      } catch (error) {
+        console.error('Error uploading banner:', error);
+      }
     }
   };
 
   const handleDeleteBanner = async () => {
-    if (!user || !user.uid) {
-      console.error('User or user.uid is undefined');
-      return;
-    }
+    if (!user || !user.uid) return;
 
     try {
       setBanner('');
@@ -100,8 +97,13 @@ const Profile = () => {
   return (
     <ProfileContainer>
       <ProfileCard>
-        <Banner style={{ backgroundImage: banner ? `url(${banner})` : 'none', backgroundColor: banner ? 'transparent' : '#D3D3D3' }}>
-        <BannerEditIconWithText>
+        <Banner
+          style={{
+            backgroundImage: banner ? `url(${banner})` : 'none',
+            backgroundColor: banner ? 'transparent' : '#D3D3D3',
+          }}
+        >
+          <BannerEditIconWithText>
             <BannerEditIcon>
               <label htmlFor="banner-upload">
                 <FaCamera />
@@ -114,7 +116,7 @@ const Profile = () => {
             )}
           </BannerEditIconWithText>
           <UserInfo>
-            <ProfileImage src={user.photoURL} alt="User" />
+            <ProfileImage src={user.photoURL} alt={`${user.displayName}'s profile`} />
             <div>
               <UserName>{user.displayName}</UserName>
               <UserEmail>{user.email}</UserEmail>
@@ -128,7 +130,9 @@ const Profile = () => {
             {isEditing ? (
               <>
                 <BioTextarea value={bio} onChange={handleBioChange} placeholder="Tell us about yourself..." />
-                <SaveBioButton onClick={handleSaveBio}>Save</SaveBioButton>
+                <SaveBioButton onClick={handleSaveBio} disabled={isSaving}>
+                  {isSaving ? 'Saving...' : 'Save'}
+                </SaveBioButton>
               </>
             ) : (
               <BioDisplay onClick={() => setIsEditing(true)}>
@@ -136,10 +140,12 @@ const Profile = () => {
               </BioDisplay>
             )}
           </BioSection>
+          {user?.uid && <UserArticles userId={user.uid} />}
+          {!user?.uid && <p>No articles yet.</p>}
         </ProfileContent>
         <ProfileHeader>
-        <h1>Profile View</h1>
-      </ProfileHeader>
+          <h1>Profile View</h1>
+        </ProfileHeader>
       </ProfileCard>
     </ProfileContainer>
   );
@@ -168,6 +174,10 @@ const ProfileCard = styled.div`
   width: 1000px;
   min-height: 800px;
   margin-top: 0;
+  @media (max-width: 768px) {
+    width: 100%;
+    margin: 20px;
+  }
 `;
 
 const Banner = styled.div`
@@ -176,12 +186,12 @@ const Banner = styled.div`
   background-size: cover;
   background-position: center;
   position: relative;
-  background-color: #D3D3D3; /* Default gray color */
+  background-color: #d3d3d3;
 `;
 
 const BannerEditIcon = styled.div`
   position: absolute;
-  top: 10px; /* Move to top left */
+  top: 10px;
   left: 10px;
   padding: 10px;
   border-radius: 50%;
@@ -190,8 +200,8 @@ const BannerEditIcon = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  background: transparent; /* No background by default */
-  transition: background 0.3s ease-in-out; /* Smooth background transition */
+  background: transparent;
+  transition: background 0.3s ease-in-out;
 
   label {
     display: flex;
@@ -204,7 +214,7 @@ const BannerEditIcon = styled.div`
   }
 
   &:hover {
-    background: rgba(0, 0, 0, 0.7); /* Apply background when hovered */
+    background: rgba(0, 0, 0, 0.7);
   }
 `;
 
@@ -212,27 +222,27 @@ const HoverText = styled.div`
   position: absolute;
   top: 50%;
   left: 100%;
-  transform: translateY(-50%); /* Center the text vertically */
+  transform: translateY(-50%);
   background: rgba(0, 0, 0, 0.7);
   color: white;
   padding: 5px 10px;
   font-size: 14px;
   border-radius: 5px;
-  visibility: hidden; /* Hide text by default */
+  visibility: hidden;
   opacity: 0;
-  white-space: nowrap; /* Prevent the text from wrapping */
-  transition: opacity 0.3s ease-in-out, left 0.3s ease-in-out; /* Smooth slide effect */
+  white-space: nowrap;
+  transition: opacity 0.3s ease-in-out, left 0.3s ease-in-out;
 `;
 
 const BannerEditIconWithText = styled.div`
   position: relative;
-  display: flex; /* Make the icon and text align horizontally */
+  display: flex;
   align-items: center;
 
   &:hover ${HoverText} {
     visibility: visible;
     opacity: 1;
-    left: 120%; /* Slide the text to the right on hover */
+    left: 120%;
   }
 `;
 

@@ -1,9 +1,9 @@
 import { initializeApp } from "firebase/app";
-import { 
-  getAuth, 
-  GoogleAuthProvider, 
-  signInWithPopup, 
-  signOut 
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut
 } from "firebase/auth";
 import { getDatabase } from "firebase/database";
 import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore"; // Firestore imports
@@ -56,28 +56,32 @@ const updateUserProfile = async (user) => {
   // Fallback if photoURL is not available
   const photo = photoURL || 'https://via.placeholder.com/150';
 
-  // Sanity user data
   const userData = {
     name: displayName,
     photoURL: photo,
     uid: uid,
-    role: 'user', // Default role if not provided
+    role: 'user',
   };
 
-  // Save to Firestore
-  await setDoc(doc(firestore, 'users', uid), userData, { merge: true });
+  try {
+    // Update Firestore
+    await setDoc(doc(firestore, 'users', uid), userData, { merge: true });
 
-  // Save to Sanity
-  await client.createOrReplace({
-    _type: 'user',
-    _id: uid,
-    name: displayName,
-    photoURL: photo,
-    uid: uid,
-    role: 'user', // Default role, can be updated later
-  });
+    // Update Sanity
+    await client.createOrReplace({
+      _type: 'user',
+      _id: uid,
+      name: displayName,
+      photoURL: photo,
+      uid: uid,
+      role: 'user',
+    });
 
-  console.log('User profile updated successfully!');
+    console.log('✅ User profile updated successfully!');
+  } catch (error) {
+    console.error("❌ Error updating user profile:", error);
+    throw new Error("Error updating user profile");
+  }
 };
 
 // 🔹 Fetch user data from Firestore
@@ -104,7 +108,6 @@ const getUserData = async (userId) => {
   }
 };
 
-// 🔹 Submit article to Sanity
 const submitArticle = async (articleData, user) => {
   try {
     if (!user || !user.uid) {
@@ -112,40 +115,62 @@ const submitArticle = async (articleData, user) => {
       throw new Error("User UID is missing. Please sign in.");
     }
 
-    // Check if user exists in Firestore before submitting article to Sanity
-    const userExists = await getUserData(user.uid);
+    // Check if user exists in Firestore
+    const userRef = doc(firestore, "users", user.uid);
+    const userDoc = await getDoc(userRef);
 
-    if (!userExists) {
+    // If the user doesn't exist, create a user in Firestore
+    if (!userDoc.exists()) {
       console.warn("⚠️ User not found in Firestore, creating user...");
-      await setDoc(doc(firestore, "users", user.uid), { 
-        name: user.displayName, 
-        photoURL: user.photoURL,
-        role: 'user', // Default role if not found
-      }, { merge: true });
+      const userData = {
+        name: user.displayName,
+        photoURL: user.photoURL || 'https://via.placeholder.com/150', // Default photo if not provided
+        role: 'user', // Default role if not provided
+      };
+
+      // Save user to Firestore
+      await setDoc(userRef, userData, { merge: true });
       console.log(`✅ User created in Firestore: ${user.displayName}`);
     }
 
-    // Submit the article to Sanity
-    const response = await client.create({
+    // Submit the article to Firestore
+    const articleRef = doc(firestore, 'articles', articleData.id);
+    await setDoc(articleRef, {
+      title: articleData.title,
+      content: articleData.content,
+      mainImage: articleData.mainImage,
+      authorId: user.uid, // Store the user UID as authorId
+      authorName: user.displayName || 'Anonymous',
+      authorImage: user.photoURL || 'https://via.placeholder.com/150',
+      publishedDate: articleData.publishedDate,
+      readingTime: articleData.readingTime,
+      views: 0, // Initialize with 0 views
+      comments: [], // Initialize comments as an empty array
+    });
+
+    console.log("✅ Article submitted to Firestore successfully");
+
+    // Optionally, you can also submit the article to Sanity as you already have in your code
+    const response = await client.createOrReplace({
       _type: 'article',
       title: articleData.title,
       content: articleData.content,
       mainImage: articleData.mainImage,
       author: {
         _type: 'reference',
-        _ref: user.uid,  // Reference to the user UID from Firebase
+        _ref: user.uid,  // Store the reference to the user UID in Sanity
       },
-      authorName: user.displayName || 'Anonymous',  // Author name (in case no name is available)
-      authorImage: user.photoURL || '', // Save the author's photo URL from Firebase (if available)
+      authorName: user.displayName || 'Anonymous',
+      authorImage: user.photoURL || 'https://via.placeholder.com/150',
       publishedDate: articleData.publishedDate,
       readingTime: articleData.readingTime,
     });
 
-    console.log("✅ Article submitted successfully", response);
+    console.log("✅ Article submitted to Sanity successfully", response);
     return response;
   } catch (error) {
-    console.error("❌ Error submitting article to Sanity:", error);
-    throw new Error("Error submitting article to Sanity");
+    console.error("❌ Error submitting article to Firestore and Sanity:", error);
+    throw new Error("Error submitting article to Firestore and Sanity");
   }
 };
 

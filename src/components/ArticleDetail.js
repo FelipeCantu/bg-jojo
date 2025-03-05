@@ -59,19 +59,26 @@ const ArticleDetail = () => {
     <ArticleDetailContainer>
       <Title>{article.title}</Title>
 
+      {/* Handle missing article image */}
       {article.mainImage?.asset ? (
         <ArticleImage
           src={urlFor(article.mainImage.asset).url()}
           alt={article.title}
         />
       ) : (
-        <ArticleImage src="fallback-image-url.jpg" alt="No image available" />
+        <ArticleImage src="https://via.placeholder.com/800x400" alt="No image available" />
       )}
 
-      {author && (
+      {/* Handle missing author */}
+      {author ? (
         <AuthorInfo>
           <AuthorImage src={author.photoURL || "https://via.placeholder.com/40"} alt={author.name} />
           <AuthorName>{author.name}</AuthorName>
+        </AuthorInfo>
+      ) : (
+        <AuthorInfo>
+          <AuthorImage src="https://via.placeholder.com/40" alt="Unknown author" />
+          <AuthorName>Unknown author</AuthorName>
         </AuthorInfo>
       )}
 
@@ -89,6 +96,7 @@ const ArticleDetail = () => {
       <ArticleCounters articleId={id} user={user} />
       <CommentSection articleId={id} user={user} />
 
+      {/* User-specific info for the author */}
       {isAuthor && user && (
         <UserInfo>
           <UserImage src={user.photo} alt={user.name} />

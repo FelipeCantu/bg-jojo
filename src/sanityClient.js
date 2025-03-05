@@ -197,34 +197,47 @@ export const deleteArticle = async (articleId) => {
 
 export const ensureUserExistsInSanity = async (uid, displayName, photoURL) => {
   try {
-    // Fetch user data from Sanity
-    const userDoc = await client.fetch(
-      `*[_type == "user" && uid == $uid][0]`,
+    // Fetch user data from Sanity using _id (since uid is stored as _id)
+    let userDoc = await client.fetch(
+      `*[_type == "user" && _id == $uid][0]`, 
       { uid }
     );
 
-    // If user does not exist, create them
     if (!userDoc) {
       console.log('User does not exist, creating new user...');
       const newUser = await client.create({
         _type: 'user',
-        uid: uid,
-        name: displayName || 'Anonymous',  // Default name if none provided
-        photoURL: photoURL || 'https://via.placeholder.com/150',  // Fallback if no photoURL is available
-        role: 'user',  // Default to 'user' role
+        _id: uid, // Store Firebase UID as the Sanity _id
+        name: displayName || 'Anonymous',  
+        photoURL: photoURL || 'https://via.placeholder.com/150',  
+        role: 'user',  
       });
 
       console.log('User created in Sanity:', newUser);
-      return newUser;  // Return the created user
+      return newUser;
     } else {
       console.log('User already exists in Sanity:', userDoc);
-      return userDoc;  // Return the existing user
+
+      // Optional: Update user info if displayName or photoURL changed
+      if (userDoc.name !== displayName || userDoc.photoURL !== photoURL) {
+        await client.patch(userDoc._id)
+          .set({
+            name: displayName || userDoc.name,
+            photoURL: photoURL || userDoc.photoURL,
+          })
+          .commit();
+        
+        console.log('User updated in Sanity');
+      }
+
+      return userDoc;
     }
   } catch (error) {
     console.error('Error ensuring user exists in Sanity:', error);
     throw new Error('Error checking or creating user in Sanity');
   }
 };
+
 
 // Export the default client for other functions if needed
 export default client;

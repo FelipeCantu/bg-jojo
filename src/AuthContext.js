@@ -12,18 +12,30 @@ export function useAuth() {
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null); // Optional error state
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user);
-      setLoading(false);
-    });
+    const unsubscribe = onAuthStateChanged(auth, 
+      (user) => {
+        setCurrentUser(user);
+        setLoading(false);
+      },
+      (error) => {
+        console.error("Error in onAuthStateChanged:", error);
+        setError(error.message);
+        setLoading(false);
+      }
+    );
 
     return unsubscribe;
   }, []);
 
+  if (loading) {
+    return <div>Loading...</div>; // Customize as needed
+  }
+
   return (
-    <AuthContext.Provider value={{ currentUser, loading }}>
+    <AuthContext.Provider value={{ currentUser, loading, error }}>
       {children}
     </AuthContext.Provider>
   );
