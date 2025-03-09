@@ -238,6 +238,25 @@ export const ensureUserExistsInSanity = async (uid, displayName, photoURL) => {
   }
 };
 
+export const updateUserProfileInSanity = async (uid, bannerUrl) => {
+  try {
+    const userDoc = await client.fetch('*[_type == "user" && _id == $uid][0]', { uid });
+
+    if (userDoc) {
+      // Update the user's banner image
+      await client.patch(userDoc._id)
+        .set({ banner: { asset: { _ref: bannerUrl } } })
+        .commit();
+
+      console.log('User profile updated with new banner image');
+    } else {
+      console.log("User not found in Sanity, create the user first");
+    }
+  } catch (error) {
+    console.error("Error updating user profile in Sanity:", error);
+  }
+};
+
 
 // Export the default client for other functions if needed
 export default client;

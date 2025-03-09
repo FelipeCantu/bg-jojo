@@ -5,7 +5,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import styled from 'styled-components';
 import { FaCamera } from 'react-icons/fa';
 import UserArticles from './UserArticles';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { client } from '../../sanityClient'; // Assuming you've set up Sanity client
 
 const Profile = () => {
   const [user, setUser] = useState(null);
@@ -13,7 +13,7 @@ const Profile = () => {
   const [bio, setBio] = useState('');
   const [banner, setBanner] = useState('');
   const [isEditing, setIsEditing] = useState(false);
-  const [isSaving, setIsSaving] = useState(false); // For handling bio save button state
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -64,19 +64,23 @@ const Profile = () => {
     if (!user || !user.uid) return;
 
     const file = event.target.files[0];
-    if (file) {
-      const storage = getStorage();
-      const fileRef = ref(storage, `user_banners/${user.uid}_${file.name}`);
+    if (!file) return;
 
-      try {
-        await uploadBytes(fileRef, file);
-        const fileURL = await getDownloadURL(fileRef);
-        setBanner(fileURL);
-        const userRef = doc(db, 'users', user.uid);
-        await setDoc(userRef, { banner: fileURL }, { merge: true });
-      } catch (error) {
-        console.error('Error uploading banner:', error);
-      }
+    try {
+      // Upload banner image to Sanity
+      const imageAsset = await client.assets.upload('image', file);
+      const imageUrl = imageAsset.url;
+
+      // Set the banner state
+      setBanner(imageUrl);
+
+      // Save the banner URL in Firestore
+      const userRef = doc(db, 'users', user.uid);
+      await setDoc(userRef, { banner: imageUrl }, { merge: true });
+
+      console.log('Banner URL saved to Firestore');
+    } catch (error) {
+      console.error('Error uploading banner to Sanity:', error);
     }
   };
 

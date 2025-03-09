@@ -33,5 +33,13 @@ export const user = defineType({
       },
       initialValue: 'user',  // Default value for new users
     }),
+    defineField({
+      name: 'banner',
+      title: 'Banner Image',
+      type: 'image', // New field for banner image
+      options: {
+        hotspot: true, // Allows users to adjust the focal point
+      },
+    }),
   ],
 });
