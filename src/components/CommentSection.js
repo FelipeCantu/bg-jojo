@@ -49,11 +49,14 @@ const CommentSection = ({ articleId, user }) => {
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
             onFocus={() => setIsCommentBoxExpanded(true)}
-            expanded={isCommentBoxExpanded}
+            $isExpanded={isCommentBoxExpanded}  // Use transient prop
           />
+
           {isCommentBoxExpanded && (
             <ButtonContainer>
-              <CancelButton type="button" onClick={() => setIsCommentBoxExpanded(false)}>Cancel</CancelButton>
+              <CancelButton type="button" onClick={() => setIsCommentBoxExpanded(false)}>
+                Cancel
+              </CancelButton>
               <PublishButton type="submit">Publish</PublishButton>
             </ButtonContainer>
           )}
@@ -74,6 +77,7 @@ const CommentSection = ({ articleId, user }) => {
   );
 };
 
+// Styled Components
 const CommentSectionContainer = styled.div`
   margin-top: 20px;
   margin-bottom: 50px;
@@ -89,8 +93,8 @@ const CommentForm = styled.form`
 
 const CommentBox = styled.textarea`
   width: 100%;
-  max-width: 100%;  /* Prevents the textarea from exceeding its container's width */
-  height: ${(props) => (props.expanded ? "100px" : "40px")};
+  max-width: 100%;
+  height: ${(props) => (props.$isExpanded ? "100px" : "40px")};  // Access transient prop here
   transition: height 0.3s ease;
   padding: 10px;
   border: 1px solid #ccc;
@@ -131,7 +135,7 @@ const CancelButton = styled.button`
 const Comment = styled.div`
   display: flex;
   align-items: flex-start;
-  margin-top: 20px;  
+  margin-top: 20px;
 `;
 
 const UserPhoto = styled.img`

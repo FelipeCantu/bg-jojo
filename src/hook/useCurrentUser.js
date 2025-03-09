@@ -7,28 +7,23 @@ const useCurrentUser = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const auth = getAuth(); // Initialize Firebase auth instance once
-    setLoading(true); // Ensure loading is set before subscribing
+    const auth = getAuth(); // Initialize Firebase Auth instance
 
     const unsubscribe = onAuthStateChanged(
       auth,
       (user) => {
         setCurrentUser(user);
-        setLoading(false); // Finished loading
+        setLoading(false);
       },
       (error) => {
         console.error("🔥 Auth error:", error);
-        setError(error); // Set error
-        setLoading(false); // Finished loading
+        setError("Failed to authenticate. Please try again."); // user-friendly error message
+        setLoading(false);
       }
     );
 
-    return () => unsubscribe(); // Cleanup listener when component unmounts
+    return unsubscribe; // Cleanup listener on unmount
   }, []);
-
-  if (loading) {
-    return { currentUser: null, loading: true, error: null }; // Prevent rendering before loading is complete
-  }
 
   return { currentUser, loading, error };
 };

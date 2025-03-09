@@ -5,21 +5,22 @@ import { PortableText } from "@portabletext/react";
 import styled from "styled-components";
 import ArticleCounters from "./ArticleCounters";
 import CommentSection from "./CommentSection";
-import { auth, onAuthStateChanged } from '../firestore';
+import { auth, onAuthStateChanged } from "../firestore";
 
 const ArticleDetail = () => {
   const { id } = useParams();
   const [article, setArticle] = useState(null);
   const [author, setAuthor] = useState(null);
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const getArticle = async () => {
+      setLoading(true);
       try {
         const fetchedArticle = await fetchArticleById(id);
         if (fetchedArticle) {
           setArticle(fetchedArticle);
-          // Fetch the author data from Sanity using the author reference
           const authorData = await fetchAuthorData(fetchedArticle.author._ref);
           setAuthor(authorData);
         } else {
@@ -27,18 +28,23 @@ const ArticleDetail = () => {
         }
       } catch (error) {
         console.error("Error fetching article:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
     getArticle();
 
-    // Listen for user authentication status change
     onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser ? {
-        name: currentUser.displayName,
-        photo: currentUser.photoURL || "https://via.placeholder.com/40",
-        uid: currentUser.uid,
-      } : null);
+      if (currentUser) {
+        setUser({
+          name: currentUser.displayName,
+          photo: currentUser.photoURL || "https://via.placeholder.com/40",
+          uid: currentUser.uid,
+        });
+      } else {
+        setUser(null);
+      }
     });
   }, [id]);
 
@@ -51,7 +57,8 @@ const ArticleDetail = () => {
     }
   };
 
-  if (!article) return <p>Loading...</p>;
+  if (loading) return <p>Loading...</p>;
+  if (!article) return <p>Article not found</p>;
 
   const isAuthor = user && author && article.authorUid === user.uid;
 
@@ -59,7 +66,6 @@ const ArticleDetail = () => {
     <ArticleDetailContainer>
       <Title>{article.title}</Title>
 
-      {/* Handle missing article image */}
       {article.mainImage?.asset ? (
         <ArticleImage
           src={urlFor(article.mainImage.asset).url()}
@@ -69,7 +75,6 @@ const ArticleDetail = () => {
         <ArticleImage src="https://via.placeholder.com/800x400" alt="No image available" />
       )}
 
-      {/* Handle missing author */}
       {author ? (
         <AuthorInfo>
           <AuthorImage src={author.photoURL || "https://via.placeholder.com/40"} alt={author.name} />
@@ -85,7 +90,6 @@ const ArticleDetail = () => {
       <PublishedDate>Published on: {new Date(article.publishedDate).toLocaleDateString()}</PublishedDate>
       <ReadingTime>Estimated Reading Time: {article.readingTime} minutes</ReadingTime>
 
-      {/* Content Handling with fallback */}
       {article.content && Array.isArray(article.content) && article.content.length > 0 ? (
         <PortableText value={article.content} />
       ) : (
@@ -96,7 +100,6 @@ const ArticleDetail = () => {
       <ArticleCounters articleId={id} user={user} />
       <CommentSection articleId={id} user={user} />
 
-      {/* User-specific info for the author */}
       {isAuthor && user && (
         <UserInfo>
           <UserImage src={user.photo} alt={user.name} />

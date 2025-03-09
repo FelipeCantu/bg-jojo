@@ -1,5 +1,5 @@
 import admin from "firebase-admin";
-import serviceAccount from "./serviceAccountKey.json"; // Update path
+import serviceAccount from "./bg-jojo-firebase-adminsdk-fbsvc-c47b06fc9f.json"; // Update path
 
 if (!admin.apps.length) {
   admin.initializeApp({

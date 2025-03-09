@@ -1,39 +1,25 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-import { db, collection, doc, addDoc, getDocs, deleteDoc } from "../../firestore"; // Import Firestore methods
-import useCurrentUser from "../../hook/useCurrentUser"
+import { db, collection, doc, addDoc, getDocs, deleteDoc } from "../../firestore";
+import { useAuth } from "../../AuthContext"; // Import useAuth
 
 const Wallet = () => {
-  const { currentUser, loading } = useCurrentUser();  // Access current user with loading and error
+  const { currentUser, loading } = useAuth(); // Use useAuth to get current user and loading state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [defaultCardId, setDefaultCardId] = useState(null);
-  const [cardholderName, setCardholderName] = useState("");
-  const [cardNumber, setCardNumber] = useState("");
-  const [expiry, setExpiry] = useState("");
-  const [cvv, setCvv] = useState("");
-  const [errors, setErrors] = useState({
-    cardholderName: "",
-    cardNumber: "",
-    expiry: "",
-    cvv: "",
-  });
+  const [form, setForm] = useState({ cardholderName: "", cardNumber: "", expiry: "", cvv: "" });
+  const [errors, setErrors] = useState({});
 
-  // UseEffect to fetch payment methods
   useEffect(() => {
-    if (!currentUser) return;  // Exit early if currentUser is not available
+    if (!currentUser || loading) return;
 
     const fetchPaymentMethods = async () => {
       try {
         const userRef = doc(db, "users", currentUser.uid);
         const paymentMethodsRef = collection(userRef, "paymentMethods");
-
         const querySnapshot = await getDocs(paymentMethodsRef);
-        const methods = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-
+        const methods = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setPaymentMethods(methods);
       } catch (error) {
         console.error("Error fetching payment methods: ", error);
@@ -41,33 +27,32 @@ const Wallet = () => {
     };
 
     fetchPaymentMethods();
-  }, [currentUser]);  // Add currentUser as dependency
+  }, [currentUser, loading]);
 
-  // Prevent action if user is still loading
   if (loading) {
-    return <div>Loading user data...</div>;  // Optional: show loading state
+    return <div>Loading user data...</div>;
   }
 
   const validateForm = () => {
-    const newErrors = { cardholderName: "", cardNumber: "", expiry: "", cvv: "" };
+    const newErrors = {};
     let isValid = true;
 
-    if (!cardholderName || !/^[a-zA-Z\s]+$/.test(cardholderName)) {
+    if (!form.cardholderName || !/^[a-zA-Z\s]+$/.test(form.cardholderName)) {
       newErrors.cardholderName = "Cardholder Name is required and must contain only letters and spaces.";
       isValid = false;
     }
 
-    if (!cardNumber || !/^\d{16}$/.test(cardNumber)) {
+    if (!form.cardNumber || !/^\d{16}$/.test(form.cardNumber)) {
       newErrors.cardNumber = "Card Number must be 16 digits.";
       isValid = false;
     }
 
-    if (!expiry || !/^(0[1-9]|1[0-2])\/\d{2}$/.test(expiry)) {
+    if (!form.expiry || !/^(0[1-9]|1[0-2])\/\d{2}$/.test(form.expiry)) {
       newErrors.expiry = "Expiry must be in MM/YY format.";
       isValid = false;
     }
 
-    if (!cvv || !/^\d{3}$/.test(cvv)) {
+    if (!form.cvv || !/^\d{3}$/.test(form.cvv)) {
       newErrors.cvv = "CVV must be 3 digits.";
       isValid = false;
     }
@@ -79,45 +64,43 @@ const Wallet = () => {
   const handleSave = async () => {
     if (!currentUser) {
       console.error("No user is logged in.");
-      return; // Return early if no user is found
+      return;
     }
-
+  
     if (validateForm()) {
       const newMethod = {
-        cardholderName,
-        cardNumber: `**** **** **** ${cardNumber.slice(-4)}`,
-        expiry,
+        cardholderName: form.cardholderName,
+        cardNumber: `**** **** **** ${form.cardNumber.slice(-4)}`,
+        expiry: form.expiry,
       };
-
+  
       try {
         const userRef = doc(db, "users", currentUser.uid);
         const paymentMethodsRef = collection(userRef, "paymentMethods");
-
         const docRef = await addDoc(paymentMethodsRef, newMethod);
-        console.log("Document written with ID: ", docRef.id);
-
-        setPaymentMethods([...paymentMethods, { ...newMethod, id: docRef.id }]);
-
-        if (paymentMethods.length === 0) {
-          setDefaultCardId(docRef.id); // Set the first card as default
+  
+        // Fetch updated list to ensure the new card is included
+        const querySnapshot = await getDocs(paymentMethodsRef);
+        const updatedMethods = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setPaymentMethods(updatedMethods);
+  
+        if (updatedMethods.length === 1) {
+          setDefaultCardId(docRef.id);
         }
-
-        setCardholderName("");
-        setCardNumber("");
-        setExpiry("");
-        setCvv("");
+  
+        setForm({ cardholderName: "", cardNumber: "", expiry: "", cvv: "" });
         setIsModalOpen(false);
       } catch (error) {
         console.error("Error adding document: ", error);
       }
     }
   };
+  
 
   const handleDelete = async (id) => {
     try {
       const userRef = doc(db, "users", currentUser.uid);
       const paymentMethodsRef = doc(userRef, "paymentMethods", id);
-
       await deleteDoc(paymentMethodsRef);
       setPaymentMethods(paymentMethods.filter((method) => method.id !== id));
 
@@ -176,16 +159,16 @@ const Wallet = () => {
               <Input
                 type="text"
                 placeholder="Cardholder Name"
-                value={cardholderName}
-                onChange={(e) => setCardholderName(e.target.value)}
+                value={form.cardholderName}
+                onChange={(e) => setForm({ ...form, cardholderName: e.target.value })}
               />
               {errors.cardholderName && <Error>{errors.cardholderName}</Error>}
 
               <Input
                 type="text"
                 placeholder="Card Number"
-                value={cardNumber}
-                onChange={(e) => setCardNumber(e.target.value)}
+                value={form.cardNumber}
+                onChange={(e) => setForm({ ...form, cardNumber: e.target.value })}
               />
               {errors.cardNumber && <Error>{errors.cardNumber}</Error>}
 
@@ -193,15 +176,15 @@ const Wallet = () => {
                 <Input
                   type="text"
                   placeholder="MM/YY"
-                  value={expiry}
-                  onChange={(e) => setExpiry(e.target.value)}
+                  value={form.expiry}
+                  onChange={(e) => setForm({ ...form, expiry: e.target.value })}
                 />
                 {errors.expiry && <Error>{errors.expiry}</Error>}
                 <Input
                   type="text"
                   placeholder="CVV"
-                  value={cvv}
-                  onChange={(e) => setCvv(e.target.value)}
+                  value={form.cvv}
+                  onChange={(e) => setForm({ ...form, cvv: e.target.value })}
                 />
                 {errors.cvv && <Error>{errors.cvv}</Error>}
               </Row>
@@ -372,41 +355,40 @@ const CancelButton = styled.button`
 `;
 
 const DefaultTag = styled.span`
-  background-color: #ff9800;
-  color: white;
-  padding: 5px 10px;
-  border-radius: 10px;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
+  color: green;
+  font-weight: bold;
   margin-left: 10px;
 `;
 
 const DeleteButton = styled.button`
-  background-color: #e74c3c;
+  background-color: red;
   color: white;
-  padding: 6px 10px;
+  padding: 5px 10px;
   border: none;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   cursor: pointer;
 
   &:hover {
-    background-color: #c0392b;
+    background-color: darkred;
   }
 `;
 
 const SetDefaultButton = styled.button`
-  background-color: #3498db;
+  background-color: #024a47;
   color: white;
-  padding: 6px 10px;
+  padding: 5px 10px;
   border: none;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   cursor: pointer;
+  margin-right: 10px;
 
   &:hover {
-    background-color: #2980b9;
+    background-color: #013d3b;
   }
 
   &:disabled {
-    background-color: #7f8c8d;
+    background-color: #ddd;
     cursor: not-allowed;
   }
 `;
@@ -414,7 +396,7 @@ const SetDefaultButton = styled.button`
 const Error = styled.p`
   color: red;
   font-size: 0.9rem;
-  margin-top: 5px;
+  margin-top: -5px;
 `;
 
 export default Wallet;

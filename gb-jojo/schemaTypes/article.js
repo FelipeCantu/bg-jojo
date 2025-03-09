@@ -38,7 +38,7 @@ export const article = defineType({
       type: 'reference',
       to: [{ type: 'user' }],
       validation: (Rule) => Rule.required(), // ✅ Ensure every article has an author
-    }),    
+    }),
     defineField({
       name: 'publishedDate',
       title: 'Published Date',
@@ -48,6 +48,25 @@ export const article = defineType({
       name: 'readingTime',
       title: 'Reading Time (minutes)',
       type: 'number',
+    }),
+    // New fields for views, likes, and likedBy
+    defineField({
+      name: 'views',
+      title: 'Views',
+      type: 'number',
+      initialValue: 0,
+    }),
+    defineField({
+      name: 'likes',
+      title: 'Likes',
+      type: 'number',
+      initialValue: 0,
+    }),
+    defineField({
+      name: 'likedBy',
+      title: 'Liked By',
+      type: 'array',
+      of: [{ type: 'reference', to: [{ type: 'user' }] }],
     }),
   ],
 });

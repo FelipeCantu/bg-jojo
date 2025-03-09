@@ -52,46 +52,52 @@ const EventDetail = () => {
   const addAttendeeToEvent = async (eventId, userId) => {
     const eventRef = doc(db, 'events', eventId);
     const eventSnap = await getDoc(eventRef);
-  
+
     try {
       if (eventSnap.exists()) {
         await updateDoc(eventRef, {
           attendees: arrayUnion(userId),
         });
       } else {
-        setDoc(eventRef, { attendees: [userId] }, { merge: true });
-
+        // If the event doesn't exist, create it with the attendee
+        await setDoc(eventRef, { attendees: [userId] }, { merge: true });
       }
       console.log('Attendee updated successfully!');
     } catch (error) {
-      console.error('Error updating attendees:', error);
+      console.error('Error adding attendee:', error);
     }
   };
-  
+
 
   // Function to toggle attending status
   const handleToggleAttend = async () => {
     if (!user) return alert('Please log in to join the event.');
-
+  
     const eventRef = doc(db, 'events', id);
-
+  
     try {
       if (isUserAttending) {
         // Remove user from the attendees list
         await updateDoc(eventRef, {
           attendees: arrayRemove(user.uid),
         });
-        setAttendees(attendees.filter((uid) => uid !== user.uid));
       } else {
         // Add user to the attendees list using addAttendeeToEvent
-        await addAttendeeToEvent(id, user.uid);
-        setAttendees([...attendees, user.uid]);
+        await addAttendeeToEvent(id, user.uid);  // Call your existing function here
       }
+  
+      // Fetch updated attendees list
+      const eventSnap = await getDoc(eventRef);
+      if (eventSnap.exists()) {
+        setAttendees(eventSnap.data().attendees || []);
+      }
+  
+      console.log('Attendee updated successfully!');
     } catch (error) {
       console.error('Error updating attendees:', error);
     }
   };
-
+  
   if (error) return <ErrorMessage>{error}</ErrorMessage>;
   if (!event) return <div>Loading...</div>;
 

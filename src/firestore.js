@@ -13,7 +13,7 @@ import {
   arrayRemove, 
   deleteDoc,
   where,
-  query,
+  query
 } from "firebase/firestore"; 
 import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 

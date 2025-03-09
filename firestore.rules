@@ -1,0 +1,39 @@
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /articles/{articleId} {
+      // Allow anyone to read articles
+      allow read: if true;
+
+      // Allow article creation only if authenticated
+      allow create: if request.auth != null;
+
+      // Allow updating likes and likedBy (including transform operations)
+      allow update: if request.auth != null
+        && (
+          (request.resource.data.keys().hasOnly(['likes', 'likedBy'])
+            && request.resource.data.keys().size() == 0
+            && request.resource.data.fieldTransforms.size() > 0)
+          || request.auth.uid == resource.data.authorId
+        );
+
+      // Allow the author to update their own article (except likes or likedBy)
+      allow update: if request.auth.uid == resource.data.authorId
+        && !request.resource.data.keys().hasAny(['likes', 'likedBy']);
+
+      // Allow delete only if the user is the author
+      allow delete: if request.auth != null && request.auth.uid == resource.data.authorId;
+    }
+
+    // 🔹 Comments
+    match /articles/{articleId}/comments/{commentId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+
+    // 🔹 User Profiles
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}

@@ -7,8 +7,7 @@ module.exports = {
     "ecmaVersion": 2018,
   },
   extends: [
-    "eslint:recommended",
-    "google",
+    "eslint:recommended", // Keep this if you want ESLint's recommended settings
   ],
   rules: {
     "no-restricted-globals": ["error", "name", "length"],
