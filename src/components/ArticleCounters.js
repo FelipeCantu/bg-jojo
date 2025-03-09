@@ -60,23 +60,23 @@ const ArticleCounters = ({ articleId }) => {
       }
     };
   
-    if (articleId && currentUser && !loading) {
+    if (articleId && !loading) {
       fetchCounts();
     }
   }, [articleId, currentUser, loading]);
 
   // Increment view count on first load
   useEffect(() => {
-    if (articleId && currentUser && !loading) {
+    if (articleId && !loading) {
       incrementViewCount();
     }
-  }, [articleId, currentUser, loading, incrementViewCount]);
+  }, [articleId, loading, incrementViewCount]);
 
   // Handle like click
   const handleLike = async (articleId) => {
     const user = auth.currentUser;
     if (!user) {
-      console.log("❌ User must be logged in to like.");
+      alert("You need to sign in to like this article!");
       return;
     }
 
