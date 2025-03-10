@@ -1,9 +1,8 @@
-import React from 'react'
+import React from 'react';
 import styled from 'styled-components';
-import { ChevronRightIcon } from '@heroicons/react/24/solid'
-import Mission from './Mission'
-import { Link } from 'react-router-dom'
-
+import { ChevronRightIcon } from '@heroicons/react/24/solid';
+import Mission from './Mission';
+import { Link } from 'react-router-dom';
 
 function Home() {
   return (
@@ -18,17 +17,15 @@ function Home() {
           <p>You Are Not Alone</p>
           <HotLink to='/Hotlines'>
             <Button>
-              <div>
-                <p> Hotlines</p>
-                <ChevronRightIcon />
-              </div>
+              <p>Hotlines</p>
+              <ChevronRightIcon width={20} height={20} />
             </Button>
           </HotLink>
         </Content>
       </VideoWrapper>
       <Mission />
-      </MainSection>
-  )
+    </MainSection>
+  );
 }
 
 const MainSection = styled.div`
@@ -43,7 +40,7 @@ const MainSection = styled.div`
 const VideoWrapper = styled.div`
   height: 90vh;
    @media (max-width: 768px) {
-    height: 60vh; /* Allow it to adjust dynamically */
+    height: 60vh;
   }
 `;
 
@@ -83,29 +80,41 @@ const Content = styled.div`
 `;
 
 const Button = styled.button`
-  gap: 1px;
-  padding: 1px 25px;
-  border: 1px solid #004d40; /* Dark green border */
-  background-color: white; /* Cream color */
-  color: #004d40; /* Dark green text */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 25px;
+  border: 1px solid #004d40;
+  background-color: white;
+  color: #004d40;
   box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.2);
   cursor: pointer;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 500;
   transition: background 0.3s ease-in-out;
-  width: 120px;
+  width: 150px;
+  margin: 0 auto; /* Centering the button */
+
   &:hover {
-    background-color: #004d40; 
+    background-color: #004d40;
     color: white;
   }
-  div {
-  display: flex;
+
+  p {
+    margin: 0;
   }
-`
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+`;
 
 const HotLink = styled(Link)`
-  text-decoration: none; /* Remove default link styling */
-  cursor: pointer;
-`
+  text-decoration: none;
+  display: flex;
+  justify-content: center;
+`;
 
-export default Home
+export default Home;

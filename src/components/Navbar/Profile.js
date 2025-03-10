@@ -144,12 +144,9 @@ const Profile = () => {
               </BioDisplay>
             )}
           </BioSection>
-          {user?.uid && <UserArticles userId={user.uid} />}
-          {!user?.uid && <p>No articles yet.</p>}
         </ProfileContent>
-        <ProfileHeader>
-          <h1>Profile View</h1>
-        </ProfileHeader>
+        {user?.uid && <UserArticles userId={user.uid} />}
+        {!user?.uid && <p>No articles yet.</p>}
       </ProfileCard>
     </ProfileContainer>
   );
@@ -161,26 +158,19 @@ const ProfileContainer = styled.div`
   align-items: flex-start;
   background: url(https://i.pinimg.com/736x/ac/62/36/ac623639e4368a63a9442e558cdadc06.jpg) no-repeat bottom center/cover;
   min-height: 100vh;
-`;
-
-const ProfileHeader = styled.div`
-  width: 100%;
-  text-align: center;
-  background-color: #024a47;
-  color: white;
-  font-size: 24px;
-  font-weight: bold;
-  bottom: 0;
+  padding-top: 0; // Ensure there's no extra space at the top
 `;
 
 const ProfileCard = styled.div`
   background: white;
   width: 1000px;
   min-height: 800px;
-  margin-top: 0;
+  margin-top: 0; // Ensure no margin pushing it down
+  position: relative; // Optional, in case of unwanted gaps
+  top: 0; // Ensure it sticks to the top
   @media (max-width: 768px) {
     width: 100%;
-    margin: 20px;
+    margin: 0; // Remove margin for mobile view as well
   }
 `;
 
