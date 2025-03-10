@@ -55,7 +55,6 @@ const ArticleList = () => {
                 </DateAndTime>
               </TopLeftSection>
 
-              {/* Apply styles to the image */}
               {article.mainImage?.asset ? (
                 <ArticleImage src={urlFor(article.mainImage.asset).url()} alt={article.title} />
               ) : (
@@ -76,7 +75,7 @@ const ArticleList = () => {
   );
 };
 
-// Styled Components (updated for image styling)
+// Styled Components (updated for responsive grid layout)
 const ArticleContainer = styled.div`
   position: relative;
   min-height: 100vh;
@@ -86,19 +85,30 @@ const ArticleContainer = styled.div`
   justify-content: flex-start;
   overflow: hidden;
   background: #feedfd;
-  padding-right: 2.5rem;
-  padding-left: 0;
+  padding: 30px;
 `;
 
 const ArticleGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  gap: 100px;
-  padding: 30px;
+  gap: 30px;
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 const LinkWrapper = styled(Link)`
   text-decoration: none;
+  display: flex;
+  justify-content: center;
 `;
 
 const ArticleCard = styled.div`
@@ -111,7 +121,7 @@ const ArticleCard = styled.div`
   position: relative;
   transition: transform 0.3s ease;
   height: 550px;
-  width: 100%;
+  width: 350px;
   overflow: hidden;
   margin-bottom: 20px;
   &:hover {
