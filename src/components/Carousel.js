@@ -21,7 +21,7 @@ const CarouselComponent = () => {
   useEffect(() => {
     sanityClient
       .fetch(
-        `*[_type == "carousel"]{
+        `*[_type == "carousel"] | order(_createdAt asc) {
           image{asset->{url}},
           text
         }`
@@ -34,7 +34,7 @@ const CarouselComponent = () => {
       })
       .catch(console.error);
   }, []);
-
+  
   return (
     <CarouselWrapper>
       <StyledSlider {...settings}>

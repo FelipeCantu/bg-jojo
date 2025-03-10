@@ -30,6 +30,7 @@ export function urlFor(source) {
   return builder.image({ _ref: ref });
 }
 
+
 // Fetch all articles
 export const fetchArticles = async () => {
   const query = `*[_type == "article"]{
