@@ -20,7 +20,8 @@ import {
   Notifications,
   Subscriptions,
   Footer,
-  NotFound
+  NotFound,
+  ArticleForm 
 } from './components';
 
 function App() {
@@ -50,6 +51,7 @@ function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/subscriptions" element={<Subscriptions />} />
+          <Route path="/create-article" element={<ArticleForm />} />
 
           {/* Catch-all route for 404 */}
           <Route path="*" element={<NotFound />} />

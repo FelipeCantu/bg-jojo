@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { fetchArticles } from '../sanityClient';
 import { urlFor } from '../sanityClient';
 import ArticleCounters from './ArticleCounters';
-import ArticleForm from './ArticleForm';
+import CreateArticleButton from './CreateArticleButton'; // Import the CreateArticleButton
 import styled from 'styled-components';
 
 const ArticleList = () => {
@@ -32,6 +32,8 @@ const ArticleList = () => {
 
   return (
     <ArticleContainer>
+      <CreateArticleButton /> {/* The floating button */}
+
       <ArticleGrid>
         {articles.map((article) => (
           <LinkWrapper to={`/article/${article._id}`} key={article._id}>
@@ -69,8 +71,6 @@ const ArticleList = () => {
           </LinkWrapper>
         ))}
       </ArticleGrid>
-
-      <ArticleForm onArticleSubmitted={getArticles} />
     </ArticleContainer>
   );
 };

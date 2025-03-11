@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { submitArticle, urlFor, uploadImageToSanity, ensureUserExistsInSanity  } from '../sanityClient';
-import { auth, onAuthStateChanged } from '../firestore'; 
+import { submitArticle, urlFor, uploadImageToSanity, ensureUserExistsInSanity } from '../sanityClient';
+import { auth, onAuthStateChanged } from '../firestore';
 import { db } from '../firestore';
 import { doc, getDoc } from 'firebase/firestore';
+import { Link } from 'react-router-dom';
 
 const ArticleForm = ({ onArticleSubmitted }) => {
-    const [isModalOpen, setIsModalOpen] = useState(false);
     const [formData, setFormData] = useState({
         title: '',
         mainImage: '',
@@ -21,42 +21,42 @@ const ArticleForm = ({ onArticleSubmitted }) => {
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-          if (!currentUser) {
-            setUser(null);
-            setIsUserLoading(false);
-            return;
-          }
-      
-          setIsUserLoading(true);
-          try {
-            const userDocRef = doc(db, 'users', currentUser.uid);
-            const userDoc = await getDoc(userDocRef);
-      
-            const fetchedUser = userDoc.exists() ? {
-              name: userDoc.data().name || currentUser.displayName,
-              photo: userDoc.data().photo || currentUser.photoURL || 'https://via.placeholder.com/40',
-              uid: currentUser.uid,
-              role: userDoc.data().role || 'user',
-            } : {
-              name: currentUser.displayName,
-              photo: currentUser.photoURL || 'https://via.placeholder.com/40',
-              uid: currentUser.uid,
-            };
-      
-            setUser(fetchedUser);
-      
-            // Ensure the user exists in Sanity
-            await ensureUserExistsInSanity(fetchedUser.uid, fetchedUser.name, fetchedUser.photo);
-      
-          } catch (error) {
-            console.error("❌ Error fetching user data:", error);
-          } finally {
-            setIsUserLoading(false);
-          }
+            if (!currentUser) {
+                setUser(null);
+                setIsUserLoading(false);
+                return;
+            }
+
+            setIsUserLoading(true);
+            try {
+                const userDocRef = doc(db, 'users', currentUser.uid);
+                const userDoc = await getDoc(userDocRef);
+
+                const fetchedUser = userDoc.exists() ? {
+                    name: userDoc.data().name || currentUser.displayName,
+                    photo: userDoc.data().photo || currentUser.photoURL || 'https://via.placeholder.com/40',
+                    uid: currentUser.uid,
+                    role: userDoc.data().role || 'user',
+                } : {
+                    name: currentUser.displayName,
+                    photo: currentUser.photoURL || 'https://via.placeholder.com/40',
+                    uid: currentUser.uid,
+                };
+
+                setUser(fetchedUser);
+
+                // Ensure the user exists in Sanity
+                await ensureUserExistsInSanity(fetchedUser.uid, fetchedUser.name, fetchedUser.photo);
+
+            } catch (error) {
+                console.error("❌ Error fetching user data:", error);
+            } finally {
+                setIsUserLoading(false);
+            }
         });
-      
+
         return () => unsubscribe();
-      }, []);
+    }, []);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -119,9 +119,11 @@ const ArticleForm = ({ onArticleSubmitted }) => {
                 },
             }, user);
 
-            if (onArticleSubmitted) onArticleSubmitted();
-            setIsModalOpen(false);
-            resetForm();
+            alert('Article submitted successfully!');
+            setFormData({ title: '', mainImage: '', content: '' });
+
+            // Trigger onArticleSubmitted callback to refresh the article list
+            onArticleSubmitted();
         } catch (error) {
             console.error('Error submitting article:', error);
         } finally {
@@ -129,132 +131,143 @@ const ArticleForm = ({ onArticleSubmitted }) => {
         }
     };
 
-    const resetForm = () => {
-        setFormData({ title: '', mainImage: '', content: '' });
-        setErrors({});
-        setImageError(null);
-    };
-
-    const getImageUrl = () => {
-        if (!formData.mainImage) return 'https://via.placeholder.com/150';
-        try {
-            return urlFor({ asset: { _ref: formData.mainImage } }).url() || 'https://via.placeholder.com/150';
-        } catch {
-            return 'https://via.placeholder.com/150';
-        }
-    };
-
     return (
         <Container>
-            <AddButton onClick={() => setIsModalOpen(true)}>+</AddButton>
-            {isModalOpen && (
-                <ModalOverlay>
-                    <ModalContent>
-                        <CloseButton onClick={() => {
-                            setIsModalOpen(false);
-                            resetForm();
-                        }}>&times;</CloseButton>
-                        {user ? (
-                            <>
-                                <h2>Submit an Article</h2>
-                                <AuthorSection>
-                                    <AuthorPhoto src={user.photo} alt="Author" />
-                                    <AuthorName>{user.name}</AuthorName>
-                                </AuthorSection>
-                                <Form onSubmit={handleSubmit}>
-                                    <label>Title:</label>
-                                    <input type="text" name="title" value={formData.title} onChange={handleChange} required />
-                                    {errors.title && <ErrorMessage>{errors.title}</ErrorMessage>}
-                                    <label>Upload Image:</label>
-                                    <input type="file" accept="image/*" onChange={handleImageUpload} required />
-                                    {uploading && <p>Uploading image...</p>}
-                                    {formData.mainImage && <PreviewImage src={getImageUrl()} alt="Uploaded Preview" />}
-                                    {imageError && <ErrorMessage>{imageError}</ErrorMessage>}
-                                    <label>Content:</label>
-                                    <textarea name="content" value={formData.content} onChange={handleChange} rows="6" required />
-                                    {errors.content && <ErrorMessage>{errors.content}</ErrorMessage>}
-                                    <SubmitButton type="submit" disabled={uploading || isSubmitting || isUserLoading || Object.keys(errors).length > 0}>
-                                        {isSubmitting ? 'Submitting...' : 'Submit'}
-                                    </SubmitButton>
-                                </Form>
-                            </>
-                        ) : (
-                            <h2>You must be signed in to submit an article.</h2>
-                        )}
-                    </ModalContent>
-                </ModalOverlay>
+            <h2>Write Your Article</h2>
+            {isUserLoading ? (
+                <p>Loading user info...</p>
+            ) : user ? (
+                <AuthorSection>
+                    <AuthorPhoto src={user?.photo} alt="Author" />
+                    <AuthorName>{user?.name}</AuthorName>
+                </AuthorSection>
+            ) : (
+                <p>Please sign in to submit an article.</p>
             )}
+            <Form onSubmit={handleSubmit}>
+                <TitleInput
+                    type="text"
+                    name="title"
+                    value={formData.title}
+                    onChange={handleChange}
+                    placeholder="Title"
+                    required
+                />
+                {errors.title && <ErrorMessage>{errors.title}</ErrorMessage>}
+
+                <ImageInput
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    required
+                />
+                {uploading && <p>Uploading image...</p>}
+                {formData.mainImage && <PreviewImage src={urlFor({ asset: { _ref: formData.mainImage } }).url()} alt="Uploaded Preview" />}
+                {imageError && <ErrorMessage>{imageError}</ErrorMessage>}
+
+                <ContentTextArea
+                    name="content"
+                    value={formData.content}
+                    onChange={handleChange}
+                    placeholder="Content"
+                    rows="10"
+                    required
+                />
+                {errors.content && <ErrorMessage>{errors.content}</ErrorMessage>}
+
+                <SubmitButton type="submit" disabled={uploading || isSubmitting || isUserLoading || Object.keys(errors).length > 0}>
+                    {isSubmitting ? 'Submitting...' : 'Submit'}
+                </SubmitButton>
+            </Form>
+
+            <Link to="/articles">
+                <BackButton>{'←'}</BackButton> 
+            </Link>
         </Container>
     );
 };
 
+// Styled Components
 const Container = styled.div`
+    padding: 40px;
+    width: 100%; /* Ensure the container takes up full width */
+    max-width: 1200px; /* Adjust max width to suit your needs */
+    margin: 0 auto;
+    background: #f4f4f4;
+    border-radius: 10px;
     position: relative;
 `;
-const AddButton = styled.button`
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
+
+const AuthorSection = styled.div`
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+`;
+
+const AuthorPhoto = styled.img`
     width: 60px;
     height: 60px;
     border-radius: 50%;
-    background: #ff5733;
-    color: white;
-    font-size: 32px;
-    border: none;
-    cursor: pointer;
-    display: flex; /* Use Flexbox */
-    align-items: center; /* Center vertically */
-    justify-content: center; /* Center horizontally */
-
-    @media (max-width: 600px) {
-        width: 50px;
-        height: 50px;
-        font-size: 28px;
-    }
-
-    @media (max-width: 375px) {
-        width: 45px;
-        height: 45px;
-        font-size: 24px;
-    }
+    margin-right: 15px;
+    object-fit: cover;
 `;
 
-
-const ModalOverlay = styled.div`
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-`;
-
-const ModalContent = styled.div`
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
-    width: 400px;
-    position: relative;
-`;
-
-const CloseButton = styled.button`
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: none;
-    border: none;
-    font-size: 24px;
-    cursor: pointer;
+const AuthorName = styled.p`
+    font-weight: bold;
+    font-size: 18px;
 `;
 
 const Form = styled.form`
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 20px;
+    width: 100%; /* Make sure the form takes up full width */
+`;
+
+const TitleInput = styled.input`
+    padding: 12px;
+    font-size: 18px;
+    border: none;
+    border-bottom: 2px solid #ddd;
+    margin-bottom: 20px;
+    background: transparent;
+    width: 100%; /* Ensure it takes up full width */
+    &::placeholder {
+        color: #aaa;
+    }
+
+    &:focus {
+        outline: none;
+        border-bottom: 2px solid #007bff;
+    }
+`;
+
+const ImageInput = styled.input`
+    padding: 10px;
+    border: none;
+    border-bottom: 2px solid #ddd;
+    margin-bottom: 20px;
+    background: transparent;
+    width: 100%; /* Ensure it takes up full width */
+`;
+
+const ContentTextArea = styled.textarea`
+    padding: 12px;
+    font-size: 16px;
+    border: none;
+    border-bottom: 2px solid #ddd;
+    min-height: 200px;
+    margin-bottom: 20px;
+    background: transparent;
+    width: 100%; /* Ensure it takes up full width */
+    &::placeholder {
+        color: #aaa;
+    }
+
+    &:focus {
+        outline: none;
+        border-bottom: 2px solid #007bff;
+    }
 `;
 
 const PreviewImage = styled.img`
@@ -265,47 +278,44 @@ const PreviewImage = styled.img`
     margin-top: 10px;
 `;
 
-const AuthorSection = styled.div`
-    display: flex;
-    align-items: center;
-    margin-bottom: 10px;
-`;
-
-const AuthorPhoto = styled.img`
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    margin-right: 10px;
-    object-fit: cover; 
-`;
-
-const AuthorName = styled.p`
-    font-weight: bold;
-    font-size: 16px;
-`;
-
 const ErrorMessage = styled.p`
     color: red;
     font-size: 12px;
-    margin-top: -5px;
+    margin-top: -10px;
 `;
 
 const SubmitButton = styled.button`
-    background-color: #4CAF50;
+    background-color: #007bff;
     color: white;
-    padding: 10px 20px;
+    padding: 15px 30px;
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 18px;
+    width: 100%; /* Ensure it takes up full width */
 
     &:hover {
-        background-color: #45a049;
+        background-color: #0056b3;
     }
 
     &:disabled {
         background-color: #ccc;
         cursor: not-allowed;
+    }
+`;
+
+const BackButton = styled.button`
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background-color: transparent;
+    color: #007bff;
+    font-size: 30px; /* Adjust the size of the arrow */
+    border: none;
+    cursor: pointer;
+
+    &:hover {
+        color: #0056b3;
     }
 `;
 
