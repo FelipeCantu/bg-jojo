@@ -132,76 +132,103 @@ const ArticleForm = ({ onArticleSubmitted }) => {
     };
 
     return (
-        <Container>
-            <h2>Write Your Article</h2>
-            {isUserLoading ? (
-                <p>Loading user info...</p>
-            ) : user ? (
-                <AuthorSection>
-                    <AuthorPhoto src={user?.photo} alt="Author" />
-                    <AuthorName>{user?.name}</AuthorName>
-                </AuthorSection>
-            ) : (
-                <p>Please sign in to submit an article.</p>
-            )}
-            <Form onSubmit={handleSubmit}>
-                <TitleInput
-                    type="text"
-                    name="title"
-                    value={formData.title}
-                    onChange={handleChange}
-                    placeholder="Title"
-                    required
-                />
-                {errors.title && <ErrorMessage>{errors.title}</ErrorMessage>}
+        <PageContainer>
+            <Container>
+                <h2>Write Your Article</h2>
+                {isUserLoading ? (
+                    <p>Loading user info...</p>
+                ) : user ? (
+                    <AuthorSection>
+                        <AuthorPhoto src={user?.photo} alt="Author" />
+                        <AuthorName>{user?.name}</AuthorName>
+                    </AuthorSection>
+                ) : (
+                    <p>Please sign in to submit an article.</p>
+                )}
+                <Form onSubmit={handleSubmit}>
+                    <TitleInput
+                        type="text"
+                        name="title"
+                        value={formData.title}
+                        onChange={handleChange}
+                        placeholder="Title"
+                        required
+                    />
+                    {errors.title && <ErrorMessage>{errors.title}</ErrorMessage>}
 
-                <ImageInput
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    required
-                />
-                {uploading && <p>Uploading image...</p>}
-                {formData.mainImage && <PreviewImage src={urlFor({ asset: { _ref: formData.mainImage } }).url()} alt="Uploaded Preview" />}
-                {imageError && <ErrorMessage>{imageError}</ErrorMessage>}
+                    <ImageInput
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        required
+                    />
+                    {uploading && <p>Uploading image...</p>}
+                    {formData.mainImage && <PreviewImage src={urlFor({ asset: { _ref: formData.mainImage } }).url()} alt="Uploaded Preview" />}
+                    {imageError && <ErrorMessage>{imageError}</ErrorMessage>}
 
-                <ContentTextArea
-                    name="content"
-                    value={formData.content}
-                    onChange={handleChange}
-                    placeholder="Content"
-                    rows="10"
-                    required
-                />
-                {errors.content && <ErrorMessage>{errors.content}</ErrorMessage>}
+                    <ContentTextArea
+                        name="content"
+                        value={formData.content}
+                        onChange={handleChange}
+                        placeholder="Content"
+                        rows="10"
+                        required
+                    />
+                    {errors.content && <ErrorMessage>{errors.content}</ErrorMessage>}
 
-                <SubmitButton type="submit" disabled={uploading || isSubmitting || isUserLoading || Object.keys(errors).length > 0}>
-                    {isSubmitting ? 'Submitting...' : 'Submit'}
-                </SubmitButton>
-            </Form>
+                    <SubmitButton type="submit" disabled={uploading || isSubmitting || isUserLoading || Object.keys(errors).length > 0}>
+                        {isSubmitting ? 'Submitting...' : 'Submit'}
+                    </SubmitButton>
+                </Form>
 
-            <Link to="/articles">
-                <BackButton>{'←'}</BackButton> 
-            </Link>
-        </Container>
+                <Link to="/articles">
+                    <BackButton>{'←'}</BackButton> 
+                </Link>
+            </Container>
+        </PageContainer>
     );
 };
 
-// Styled Components
+const PageContainer = styled.div`
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start; /* Top-aligned by default */
+    align-items: center; /* Center horizontally by default */
+    overflow-x: hidden; /* Prevent horizontal scrolling */
+`;
+
 const Container = styled.div`
     padding: 40px;
-    width: 100%; /* Ensure the container takes up full width */
-    max-width: 1200px; /* Adjust max width to suit your needs */
+    width: 100%;
+    max-width: 800px; /* Adjust max-width for mobile responsiveness */
     margin: 0 auto;
     background: #f4f4f4;
     border-radius: 10px;
     position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Center vertically */
+    align-items: center; /* Center horizontally */
+    box-sizing: border-box;
+
+    @media (max-width: 768px) {
+        padding: 20px;
+    }
+
+    @media (max-width: 480px) {
+        padding: 15px;
+        width: 100%;
+        margin: 0 10px; /* Ensure no overflow */
+    }
 `;
 
 const AuthorSection = styled.div`
     display: flex;
     align-items: center;
     margin-bottom: 20px;
+    flex-wrap: wrap; /* Allows wrapping if space is tight */
+    justify-content: center; /* Center author info */
 `;
 
 const AuthorPhoto = styled.img`
@@ -210,18 +237,39 @@ const AuthorPhoto = styled.img`
     border-radius: 50%;
     margin-right: 15px;
     object-fit: cover;
+
+    @media (max-width: 480px) {
+        width: 40px;
+        height: 40px;
+    }
 `;
 
 const AuthorName = styled.p`
     font-weight: bold;
     font-size: 18px;
+
+    @media (max-width: 480px) {
+        font-size: 14px;
+    }
 `;
 
 const Form = styled.form`
     display: flex;
     flex-direction: column;
     gap: 20px;
-    width: 100%; /* Make sure the form takes up full width */
+    width: 100%; /* Ensure form takes full width */
+    max-width: 600px; /* Limit the form width to 600px */
+    justify-content: center; /* Center content vertically inside form */
+    align-items: center; /* Center content horizontally inside form */
+
+    @media (max-width: 768px) {
+        width: 90%; /* Allow form to take up more space on tablets */
+    }
+
+    @media (max-width: 480px) {
+        width: 100%; /* Full width on mobile screens */
+        margin: 0; /* Remove margins */
+    }
 `;
 
 const TitleInput = styled.input`
@@ -231,7 +279,7 @@ const TitleInput = styled.input`
     border-bottom: 2px solid #ddd;
     margin-bottom: 20px;
     background: transparent;
-    width: 100%; /* Ensure it takes up full width */
+    width: 100%;
     &::placeholder {
         color: #aaa;
     }
@@ -239,6 +287,10 @@ const TitleInput = styled.input`
     &:focus {
         outline: none;
         border-bottom: 2px solid #007bff;
+    }
+
+    @media (max-width: 480px) {
+        font-size: 16px;
     }
 `;
 
@@ -248,7 +300,7 @@ const ImageInput = styled.input`
     border-bottom: 2px solid #ddd;
     margin-bottom: 20px;
     background: transparent;
-    width: 100%; /* Ensure it takes up full width */
+    width: 100%;
 `;
 
 const ContentTextArea = styled.textarea`
@@ -259,7 +311,7 @@ const ContentTextArea = styled.textarea`
     min-height: 200px;
     margin-bottom: 20px;
     background: transparent;
-    width: 100%; /* Ensure it takes up full width */
+    width: 100%;
     &::placeholder {
         color: #aaa;
     }
@@ -267,6 +319,10 @@ const ContentTextArea = styled.textarea`
     &:focus {
         outline: none;
         border-bottom: 2px solid #007bff;
+    }
+
+    @media (max-width: 480px) {
+        font-size: 14px;
     }
 `;
 
@@ -276,12 +332,26 @@ const PreviewImage = styled.img`
     object-fit: cover;
     border-radius: 5px;
     margin-top: 10px;
+
+    @media (max-width: 768px) {
+        width: 80px;
+        height: 80px;
+    }
+
+    @media (max-width: 480px) {
+        width: 60px;
+        height: 60px;
+    }
 `;
 
 const ErrorMessage = styled.p`
     color: red;
     font-size: 12px;
     margin-top: -10px;
+
+    @media (max-width: 480px) {
+        font-size: 10px;
+    }
 `;
 
 const SubmitButton = styled.button`
@@ -292,7 +362,7 @@ const SubmitButton = styled.button`
     border-radius: 5px;
     cursor: pointer;
     font-size: 18px;
-    width: 100%; /* Ensure it takes up full width */
+    width: 100%;
 
     &:hover {
         background-color: #0056b3;
@@ -302,6 +372,11 @@ const SubmitButton = styled.button`
         background-color: #ccc;
         cursor: not-allowed;
     }
+
+    @media (max-width: 480px) {
+        font-size: 16px;
+        padding: 12px 25px;
+    }
 `;
 
 const BackButton = styled.button`
@@ -310,12 +385,16 @@ const BackButton = styled.button`
     left: 20px;
     background-color: transparent;
     color: #007bff;
-    font-size: 30px; /* Adjust the size of the arrow */
+    font-size: 30px;
     border: none;
     cursor: pointer;
 
     &:hover {
         color: #0056b3;
+    }
+
+    @media (max-width: 480px) {
+        font-size: 25px;
     }
 `;
 

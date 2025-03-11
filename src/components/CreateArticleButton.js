@@ -14,10 +14,10 @@ const FloatingButton = styled.button`
     position: fixed;
     bottom: 30px;
     right: 30px;
-    background-color: #fe592a;  /* Updated color */
+    background-color: #fe592a; /* Updated color */
     color: white;
     border: none;
-    border-radius: 50%;
+    border-radius: 50%; /* Ensures the button remains circular */
     width: 60px;
     height: 60px;
     font-size: 36px;
@@ -27,7 +27,7 @@ const FloatingButton = styled.button`
     cursor: pointer;
     box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
     transition: background-color 0.3s ease;
-    z-index: 1000;  /* Ensure it's on top of other elements */
+    z-index: 1000; /* Ensure it's on top of other elements */
 
     &:hover {
         background-color: #f14e1f; 
@@ -50,5 +50,6 @@ const FloatingButton = styled.button`
         font-size: 28px;
     }
 `;
+
 
 export default CreateArticleButton;
