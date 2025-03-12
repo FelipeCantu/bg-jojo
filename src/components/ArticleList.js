@@ -3,79 +3,121 @@ import { Link } from 'react-router-dom';
 import { fetchArticles } from '../sanityClient';
 import { urlFor } from '../sanityClient';
 import ArticleCounters from './ArticleCounters';
-import CreateArticleButton from './CreateArticleButton'; // Import the CreateArticleButton
+import CreateArticleButton from './CreateArticleButton';
 import styled from 'styled-components';
+import { FaSearch } from 'react-icons/fa';
 
 const ArticleList = () => {
   const [articles, setArticles] = useState([]);
+  const [filteredArticles, setFilteredArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  const getArticles = async () => {
-    try {
-      const fetchedArticles = await fetchArticles();
-      setArticles(fetchedArticles);
-    } catch (err) {
-      console.error("Error fetching articles:", err);
-      setError('Failed to load articles. Please try again later.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
 
   useEffect(() => {
+    const getArticles = async () => {
+      try {
+        const fetchedArticles = await fetchArticles();
+        setArticles(fetchedArticles);
+        setFilteredArticles(fetchedArticles);
+      } catch (err) {
+        console.error("Error fetching articles:", err);
+        setError('Failed to load articles. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
     getArticles();
   }, []);
+
+  useEffect(() => {
+    setFilteredArticles(
+      articles.filter(article =>
+        article.title.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    );
+  }, [searchQuery, articles]);
 
   if (loading) return <LoadingMessage>Loading articles...</LoadingMessage>;
   if (error) return <ErrorMessage>{error}</ErrorMessage>;
 
   return (
     <ArticleContainer>
-      <CreateArticleButton /> {/* The floating button */}
+      <SearchContainer>
+        <SearchIcon onClick={() => setShowSearch(!showSearch)} />
+        <SearchBar show={showSearch}
+          type="text"
+          placeholder="Search article..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </SearchContainer>
+      
+      <CreateArticleButton />
+      {filteredArticles.length === 0 ? (
+        <NoArticlesMessage>No articles found</NoArticlesMessage>
+      ) : (
+        <ArticleGrid>
+          {filteredArticles.map((article) => (
+            <LinkWrapper to={`/article/${article._id}`} key={article._id}>
+              <ArticleCard>
+                <TopLeftSection>
+                  <UserInfo>
+                    <UserImage
+                      src={article.author?.photoURL || "https://via.placeholder.com/40"}
+                      alt={article.author?.name || "Anonymous"}
+                    />
+                    <UserName>{article.author?.name || "Anonymous"}</UserName>
+                  </UserInfo>
+                  <DateAndTime>
+                    {article.publishedDate && (
+                      <PublishedDate>{new Date(article.publishedDate).toLocaleDateString()}</PublishedDate>
+                    )}
+                    {article.publishedDate && article.readingTime && <Dot>·</Dot>}
+                    <ReadingTime>
+                      Estimated Reading Time: {article.readingTime || 'N/A'} minutes
+                    </ReadingTime>
+                  </DateAndTime>
+                </TopLeftSection>
 
-      <ArticleGrid>
-        {articles.map((article) => (
-          <LinkWrapper to={`/article/${article._id}`} key={article._id}>
-            <ArticleCard>
-              <TopLeftSection>
-                <UserInfo>
-                  <UserImage
-                    src={article.author?.photoURL || "https://via.placeholder.com/40"}
-                    alt={article.author?.name || "Anonymous"}
-                  />
-                  <UserName>{article.author?.name || "Anonymous"}</UserName>
-                </UserInfo>
-                <DateAndTime>
-                  {article.publishedDate && (
-                    <PublishedDate>{new Date(article.publishedDate).toLocaleDateString()}</PublishedDate>
-                  )}
-                  {article.publishedDate && article.readingTime && <Dot>·</Dot>}
-                  <ReadingTime>
-                    Estimated Reading Time: {article.readingTime || 'N/A'} minutes
-                  </ReadingTime>
-                </DateAndTime>
-              </TopLeftSection>
+                {article.mainImage?.asset ? (
+                  <ArticleImage src={urlFor(article.mainImage.asset).url()} alt={article.title} />
+                ) : (
+                  <ArticleImage src="https://via.placeholder.com/350x250" alt="Fallback content for this article" />
+                )}
 
-              {article.mainImage?.asset ? (
-                <ArticleImage src={urlFor(article.mainImage.asset).url()} alt={article.title} />
-              ) : (
-                <ArticleImage src="https://via.placeholder.com/350x250" alt="Fallback content for this article" />
-              )}
+                <Divider />
+                <ArticleTitle>{article.title || 'No Title'}</ArticleTitle>
 
-              <Divider />
-              <ArticleTitle>{article.title || 'No Title'}</ArticleTitle>
-
-              <ArticleCounters articleId={article._id} />
-            </ArticleCard>
-          </LinkWrapper>
-        ))}
-      </ArticleGrid>
+                <ArticleCounters articleId={article._id} />
+              </ArticleCard>
+            </LinkWrapper>
+          ))}
+        </ArticleGrid>
+      )}
     </ArticleContainer>
   );
 };
 
-// Styled Components (updated for responsive grid layout)
+const LoadingMessage = styled.p`
+  font-size: 1.2rem;
+  color: #555;
+  text-align: center;
+`;
+
+const ErrorMessage = styled.p`
+  font-size: 1.2rem;
+  color: red;
+  text-align: center;
+`;
+
+const NoArticlesMessage = styled.p`
+  font-size: 1.2rem;
+  color: #555;
+  text-align: center;
+`;
+
 const ArticleContainer = styled.div`
   position: relative;
   min-height: 100vh;
@@ -86,6 +128,43 @@ const ArticleContainer = styled.div`
   overflow: hidden;
   background: #feedfd;
   padding: 30px;
+`;
+
+const SearchContainer = styled.div`
+  display: flex;
+  align-items: center;
+  margin-bottom: 40px; /* Increased margin to add spacing */
+  position: relative; /* Changed to relative to avoid overlap */
+`;
+
+const SearchIcon = styled(FaSearch)`
+  cursor: pointer;
+  font-size: 1.5rem;
+  margin-right: 10px;
+  transition: transform 0.3s ease;
+  &:hover {
+    transform: scale(1.2);
+  }
+`;
+
+const SearchBar = styled.input`
+  display: ${({ show }) => (show ? 'block' : 'none')};
+  padding: 10px;
+  font-size: 1rem;
+  border: none;
+  border-bottom: 2px solid #ccc;
+  background: transparent;
+  outline: none;
+  width: 250px;
+  transition: all 0.3s ease-in-out;
+  opacity: ${({ show }) => (show ? '1' : '0')};
+  transform: ${({ show }) => (show ? 'translateX(0)' : 'translateX(-20px)')};
+  &::placeholder {
+    color: #aaa;
+  }
+  &:focus {
+    border-bottom: 2px solid #fe592a;
+  }
 `;
 
 const ArticleGrid = styled.div`
@@ -203,18 +282,6 @@ const ArticleTitle = styled.h2`
   display: flex;
   align-items: center;
   justify-content: center;
-  text-align: center;
-`;
-
-const LoadingMessage = styled.p`
-  font-size: 1.2rem;
-  color: #555;
-  text-align: center;
-`;
-
-const ErrorMessage = styled.p`
-  font-size: 1.2rem;
-  color: red;
   text-align: center;
 `;
 
