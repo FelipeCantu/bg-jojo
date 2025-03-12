@@ -4,6 +4,7 @@ import styled from "styled-components";
 import { client, urlFor } from "../../sanityClient";
 import useCurrentUser from "../../hook/useCurrentUser";
 import ArticleCounters from "../ArticleCounters"; // Import the ArticleCounters component
+import { HiDotsVertical } from 'react-icons/hi'; // Import Heroicons vertical 3 dots
 
 const UserArticles = () => {
   const { currentUser, loading, error } = useCurrentUser();
@@ -11,6 +12,7 @@ const UserArticles = () => {
   const [fetchError, setFetchError] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null); // Manage confirmation state
   const [articleToDelete, setArticleToDelete] = useState(null); // Store article to delete
+  const [openDropdownId, setOpenDropdownId] = useState(null); // Manage open dropdowns by article ID
 
   useEffect(() => {
     const fetchArticles = async () => {
@@ -81,6 +83,11 @@ const UserArticles = () => {
     setArticleToDelete(null);
   };
 
+  const toggleDropdown = (articleId) => {
+    // Toggle the dropdown for the current article and close all others
+    setOpenDropdownId(openDropdownId === articleId ? null : articleId);
+  };
+
   if (loading) return <LoadingMessage>Loading...</LoadingMessage>;
   if (error) return <ErrorMessage>{error.message}</ErrorMessage>;
   if (!currentUser?.uid) return <ErrorMessage>You must be logged in to view your articles.</ErrorMessage>;
@@ -95,7 +102,7 @@ const UserArticles = () => {
             <HorizontalScrollContainer>
               {articles.map((article) => (
                 <ArticleItem key={article._id}>
-                  {/* LinkWrapper is only for the article's content, not the delete button */}
+                  {/* LinkWrapper is only for the article's content, not the dropdown menu */}
                   <LinkWrapper to={`/article/${article._id}`}>
                     <ArticleCard>
                       <TopLeftSection>
@@ -130,10 +137,19 @@ const UserArticles = () => {
                     </ArticleCard>
                   </LinkWrapper>
 
-                  {/* Delete button outside the LinkWrapper to prevent navigation */}
-                  <DeleteButton onClick={(e) => { e.stopPropagation(); openConfirmDelete(article._id); }}>
-                    X
-                  </DeleteButton>
+                  {/* Wedge Icon and Dropdown Menu */}
+                  <DropdownWrapper>
+                    <DropdownButton onClick={() => toggleDropdown(article._id)}>
+                      <HiDotsVertical size={20} /> {/* Heroicon for vertical 3 dots */}
+                    </DropdownButton>
+                    {openDropdownId === article._id && (
+                      <DropdownMenu>
+                        <MenuItem onClick={() => openConfirmDelete(article._id)}>Delete</MenuItem>
+                        <MenuItem>Edit</MenuItem> {/* Implement edit functionality here */}
+                      </DropdownMenu>
+                    )}
+                  </DropdownWrapper>
+
                 </ArticleItem>
               ))}
             </HorizontalScrollContainer>
@@ -306,55 +322,44 @@ const LoadingMessage = styled.p`
   text-align: center;
 `;
 
-const DeleteButton = styled.button`
+const DropdownWrapper = styled.div`
   position: absolute;
   top: 10px;
   right: 10px;
+`;
+
+const DropdownButton = styled.button`
   background: none;
   border: none;
   font-size: 1.5rem;
-  color: gray; 
   cursor: pointer;
-  transition: color 0.3s ease;
-
-  &:hover {
-    color: red; 
-  }
-`;
-
-const ConfirmationModal = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 1000;
-  backdrop-filter: blur(4px); // Add blur effect to background
+  height: 20px; /* Adjust height for proper alignment */
 `;
 
-const ModalContainer = styled.div`
+const DropdownMenu = styled.div`
+  position: absolute;
+  top: 25px;
+  right: 0;
   background-color: white;
-  padding: 30px 40px;
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  width: 400px; // Set a fixed width for the modal
-  text-align: center;
+  border: 1px solid #ddd;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  padding: 10px;
+  width: 120px;
+  border-radius: 5px;
+  z-index: 100;
 `;
 
-const ConfirmationText = styled.p`
-  font-size: 1.2rem;
-  color: #333;
-  margin-bottom: 20px;
-`;
+const MenuItem = styled.div`
+  padding: 10px;
+  cursor: pointer;
 
-const ButtonContainer = styled.div`
-  display: flex;
-  justify-content: space-between;
-  gap: 15px;
+  &:hover {
+    background-color: #f1f1f1;
+  }
 `;
 
 const ConfirmButton = styled.button`
@@ -365,7 +370,6 @@ const ConfirmButton = styled.button`
   border-radius: 5px;
   cursor: pointer;
   font-weight: bold;
-  transition: background-color 0.3s ease;
 
   &:hover {
     background-color: #c0392b;
@@ -380,11 +384,42 @@ const CancelButton = styled.button`
   border-radius: 5px;
   cursor: pointer;
   font-weight: bold;
-  transition: background-color 0.3s ease;
 
   &:hover {
     background-color: #7f8c8d;
   }
+`;
+
+const ConfirmationModal = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+`;
+
+const ModalContainer = styled.div`
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 400px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+`;
+
+const ConfirmationText = styled.p`
+  font-size: 1rem;
+  margin-bottom: 20px;
+  color: #333;
+`;
+
+const ButtonContainer = styled.div`
+  display: flex;
+  justify-content: space-between;
 `;
 
 export default UserArticles;
