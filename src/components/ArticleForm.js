@@ -177,7 +177,7 @@ const ArticleForm = ({ onArticleSubmitted }) => {
                     {errors.content && <ErrorMessage>{errors.content}</ErrorMessage>}
 
                     <SubmitButton type="submit" disabled={uploading || isSubmitting || isUserLoading || Object.keys(errors).length > 0}>
-                        {isSubmitting ? 'Submitting...' : 'Submit'}
+                        {isSubmitting ? 'Publishing...' : 'Publish Article'}
                     </SubmitButton>
                 </Form>
 
@@ -355,7 +355,7 @@ const ErrorMessage = styled.p`
 `;
 
 const SubmitButton = styled.button`
-    background-color: #007bff;
+    background-color: #fe592a; /* Updated color */
     color: white;
     padding: 15px 30px;
     border: none;
@@ -365,7 +365,7 @@ const SubmitButton = styled.button`
     width: 100%;
 
     &:hover {
-        background-color: #0056b3;
+        background-color: #d94a1f; /* Darker shade for hover */
     }
 
     &:disabled {
@@ -384,13 +384,13 @@ const BackButton = styled.button`
     top: 20px;
     left: 20px;
     background-color: transparent;
-    color: #007bff;
+    color: #fe592a; /* Updated color */
     font-size: 30px;
     border: none;
     cursor: pointer;
 
     &:hover {
-        color: #0056b3;
+        color: #d94a1f; /* Darker shade for hover */
     }
 
     @media (max-width: 480px) {
