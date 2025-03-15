@@ -51,5 +51,4 @@ const FloatingButton = styled.button`
     }
 `;
 
-
 export default CreateArticleButton;

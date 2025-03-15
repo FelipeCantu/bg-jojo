@@ -3,16 +3,16 @@ import { Link } from "react-router-dom";
 import styled from "styled-components";
 import { client, urlFor } from "../../sanityClient";
 import useCurrentUser from "../../hook/useCurrentUser";
-import ArticleCounters from "../ArticleCounters"; // Import the ArticleCounters component
-import { HiDotsVertical } from 'react-icons/hi'; // Import Heroicons vertical 3 dots
+import ArticleCounters from "../ArticleCounters";
+import { HiDotsVertical } from 'react-icons/hi';
 
 const UserArticles = () => {
   const { currentUser, loading, error } = useCurrentUser();
   const [articles, setArticles] = useState([]);
   const [fetchError, setFetchError] = useState(null);
-  const [confirmDelete, setConfirmDelete] = useState(null); // Manage confirmation state
-  const [articleToDelete, setArticleToDelete] = useState(null); // Store article to delete
-  const [openDropdownId, setOpenDropdownId] = useState(null); // Manage open dropdowns by article ID
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [articleToDelete, setArticleToDelete] = useState(null);
+  const [openDropdownId, setOpenDropdownId] = useState(null);
 
   useEffect(() => {
     const fetchArticles = async () => {
@@ -59,14 +59,10 @@ const UserArticles = () => {
 
   const handleDeleteArticle = async (articleId) => {
     try {
-      // Delete the article from Sanity
       await client.delete(articleId);
-
-      // Filter out the deleted article from the state
       setArticles((prevArticles) => prevArticles.filter((article) => article._id !== articleId));
-
       alert("Article deleted successfully!");
-      setConfirmDelete(false); // Close confirmation dialog
+      setConfirmDelete(false);
     } catch (error) {
       console.error("Error deleting article:", error);
       alert("Failed to delete the article. Please try again.");
@@ -84,7 +80,6 @@ const UserArticles = () => {
   };
 
   const toggleDropdown = (articleId) => {
-    // Toggle the dropdown for the current article and close all others
     setOpenDropdownId(openDropdownId === articleId ? null : articleId);
   };
 
@@ -102,7 +97,6 @@ const UserArticles = () => {
             <HorizontalScrollContainer>
               {articles.map((article) => (
                 <ArticleItem key={article._id}>
-                  {/* LinkWrapper is only for the article's content, not the dropdown menu */}
                   <LinkWrapper to={`/article/${article._id}`}>
                     <ArticleCard>
                       <TopLeftSection>
@@ -132,24 +126,21 @@ const UserArticles = () => {
                       <Divider />
                       <ArticleTitle>{article.title || 'No Title'}</ArticleTitle>
 
-                      {/* Include ArticleCounters here, passing the articleId */}
                       <ArticleCounters articleId={article._id} />
                     </ArticleCard>
                   </LinkWrapper>
 
-                  {/* Wedge Icon and Dropdown Menu */}
                   <DropdownWrapper>
                     <DropdownButton onClick={() => toggleDropdown(article._id)}>
-                      <HiDotsVertical size={20} /> {/* Heroicon for vertical 3 dots */}
+                      <HiDotsVertical size={20} />
                     </DropdownButton>
                     {openDropdownId === article._id && (
                       <DropdownMenu>
                         <MenuItem onClick={() => openConfirmDelete(article._id)}>Delete</MenuItem>
-                        <MenuItem>Edit</MenuItem> {/* Implement edit functionality here */}
+                        <MenuItem>Edit</MenuItem>
                       </DropdownMenu>
                     )}
                   </DropdownWrapper>
-
                 </ArticleItem>
               ))}
             </HorizontalScrollContainer>
@@ -175,18 +166,13 @@ const UserArticles = () => {
 };
 
 const Container = styled.div`
-  max-width: 100%;
+  max-width: 1200px;
   margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 300px;
-  text-align: center;
+  padding: 20px;
 `;
 
 const ArticleSection = styled.div`
-  width: 95%;
+  width: 100%;
   padding: 20px 0;
 `;
 
@@ -202,46 +188,37 @@ const HorizontalScrollContainer = styled.div`
   padding-bottom: 10px;
   scrollbar-width: thin;
   scrollbar-color: #888 transparent;
-  white-space: nowrap;
 `;
 
 const ArticleItem = styled.div`
   flex: 0 0 auto;
-  width: 100%; 
-  max-width: 550px; 
-  height: 550px;
-  background-color: #f8d8a5;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
+  width: 300px;
+  background-color: #f8d8a5; 
+  // border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   position: relative;
   transition: transform 0.3s ease;
+
   &:hover {
     transform: translateY(-5px);
-    box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
   }
 `;
 
 const LinkWrapper = styled(Link)`
   text-decoration: none;
+  color: inherit;
 `;
 
 const ArticleCard = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 30px;
-  position: relative;
+  padding: 20px;
 `;
 
 const TopLeftSection = styled.div`
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
   gap: 10px;
   margin-bottom: 15px;
-  width: 100%;
 `;
 
 const UserInfo = styled.div`
@@ -266,27 +243,20 @@ const UserDisplayName = styled.span`
 const DateAndTime = styled.div`
   display: flex;
   align-items: center;
-  gap: 10px;
-`;
-
-const PublishedDate = styled.span`
+  gap: 5px;
   font-size: 0.9rem;
   color: #666;
 `;
 
-const Dot = styled.span`
-  font-size: 1rem;
-  color: #666;
-`;
+const PublishedDate = styled.span``;
 
-const ReadingTime = styled.span`
-  font-size: 0.9rem;
-  color: #555;
-`;
+const Dot = styled.span``;
+
+const ReadingTime = styled.span``;
 
 const ArticleImage = styled.img`
   width: 100%;
-  height: 250px;
+  height: 180px;
   object-fit: cover;
   border-radius: 10px;
   margin-bottom: 15px;
@@ -294,7 +264,7 @@ const ArticleImage = styled.img`
 
 const Divider = styled.div`
   width: 100%;
-  height: 2px;
+  height: 1px;
   background: black;
   margin: 10px 0;
 `;
@@ -302,6 +272,7 @@ const Divider = styled.div`
 const ArticleTitle = styled.h3`
   font-size: 1.25rem;
   color: #333;
+  margin-bottom: 10px;
 `;
 
 const NoArticlesMessage = styled.p`
@@ -331,62 +302,33 @@ const DropdownWrapper = styled.div`
 const DropdownButton = styled.button`
   background: none;
   border: none;
-  font-size: 1.5rem;
   cursor: pointer;
+  padding: 5px;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
   align-items: center;
-  height: 20px; /* Adjust height for proper alignment */
+  justify-content: center;
 `;
 
 const DropdownMenu = styled.div`
   position: absolute;
-  top: 25px;
+  top: 30px;
   right: 0;
   background-color: white;
   border: 1px solid #ddd;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-  padding: 10px;
-  width: 120px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   border-radius: 5px;
   z-index: 100;
+  width: 120px;
 `;
 
 const MenuItem = styled.div`
   padding: 10px;
+  font-size: 0.9rem;
+  color: #333;
   cursor: pointer;
 
   &:hover {
     background-color: #f1f1f1;
-  }
-`;
-
-const ConfirmButton = styled.button`
-  padding: 12px 24px;
-  background-color: #e74c3c;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-weight: bold;
-
-  &:hover {
-    background-color: #c0392b;
-  }
-`;
-
-const CancelButton = styled.button`
-  padding: 12px 24px;
-  background-color: #95a5a6;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-weight: bold;
-
-  &:hover {
-    background-color: #7f8c8d;
   }
 `;
 
@@ -407,8 +349,8 @@ const ModalContainer = styled.div`
   background: white;
   padding: 20px;
   border-radius: 8px;
-  width: 400px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  width: 300px;
+  text-align: center;
 `;
 
 const ConfirmationText = styled.p`
@@ -419,7 +361,36 @@ const ConfirmationText = styled.p`
 
 const ButtonContainer = styled.div`
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
+  gap: 10px;
+`;
+
+const ConfirmButton = styled.button`
+  padding: 10px 20px;
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+
+  &:hover {
+    background-color: #c0392b;
+  }
+`;
+
+const CancelButton = styled.button`
+  padding: 10px 20px;
+  background-color: #95a5a6;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+
+  &:hover {
+    background-color: #7f8c8d;
+  }
 `;
 
 export default UserArticles;

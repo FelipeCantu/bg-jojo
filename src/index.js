@@ -4,13 +4,15 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import { AuthProvider } from "./AuthContext"; 
-
+import { ThemeProvider, studioTheme } from '@sanity/ui'; // Import ThemeProvider from Sanity UI
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <AuthProvider>
-  <App />
-</AuthProvider>,
+    <ThemeProvider theme={studioTheme}> {/* Wrap with ThemeProvider */}
+      <App />
+    </ThemeProvider>
+  </AuthProvider>
 );
 
 // If you want to start measuring performance in your app, pass a function
