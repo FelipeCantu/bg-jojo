@@ -30,7 +30,6 @@ export function urlFor(source) {
   return builder.image({ _ref: ref });
 }
 
-
 // Fetch all articles
 export const fetchArticles = async () => {
   const query = `*[_type == "article"]{
@@ -72,7 +71,7 @@ export const fetchArticleById = async (id) => {
 // Upload image to Sanity
 export const uploadImageToSanity = async (file) => {
   const allowedTypes = ["image/jpeg", "image/png", "image/gif"];
-  
+
   if (!allowedTypes.includes(file.type)) {
     throw new Error("Invalid file type. Only JPEG, PNG, and GIF are allowed.");
   }
@@ -90,6 +89,7 @@ export const uploadImageToSanity = async (file) => {
   }
 };
 
+// Submit an article to Sanity
 export const submitArticle = async (articleData, user) => {
   if (!user?.uid) {
     throw new Error("User UID is missing. Please sign in.");
@@ -99,42 +99,34 @@ export const submitArticle = async (articleData, user) => {
     throw new Error("Article title and content are required.");
   }
 
-  console.log("🔍 Ensuring user exists in Sanity:", user.uid);
-
   try {
-    // Check if the user already exists in Sanity
+    // Ensure the user exists in Sanity
     let sanityUser = await client.fetch('*[_type == "user" && uid == $uid][0]', { uid: user.uid });
 
     if (!sanityUser) {
-      console.log("👤 User does not exist. Creating user in Sanity.");
-      // If the user does not exist, create a new user
       sanityUser = await client.create({
         _type: "user",
         uid: user.uid,
         name: user.displayName || "Anonymous",
-        photoURL: user.photoURL || "", // Store photoURL in Sanity
-        photo: user.photoURL ? { asset: { _ref: user.photoURL } } : null, // Store image reference if available
+        photoURL: user.photoURL || "",
       });
-
-      console.log("👤 User created in Sanity:", sanityUser);
-    } else {
-      console.log("👤 User confirmed in Sanity:", sanityUser.name);
     }
 
-    // Submit the article with the author information
+    // Ensure content is an array (PortableText format)
+    const content = Array.isArray(articleData.content) ? articleData.content : [];
+
+    // Submit the article
     const response = await client.create({
       _type: "article",
       title: articleData.title,
-      content: articleData.content,
+      content, // Ensure this is an array of PortableText blocks
       mainImage: articleData.mainImage,
       publishedDate: new Date().toISOString(),
       readingTime: articleData.readingTime,
       author: {
         _type: "reference",
-        _ref: sanityUser._id, // Link article to the user in Sanity
+        _ref: sanityUser._id,
       },
-      authorName: sanityUser.name, // Save the author's name
-      authorImage: sanityUser.photoURL || '', // Save the author's photo URL from the user document
     });
 
     console.log("✅ Article submitted successfully:", response);
@@ -145,46 +137,40 @@ export const submitArticle = async (articleData, user) => {
   }
 };
 
-
-
-
+// Get user from Sanity
 export const getUserFromSanity = async (uid) => {
   const query = `*[_type == "user" && _id == $uid][0]`;
   try {
-      const user = await client.fetch(query, { uid });
-      if (!user) {
-          throw new Error(`User with UID: ${uid} not found in Sanity`);
-      }
-      // Return the Firebase UID stored as _id in Sanity
-      return user._id; // This is the Firebase UID
+    const user = await client.fetch(query, { uid });
+    if (!user) {
+      throw new Error(`User with UID: ${uid} not found in Sanity`);
+    }
+    return user._id; // Return the Firebase UID stored as _id in Sanity
   } catch (error) {
-      console.error("❌ Error fetching user from Sanity:", error);
-      return null;
+    console.error("❌ Error fetching user from Sanity:", error);
+    return null;
   }
 };
 
-
-// Create a new user in Sanity if they don't exist
-// Updated createUserInSanity function
+// Create or update a user in Sanity
 export const createUserInSanity = async (user) => {
   try {
-      const newUser = {
-          _type: "user",
-          _id: user.uid,
-          name: user.name || "Anonymous",
-          email: user.email || "",
-          photoURL: user.photoURL || "https://via.placeholder.com/40", // Default fallback photo
-          role: user.role || "user",  // Ensure role is passed dynamically
-      };
-      return await client.createOrReplace(newUser);  // Use createOrReplace to update existing users
+    const newUser = {
+      _type: "user",
+      _id: user.uid,
+      name: user.name || "Anonymous",
+      email: user.email || "",
+      photoURL: user.photoURL || "https://via.placeholder.com/40",
+      role: user.role || "user",
+    };
+    return await client.createOrReplace(newUser); // Use createOrReplace to update existing users
   } catch (error) {
-      console.error("❌ Error creating user in Sanity:", error);
-      throw new Error("Could not create user in Sanity.");
+    console.error("❌ Error creating user in Sanity:", error);
+    throw new Error("Could not create user in Sanity.");
   }
 };
 
-
-// Delete article from Sanity
+// Delete an article from Sanity
 export const deleteArticle = async (articleId) => {
   try {
     const result = await client.delete(articleId);
@@ -196,60 +182,61 @@ export const deleteArticle = async (articleId) => {
   }
 };
 
+// Ensure a user exists in Sanity
 export const ensureUserExistsInSanity = async (uid, displayName, photoURL) => {
   try {
     // Fetch user data from Sanity using _id (since uid is stored as _id)
-    let userDoc = await client.fetch(
-      `*[_type == "user" && _id == $uid][0]`, 
-      { uid }
-    );
+    let userDoc = await client.fetch(`*[_type == "user" && _id == $uid][0]`, { uid });
 
     if (!userDoc) {
-      console.log('User does not exist, creating new user...');
+      console.log("User does not exist, creating new user...");
       const newUser = await client.create({
-        _type: 'user',
+        _type: "user",
         _id: uid, // Store Firebase UID as the Sanity _id
-        name: displayName || 'Anonymous',  
-        photoURL: photoURL || 'https://via.placeholder.com/150',  
-        role: 'user',  
+        name: displayName || "Anonymous",
+        photoURL: photoURL || "https://via.placeholder.com/150",
+        role: "user",
       });
 
-      console.log('User created in Sanity:', newUser);
+      console.log("User created in Sanity:", newUser);
       return newUser;
     } else {
-      console.log('User already exists in Sanity:', userDoc);
+      console.log("User already exists in Sanity:", userDoc);
 
       // Optional: Update user info if displayName or photoURL changed
       if (userDoc.name !== displayName || userDoc.photoURL !== photoURL) {
-        await client.patch(userDoc._id)
+        await client
+          .patch(userDoc._id)
           .set({
             name: displayName || userDoc.name,
             photoURL: photoURL || userDoc.photoURL,
           })
           .commit();
-        
-        console.log('User updated in Sanity');
+
+        console.log("User updated in Sanity");
       }
 
       return userDoc;
     }
   } catch (error) {
-    console.error('Error ensuring user exists in Sanity:', error);
-    throw new Error('Error checking or creating user in Sanity');
+    console.error("Error ensuring user exists in Sanity:", error);
+    throw new Error("Error checking or creating user in Sanity");
   }
 };
 
+// Update user profile in Sanity
 export const updateUserProfileInSanity = async (uid, bannerUrl) => {
   try {
     const userDoc = await client.fetch('*[_type == "user" && _id == $uid][0]', { uid });
 
     if (userDoc) {
       // Update the user's banner image
-      await client.patch(userDoc._id)
+      await client
+        .patch(userDoc._id)
         .set({ banner: { asset: { _ref: bannerUrl } } })
         .commit();
 
-      console.log('User profile updated with new banner image');
+      console.log("User profile updated with new banner image");
     } else {
       console.log("User not found in Sanity, create the user first");
     }
@@ -257,7 +244,6 @@ export const updateUserProfileInSanity = async (uid, bannerUrl) => {
     console.error("Error updating user profile in Sanity:", error);
   }
 };
-
 
 // Export the default client for other functions if needed
 export default client;

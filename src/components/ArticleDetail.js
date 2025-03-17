@@ -114,14 +114,20 @@ const ArticleDetail = () => {
               ),
             },
             marks: {
-              strong: ({ children }) => <strong>{children}</strong>,
-              em: ({ children }) => <em>{children}</em>,
-              underline: ({ children }) => <u>{children}</u>,
-              link: ({ value, children }) => (
-                <a href={value.href} target="_blank" rel="noopener noreferrer" style={{ color: "#007bff", textDecoration: "none" }}>
-                  {children}
-                </a>
-              ),
+              link: ({ value, children }) => {
+                const href = value?.href?.trim();
+            
+                if (!href || !/^https?:\/\//.test(href)) {
+                  console.warn("Invalid or missing href in link:", value);
+                  return <span style={{ color: "red", fontWeight: "bold" }}>{children}</span>; // Display broken links safely
+                }
+            
+                return (
+                  <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: "#007bff", textDecoration: "none" }}>
+                    {children}
+                  </a>
+                );
+              },
               code: ({ children }) => (
                 <code style={{ fontFamily: "monospace", backgroundColor: "#f4f4f4", padding: "2px 4px", borderRadius: "4px" }}>
                   {children}
@@ -153,7 +159,6 @@ const ArticleDetail = () => {
     </ArticleDetailContainer>
   );
 };
-
 // Styled Components
 const ArticleDetailContainer = styled.div`
   padding: 20px;

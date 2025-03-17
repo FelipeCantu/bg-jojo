@@ -5,15 +5,15 @@ import { auth, onAuthStateChanged } from '../firestore';
 import { db } from '../firestore';
 import { doc, getDoc } from 'firebase/firestore';
 import { Link, useNavigate } from 'react-router-dom';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css'; // Import the styles
+import TextEditor from './TextEditor';
 
 const ArticleForm = ({ onArticleSubmitted }) => {
   const [formData, setFormData] = useState({
     title: '',
     mainImage: '',
-    content: '', // Store content as HTML
+    content: [], // default as an array if you're using Portable Text
   });
+  
   const [uploading, setUploading] = useState(false);
   const [errors, setErrors] = useState({});
   const [user, setUser] = useState(null);
@@ -30,11 +30,9 @@ const ArticleForm = ({ onArticleSubmitted }) => {
         return;
       }
 
-      setIsUserLoading(true);
       try {
         const userDocRef = doc(db, 'users', currentUser.uid);
         const userDoc = await getDoc(userDocRef);
-
         const fetchedUser = userDoc.exists() ? {
           name: userDoc.data().name || currentUser.displayName,
           photo: userDoc.data().photo || currentUser.photoURL || 'https://via.placeholder.com/40',
@@ -47,10 +45,7 @@ const ArticleForm = ({ onArticleSubmitted }) => {
         };
 
         setUser(fetchedUser);
-
-        // Ensure the user exists in Sanity
         await ensureUserExistsInSanity(fetchedUser.uid, fetchedUser.name, fetchedUser.photo);
-
       } catch (error) {
         console.error("❌ Error fetching user data:", error);
       } finally {
@@ -61,18 +56,36 @@ const ArticleForm = ({ onArticleSubmitted }) => {
     return () => unsubscribe();
   }, []);
 
-  const handleTitleChange = (e) => {
-    setFormData({ ...formData, title: e.target.value });
-  };
+  const handleTitleChange = (e) => setFormData({ ...formData, title: e.target.value });
+  const handleContentChange = (value) => setFormData({ ...formData, content: value });
 
   const validateForm = () => {
-    const errors = {};
-    if (!formData.title.trim()) errors.title = 'Title is required';
-    if (!formData.content.trim()) errors.content = 'Content is required';
-    if (imageError) errors.image = imageError;
-    return errors;
+    const newErrors = {};
+  
+    if (!formData.title.trim()) newErrors.title = 'Title is required';
+  
+    // Validate Portable Text array content
+    if (!Array.isArray(formData.content) || formData.content.length === 0) {
+      newErrors.content = 'Content is required';
+    } else {
+      // Optional: Check if blocks have any text
+      const hasText = formData.content.some(
+        (block) =>
+          block._type === 'block' &&
+          block.children &&
+          block.children.some((child) => child.text && child.text.trim() !== '')
+      );
+      if (!hasText) newErrors.content = 'Content is required';
+    }
+  
+    if (imageError) newErrors.image = imageError;
+    return newErrors;
   };
-
+  
+  console.log('Content Type:', typeof formData.content);
+  console.log('Content Value:', formData.content);
+    
+  
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -80,7 +93,6 @@ const ArticleForm = ({ onArticleSubmitted }) => {
     setUploading(true);
     setImageError(null);
 
-    // Validate image type
     if (!['image/jpeg', 'image/png', 'image/gif'].includes(file.type)) {
       setImageError('Only JPEG, PNG, and GIF images are allowed.');
       setUploading(false);
@@ -91,81 +103,42 @@ const ArticleForm = ({ onArticleSubmitted }) => {
       const imageAsset = await uploadImageToSanity(file);
       setFormData((prev) => ({ ...prev, mainImage: imageAsset.asset._ref }));
     } catch (error) {
-      setImageError('Failed to upload image. Please try again later.');
+      setImageError('Failed to upload image. Please try again.');
     } finally {
       setUploading(false);
     }
   };
 
-  const handleContentChange = (value) => {
-    setFormData({ ...formData, content: value });
-  };
-
-  const htmlToPortableText = (html) => {
-    const blocks = [];
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
-
-    doc.body.childNodes.forEach((node) => {
-      if (node.nodeType === Node.TEXT_NODE) {
-        blocks.push({
-          _type: 'block',
-          style: 'normal',
-          children: [{ _type: 'span', text: node.textContent }],
-        });
-      } else if (node.nodeType === Node.ELEMENT_NODE) {
-        if (node.tagName === 'P') {
-          blocks.push({
-            _type: 'block',
-            style: 'normal',
-            children: [{ _type: 'span', text: node.textContent }],
-          });
-        } else if (node.tagName === 'H1') {
-          blocks.push({
-            _type: 'block',
-            style: 'h1',
-            children: [{ _type: 'span', text: node.textContent }],
-          });
-        }
-        // Add more tag handlers as needed
-      }
-    });
-
-    return blocks;
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const validationErrors = validateForm();
     setErrors(validationErrors);
     if (Object.keys(validationErrors).length > 0) return;
-
+  
     if (!user || !user.uid) {
       alert('You must be signed in to submit an article.');
       return;
     }
-
+  
     setIsSubmitting(true);
     try {
-      // Convert HTML to Portable Text
-      const portableTextContent = htmlToPortableText(formData.content);
-
+      const portableTextContent = formData.content; // Already Portable Text
+  
       const submittedArticle = await submitArticle({
         title: formData.title,
-        content: portableTextContent, // Use converted Portable Text
+        content: portableTextContent,
         mainImage: formData.mainImage ? { asset: { _ref: formData.mainImage } } : null,
         publishedDate: new Date().toISOString(),
-        readingTime: Math.ceil(portableTextContent.length / 200), 
+        readingTime: Math.ceil(portableTextContent.length / 5), // Rough estimate
         author: {
           _type: 'reference',
           _ref: user.uid,
         },
       }, user);
-
+  
       alert('Article submitted successfully!');
-      setFormData({ title: '', mainImage: '', content: '' });
-
-      // Redirect to the newly created article
+      setFormData({ title: '', mainImage: '', content: [] }); // Reset content as array
       navigate(`/article/${submittedArticle._id}`);
     } catch (error) {
       console.error('Error submitting article:', error);
@@ -174,6 +147,7 @@ const ArticleForm = ({ onArticleSubmitted }) => {
       setIsSubmitting(false);
     }
   };
+  
 
   return (
     <PageContainer>
@@ -189,6 +163,7 @@ const ArticleForm = ({ onArticleSubmitted }) => {
         ) : (
           <p>Please sign in to submit an article.</p>
         )}
+
         <Form onSubmit={handleSubmit}>
           <TitleInput
             type="text"
@@ -207,38 +182,15 @@ const ArticleForm = ({ onArticleSubmitted }) => {
             required
           />
           {uploading && <p>Uploading image...</p>}
-          {formData.mainImage && <PreviewImage src={urlFor({ asset: { _ref: formData.mainImage } }).url()} alt="Uploaded Preview" />}
+          {formData.mainImage && (
+            <PreviewImage src={urlFor({ asset: { _ref: formData.mainImage } }).url()} alt="Uploaded Preview" />
+          )}
           {imageError && <ErrorMessage>{imageError}</ErrorMessage>}
 
-          <ReactQuill
-            theme="snow"
-            value={formData.content}
-            onChange={handleContentChange}
-            modules={{
-              toolbar: [
-                [{ header: [1, 2, 3, false] }],
-                ['bold', 'italic', 'underline', 'strike'],
-                [{ list: 'ordered' }, { list: 'bullet' }],
-                ['link', 'image'],
-                ['clean'],
-              ],
-            }}
-            formats={[
-              'header',
-              'bold',
-              'italic',
-              'underline',
-              'strike',
-              'list',
-              'bullet',
-              'link',
-              'image',
-            ]}
-          />
-
+          <TextEditor value={formData.content} onChange={handleContentChange} />
           {errors.content && <ErrorMessage>{errors.content}</ErrorMessage>}
 
-          <SubmitButton type="submit" disabled={uploading || isSubmitting || isUserLoading || Object.keys(errors).length > 0}>
+          <SubmitButton type="submit" disabled={uploading || isSubmitting || isUserLoading}>
             {isSubmitting ? 'Publishing...' : 'Publish Article'}
           </SubmitButton>
         </Form>

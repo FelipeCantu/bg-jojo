@@ -3,7 +3,13 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { app } from "./firebaseconfig"; // Ensure Firebase is initialized
 
 const auth = getAuth(app);
-const AuthContext = createContext();
+
+// Create the AuthContext with a default value
+const AuthContext = createContext({
+  currentUser: null,
+  loading: true,
+  error: null,
+});
 
 // Custom hook to access auth context
 export function useAuth() {
@@ -13,35 +19,37 @@ export function useAuth() {
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null); // Optional error state
+  const [error, setError] = useState(null);
 
   useEffect(() => {
+    // Set up the auth state listener
     const unsubscribe = onAuthStateChanged(
       auth,
       (user) => {
         setCurrentUser(user);
         setLoading(false);
+        setError(null); // Reset error on successful auth state change
       },
       (error) => {
         console.error("Error in onAuthStateChanged:", error);
-        setError(error.message); // Set error if occurs
+        setError(error.message); // Set error if auth state change fails
         setLoading(false);
       }
     );
 
-    return unsubscribe;
+    // Cleanup the listener on unmount
+    return () => unsubscribe();
   }, []);
 
-  if (loading) {
-    return <div>Loading...</div>; // Customize as needed (add spinner or message)
-  }
-
-  if (error) {
-    return <div>Error: {error}</div>; // Display error message if exists
-  }
+  // Provide the auth context value
+  const value = {
+    currentUser,
+    loading,
+    error,
+  };
 
   return (
-    <AuthContext.Provider value={{ currentUser, loading, error }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

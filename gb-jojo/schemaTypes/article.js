@@ -1,4 +1,6 @@
+// schemas/article.js
 import { defineField, defineType } from 'sanity';
+import { blockContent } from './blockContent'; // Import the blockContent schema
 
 export const article = defineType({
   name: 'article',
@@ -11,33 +13,22 @@ export const article = defineType({
       type: 'string',
     }),
     defineField({
-      name: "mainImage",
-      title: "Main Image",
-      type: "image",
+      name: 'mainImage',
+      title: 'Main Image',
+      type: 'image',
       options: { hotspot: true },
     }),
     defineField({
       name: 'content',
       title: 'Content',
-      type: 'array',
-      of: [
-        {
-          type: 'block',
-        },
-        {
-          type: 'image',
-          options: {
-            hotspot: true,
-          },
-        },
-      ],
+      type: blockContent.name, // Reference the blockContent schema
     }),
     defineField({
       name: 'author',
       title: 'Author',
       type: 'reference',
       to: [{ type: 'user' }],
-      validation: (Rule) => Rule.required(), // ✅ Ensure every article has an author
+      validation: (Rule) => Rule.required(), // Ensure every article has an author
     }),
     defineField({
       name: 'publishedDate',
@@ -49,7 +40,6 @@ export const article = defineType({
       title: 'Reading Time (minutes)',
       type: 'number',
     }),
-    // New fields for views, likes, and likedBy
     defineField({
       name: 'views',
       title: 'Views',
