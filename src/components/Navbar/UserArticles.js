@@ -194,7 +194,6 @@ const ArticleItem = styled.div`
   flex: 0 0 auto;
   width: 300px;
   background-color: #f8d8a5; 
-  // border-radius: 10px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   position: relative;
   transition: transform 0.3s ease;
@@ -273,6 +272,13 @@ const ArticleTitle = styled.h3`
   font-size: 1.25rem;
   color: #333;
   margin-bottom: 10px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+  max-width: 100%;
 `;
 
 const NoArticlesMessage = styled.p`

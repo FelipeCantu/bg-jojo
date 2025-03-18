@@ -53,7 +53,7 @@ const ArticleList = () => {
           onChange={(e) => setSearchQuery(e.target.value)}
         />
       </SearchContainer>
-      
+
       <CreateArticleButton />
       {filteredArticles.length === 0 ? (
         <NoArticlesMessage>No articles found</NoArticlesMessage>
@@ -88,8 +88,11 @@ const ArticleList = () => {
                 )}
 
                 <Divider />
-                <ArticleTitle>{article.title || 'No Title'}</ArticleTitle>
-
+                <ArticleTitle>
+                  {article.title.length > 50
+                    ? `${article.title.substring(0, 50)}...` // Truncate after 50 characters
+                    : article.title}
+                </ArticleTitle>
                 <ArticleCounters articleId={article._id} />
               </ArticleCard>
             </LinkWrapper>
@@ -279,10 +282,14 @@ const ArticleTitle = styled.h2`
   color: black;
   margin: 15px 0;
   flex-grow: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: -webkit-box;
+  // -webkit-line-clamp: 2; 
+  -webkit-box-orient: vertical; 
+  overflow: hidden;
+  text-overflow: ellipsis;
   text-align: center;
+  line-height: 1.2;
+  max-width: 100%; 
 `;
 
 export default ArticleList;
