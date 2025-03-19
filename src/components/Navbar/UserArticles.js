@@ -293,7 +293,7 @@ const ArticleCountersWrapper = styled.div`
   margin-top: auto;
   padding-top: 10px; 
   padding-bottom: 5px;
-  display: block;
+  display: flex;
 `;
 
 const NoArticlesMessage = styled.p`
