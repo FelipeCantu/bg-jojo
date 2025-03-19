@@ -19,6 +19,8 @@ const ArticleDetail = () => {
       setLoading(true);
       try {
         const fetchedArticle = await fetchArticleById(id);
+        console.log("Article content:", fetchedArticle.content);
+
         if (fetchedArticle) {
           const authorData = await fetchAuthorData(fetchedArticle.author._ref);
           setArticle(fetchedArticle);
@@ -62,7 +64,7 @@ const ArticleDetail = () => {
   if (!article) return <ErrorMessage>Article not found.</ErrorMessage>;
 
   const isAuthor = user && article.authorUid && article.authorUid === user.uid;
-
+  
   return (
     <ArticleDetailContainer>
       {/* Title and Top Right Section (Level with the title) */}
@@ -115,32 +117,38 @@ const ArticleDetail = () => {
             },
             marks: {
               link: ({ value, children }) => {
-                const href = value?.href?.trim();
-            
-                if (!href || !/^https?:\/\//.test(href)) {
+                let href = value?.href;
+              
+                if (!href) {
                   console.warn("Invalid or missing href in link:", value);
-                  return <span style={{ color: "red", fontWeight: "bold" }}>{children}</span>; // Display broken links safely
+                  return <span style={{ color: "red", fontWeight: "bold" }}>{children}</span>;
                 }
-            
+              
+                // Add https:// if it's missing
+                if (!/^https?:\/\//.test(href)) {
+                  href = `https://${href}`;
+                }
+              
                 return (
                   <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: "#007bff", textDecoration: "none" }}>
                     {children}
                   </a>
                 );
               },
+              
               code: ({ children }) => (
-                <code style={{ fontFamily: "monospace", backgroundColor: "#f4f4f4", padding: "2px 4px", borderRadius: "4px" }}>
-                  {children}
-                </code>
-              ),
-            },
+              <code style={{ fontFamily: "monospace", backgroundColor: "#f4f4f4", padding: "2px 4px", borderRadius: "4px" }}>
+                {children}
+              </code>
+            ),
+          },
             list: {
-              bullet: ({ children }) => <ul style={{ margin: "10px 0", paddingLeft: "20px" }}>{children}</ul>,
-              number: ({ children }) => <ol style={{ margin: "10px 0", paddingLeft: "20px" }}>{children}</ol>,
+          bullet: ({children}) => <ul style={{ margin: "10px 0", paddingLeft: "20px" }}>{children}</ul>,
+        number: ({children}) => <ol style={{ margin: "10px 0", paddingLeft: "20px" }}>{children}</ol>,
             },
-            listItem: {
-              bullet: ({ children }) => <li style={{ marginBottom: "5px" }}>{children}</li>,
-              number: ({ children }) => <li style={{ marginBottom: "5px" }}>{children}</li>,
+        listItem: {
+          bullet: ({children}) => <li style={{ marginBottom: "5px" }}>{children}</li>,
+        number: ({children}) => <li style={{ marginBottom: "5px" }}>{children}</li>,
             },
           }}
         />
@@ -258,14 +266,15 @@ const ContentWrapper = styled.div`
     margin-bottom: 15px;
   }
 
-  a {
-    color: #007bff;
-    text-decoration: none;
+a {
+  color: #007bff;
+  text-decoration: none;
 
-    &:hover {
-      text-decoration: underline;
-    }
+  &:hover {
+    text-decoration: underline;
   }
+}
+
 
   blockquote {
     font-style: italic;
