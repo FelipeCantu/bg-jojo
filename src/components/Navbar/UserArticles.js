@@ -113,7 +113,7 @@ const UserArticles = () => {
                           )}
                           {article.publishedDate && article.readingTime && <Dot>·</Dot>}
                           <ReadingTime>
-                            Estimated Reading Time: {article.readingTime || 'N/A'} minutes
+                            {article.readingTime || 'N/A'} min read
                           </ReadingTime>
                         </DateAndTime>
                       </TopLeftSection>
@@ -126,7 +126,9 @@ const UserArticles = () => {
                       <Divider />
                       <ArticleTitle>{article.title || 'No Title'}</ArticleTitle>
 
-                      <ArticleCounters articleId={article._id} />
+                      <ArticleCountersWrapper>
+                        <ArticleCounters articleId={article._id} />
+                      </ArticleCountersWrapper>
                     </ArticleCard>
                   </LinkWrapper>
 
@@ -210,7 +212,12 @@ const LinkWrapper = styled(Link)`
 `;
 
 const ArticleCard = styled.div`
-  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  padding: 5px 20px;
+  position: relative;
 `;
 
 const TopLeftSection = styled.div`
@@ -227,6 +234,7 @@ const UserInfo = styled.div`
 `;
 
 const UserImage = styled.img`
+  padding-top: 5px;
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -279,6 +287,12 @@ const ArticleTitle = styled.h3`
   text-overflow: ellipsis;
   line-height: 1.4;
   max-width: 100%;
+`;
+
+const ArticleCountersWrapper = styled.div`
+  margin-top: auto;
+  padding-top: 10px; 
+  padding-bottom: 5px;
 `;
 
 const NoArticlesMessage = styled.p`
