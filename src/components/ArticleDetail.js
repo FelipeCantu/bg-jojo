@@ -19,8 +19,6 @@ const ArticleDetail = () => {
       setLoading(true);
       try {
         const fetchedArticle = await fetchArticleById(id);
-        console.log("Article content:", fetchedArticle.content);
-
         if (fetchedArticle) {
           const authorData = await fetchAuthorData(fetchedArticle.author._ref);
           setArticle(fetchedArticle);
@@ -64,10 +62,10 @@ const ArticleDetail = () => {
   if (!article) return <ErrorMessage>Article not found.</ErrorMessage>;
 
   const isAuthor = user && article.authorUid && article.authorUid === user.uid;
-  
+  console.log(article.content);
+
   return (
     <ArticleDetailContainer>
-      {/* Title and Top Right Section (Level with the title) */}
       <HeaderSection>
         <Title>{article.title}</Title>
         <TopRightSection>
@@ -82,14 +80,12 @@ const ArticleDetail = () => {
         </TopRightSection>
       </HeaderSection>
 
-      {/* Main Image */}
       {article.mainImage?.asset ? (
         <ArticleImage src={urlFor(article.mainImage.asset).url()} alt={article.title} />
       ) : (
         <ArticleImage src="https://via.placeholder.com/800x400" alt="No image available" />
       )}
 
-      {/* Article Content */}
       <ContentWrapper>
         <PortableText
           value={article.content}
@@ -110,48 +106,58 @@ const ArticleDetail = () => {
               h4: ({ children }) => <h4 style={{ fontSize: "1.5rem", fontWeight: "bold", margin: "10px 0" }}>{children}</h4>,
               normal: ({ children }) => <p style={{ marginBottom: "15px", lineHeight: "1.6" }}>{children}</p>,
               blockquote: ({ children }) => (
-                <blockquote style={{ fontStyle: "italic", borderLeft: "4px solid #ccc", paddingLeft: "10px", margin: "15px 0" }}>
+                <blockquote
+                  style={{
+                    fontStyle: 'italic',  // Ensure italic style is applied
+                    borderLeft: '6px solid #007bff', // Thicker border for emphasis
+                    paddingLeft: '20px', // More padding
+                    margin: '20px 0', // Spacing around the blockquote
+                    backgroundColor: '#f9f9f9', // Light background color
+                    color: '#555', // Text color
+                    fontSize: '1.2rem', // Larger font size
+                    borderRadius: '5px', // Rounded corners
+                    boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)', // Subtle shadow
+                  }}
+                >
                   {children}
                 </blockquote>
-              ),
-            },
+              )
+            },              
             marks: {
-              link: ({ value, children }) => {
-                let href = value?.href;
-              
-                if (!href) {
-                  console.warn("Invalid or missing href in link:", value);
-                  return <span style={{ color: "red", fontWeight: "bold" }}>{children}</span>;
-                }
-              
-                // Add https:// if it's missing
-                if (!/^https?:\/\//.test(href)) {
-                  href = `https://${href}`;
-                }
-              
-                return (
-                  <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: "#007bff", textDecoration: "none" }}>
+                link: ({ value, children }) => {
+                  let href = value?.href;
+                  if (!href) {
+                    console.warn("Invalid or missing href in link:", value);
+                    return <span style={{ color: "red", fontWeight: "bold" }}>{children}</span>;
+                  }
+                  if (!/^https?:\/\//.test(href)) {
+                    href = `https://${href}`;
+                  }
+                  return (
+                    <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: "#007bff", textDecoration: "none" }}>
+                      {children}
+                    </a>
+                  );
+                },
+                code: ({ children }) => (
+                  <code style={{ fontFamily: "monospace", backgroundColor: "#f4f4f4", padding: "2px 4px", borderRadius: "4px" }}>
                     {children}
-                  </a>
-                );
+                  </code>
+                ),
+                strong: ({ children }) => <strong style={{ fontWeight: "bold" }}>{children}</strong>,
+                em: ({ children }) => <em style={{ fontStyle: "italic" }}>{children}</em>,
               },
-              
-              code: ({ children }) => (
-              <code style={{ fontFamily: "monospace", backgroundColor: "#f4f4f4", padding: "2px 4px", borderRadius: "4px" }}>
-                {children}
-              </code>
-            ),
-          },
-            list: {
-          bullet: ({children}) => <ul style={{ margin: "10px 0", paddingLeft: "20px" }}>{children}</ul>,
-        number: ({children}) => <ol style={{ margin: "10px 0", paddingLeft: "20px" }}>{children}</ol>,
-            },
-        listItem: {
-          bullet: ({children}) => <li style={{ marginBottom: "5px" }}>{children}</li>,
-        number: ({children}) => <li style={{ marginBottom: "5px" }}>{children}</li>,
-            },
-          }}
-        />
+              list: {
+                bullet: ({ children }) => <ul style={{ margin: "10px 0", paddingLeft: "20px" }}>{children}</ul>,
+                number: ({ children }) => <ol style={{ margin: "10px 0", paddingLeft: "20px" }}>{children}</ol>,
+              },
+              listItem: {
+                bullet: ({ children }) => <li style={{ marginBottom: "5px" }}>{children}</li>,
+                number: ({ children }) => <li style={{ marginBottom: "5px" }}>{children}</li>,
+              },
+            }
+          }
+            />
       </ContentWrapper>
 
       <Divider />
@@ -167,6 +173,7 @@ const ArticleDetail = () => {
     </ArticleDetailContainer>
   );
 };
+
 // Styled Components
 const ArticleDetailContainer = styled.div`
   padding: 20px;
@@ -183,7 +190,6 @@ const HeaderSection = styled.div`
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 20px;
-
   @media (max-width: 768px) {
     flex-direction: column;
     gap: 10px;
@@ -201,7 +207,6 @@ const TopRightSection = styled.div`
   flex-direction: column;
   align-items: flex-end;
   gap: 5px;
-
   @media (max-width: 768px) {
     align-items: flex-start;
   }
@@ -249,14 +254,14 @@ const ContentWrapper = styled.div`
   font-size: 16px;
   line-height: 1.6;
   color: #333;
-
+  
   img {
     max-width: 100%;
     height: auto;
     border-radius: 10px;
     margin: 10px 0;
   }
-
+  
   h1, h2, h3, h4 {
     margin-top: 20px;
     margin-bottom: 10px;
@@ -266,21 +271,25 @@ const ContentWrapper = styled.div`
     margin-bottom: 15px;
   }
 
-a {
-  color: #007bff;
-  text-decoration: none;
+  a {
+    color: #007bff;
+    text-decoration: none;
 
-  &:hover {
-    text-decoration: underline;
+    &:hover {
+      text-decoration: underline;
+    }
   }
-}
-
 
   blockquote {
     font-style: italic;
-    border-left: 4px solid #ccc;
-    padding-left: 10px;
-    margin: 15px 0;
+    border-left: 6px solid #007bff;
+    padding-left: 20px;
+    margin: 20px 0;
+    background-color: #f9f9f9;
+    color: #555;
+    font-size: 1.2rem;
+    border-radius: 5px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   }
 
   ul, ol {
@@ -298,6 +307,10 @@ a {
     padding: 2px 4px;
     border-radius: 4px;
   }
+
+  em {
+    font-style: italic;
+  }
 `;
 
 const Divider = styled.hr`
@@ -308,8 +321,8 @@ const Divider = styled.hr`
 
 const LoadingMessage = styled.p`
   font-size: 18px;
+  color: #555;
   text-align: center;
-  margin-top: 50px;
 `;
 
 const ErrorMessage = styled.p`
@@ -319,8 +332,9 @@ const ErrorMessage = styled.p`
 `;
 
 const UserInfo = styled.div`
-  margin-top: 20px;
+  margin-top: 30px;
   display: flex;
+  gap: 10px;
   align-items: center;
 `;
 
@@ -328,12 +342,11 @@ const UserImage = styled.img`
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  margin-right: 10px;
 `;
 
 const UserName = styled.p`
   font-size: 16px;
-  color: #333;
+  font-weight: bold;
 `;
 
 export default ArticleDetail;
