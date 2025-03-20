@@ -18,6 +18,28 @@ export const convertHtmlToPortableText = (html) => {
       return;
     }
 
+    // Handle ordered and unordered lists
+    if (node.nodeName === 'UL' || node.nodeName === 'OL') {
+      const listType = node.nodeName === 'UL' ? 'bullet' : 'number';
+      node.childNodes.forEach((child) => {
+        if (child.nodeName === 'LI') {
+          portableText.push({
+            _type: 'block',
+            style: 'normal',
+            listItem: listType,
+            children: [
+              {
+                _key: Math.random().toString(36).substr(2, 9),
+                _type: 'span',
+                text: child.textContent.trim(),
+              },
+            ],
+          });
+        }
+      });
+      return;
+    }
+
     if (blockElements.includes(node.nodeName.toLowerCase())) {
       const tag = node.nodeName.toLowerCase();
       const style = tag === 'blockquote' ? 'blockquote' : (tag === 'p' ? 'normal' : tag);
