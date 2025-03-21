@@ -1,4 +1,4 @@
-import React, {  useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
@@ -9,7 +9,7 @@ import { convertHtmlToPortableText } from './utils/htmlToPortableText';
 import { portableTextToHtml } from './utils/portableTextHtml';
 import { FaBold, FaItalic, FaListUl, FaListOl, FaQuoteLeft, FaAlignLeft, FaAlignCenter, FaAlignRight, FaLink } from 'react-icons/fa';
 import Placeholder from '@tiptap/extension-placeholder';
-import { debounce } from 'lodash'; // For debouncing the onUpdate callback
+import { debounce } from 'lodash';
 
 const TextEditor = ({ value, onChange }) => {
   const editor = useEditor({
@@ -20,7 +20,9 @@ const TextEditor = ({ value, onChange }) => {
         HTMLAttributes: {
           target: '_blank',
           rel: 'noopener noreferrer',
+          class: 'external-link',
         },
+        validate: (href) => /^https?:\/\//.test(href), // Validate URLs
       }),
       TextAlign.configure({ types: ['paragraph', 'heading'] }),
       Placeholder.configure({
@@ -35,7 +37,7 @@ const TextEditor = ({ value, onChange }) => {
     }, 300),
   });
 
-  // Memoize handleImageUpload
+  // Handle image upload
   const handleImageUpload = useCallback(async (file) => {
     try {
       const result = await client.assets.upload('image', file);
@@ -48,7 +50,7 @@ const TextEditor = ({ value, onChange }) => {
     }
   }, [editor]);
 
-  // Memoize addImage and include handleImageUpload in the dependency array
+  // Add image button handler
   const addImage = useCallback(() => {
     const input = document.createElement('input');
     input.setAttribute('type', 'file');
@@ -62,25 +64,36 @@ const TextEditor = ({ value, onChange }) => {
     };
   }, [handleImageUpload]);
 
-
+  // Insert link button handler
   const insertLink = useCallback(() => {
     const url = prompt('Enter the URL');
-    if (url && editor) {
+    if (url && /^(https?:\/\/)/.test(url)) {
       editor.chain().focus().setLink({ href: url }).run();
+    } else if (url) {
+      alert('Please enter a valid URL starting with http:// or https://');
     }
   }, [editor]);
 
   return (
-    <div style={{
-      maxWidth: '100%',
-      padding: '20px',
-      backgroundColor: '#f4f6f9',
-      borderRadius: '8px',
-      boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
-    }}>
-      {/* Add the CSS for the placeholder */}
+    <div
+      style={{
+        maxWidth: '100%',
+        padding: '20px',
+        backgroundColor: '#f4f6f9',
+        borderRadius: '8px',
+        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
+      }}
+    >
+      {/* Add CSS for links and placeholder */}
       <style>
         {`
+          .tiptap a.external-link {
+            color: #007BFF;
+            text-decoration: underline;
+          }
+          .tiptap a.external-link:hover {
+            text-decoration: none;
+          }
           .tiptap p.is-editor-empty:first-child::before {
             content: attr(data-placeholder);
             float: left;
@@ -93,14 +106,17 @@ const TextEditor = ({ value, onChange }) => {
       </style>
 
       {/* Toolbar */}
-      <div style={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: '10px',
-        marginBottom: '20px',
-      }}>
-        {/* Text Formatting Buttons with Icons */}
-        <button onClick={() => editor.chain().focus().toggleBold().run()} 
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '10px',
+          marginBottom: '20px',
+        }}
+      >
+        {/* Formatting Buttons */}
+        <button
+          onClick={() => editor.chain().focus().toggleBold().run()}
           style={{
             fontWeight: editor?.isActive('bold') ? 'bold' : 'normal',
             padding: '8px 16px',
@@ -110,10 +126,12 @@ const TextEditor = ({ value, onChange }) => {
             background: editor?.isActive('bold') ? '#007BFF' : '#f9f9f9',
             color: editor?.isActive('bold') ? '#fff' : '#333',
             transition: 'background-color 0.3s',
-          }}>
+          }}
+        >
           <FaBold />
         </button>
-        <button onClick={() => editor.chain().focus().toggleItalic().run()} 
+        <button
+          onClick={() => editor.chain().focus().toggleItalic().run()}
           style={{
             fontStyle: editor?.isActive('italic') ? 'italic' : 'normal',
             padding: '8px 16px',
@@ -123,10 +141,12 @@ const TextEditor = ({ value, onChange }) => {
             background: editor?.isActive('italic') ? '#007BFF' : '#f9f9f9',
             color: editor?.isActive('italic') ? '#fff' : '#333',
             transition: 'background-color 0.3s',
-          }}>
+          }}
+        >
           <FaItalic />
         </button>
-        <button onClick={() => editor.chain().focus().toggleBulletList().run()} 
+        <button
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
           style={{
             padding: '8px 16px',
             borderRadius: '4px',
@@ -135,10 +155,12 @@ const TextEditor = ({ value, onChange }) => {
             background: editor?.isActive('bulletList') ? '#007BFF' : '#f9f9f9',
             color: editor?.isActive('bulletList') ? '#fff' : '#333',
             transition: 'background-color 0.3s',
-          }}>
+          }}
+        >
           <FaListUl />
         </button>
-        <button onClick={() => editor.chain().focus().toggleOrderedList().run()} 
+        <button
+          onClick={() => editor.chain().focus().toggleOrderedList().run()}
           style={{
             padding: '8px 16px',
             borderRadius: '4px',
@@ -147,10 +169,12 @@ const TextEditor = ({ value, onChange }) => {
             background: editor?.isActive('orderedList') ? '#007BFF' : '#f9f9f9',
             color: editor?.isActive('orderedList') ? '#fff' : '#333',
             transition: 'background-color 0.3s',
-          }}>
+          }}
+        >
           <FaListOl />
         </button>
-        <button onClick={() => editor.chain().focus().toggleBlockquote().run()} 
+        <button
+          onClick={() => editor.chain().focus().toggleBlockquote().run()}
           style={{
             padding: '8px 16px',
             borderRadius: '4px',
@@ -159,10 +183,12 @@ const TextEditor = ({ value, onChange }) => {
             background: editor?.isActive('blockquote') ? '#007BFF' : '#f9f9f9',
             color: editor?.isActive('blockquote') ? '#fff' : '#333',
             transition: 'background-color 0.3s',
-          }}>
+          }}
+        >
           <FaQuoteLeft />
         </button>
-        <button onClick={() => editor.chain().focus().setTextAlign('left').run()} 
+        <button
+          onClick={() => editor.chain().focus().setTextAlign('left').run()}
           style={{
             padding: '8px 16px',
             borderRadius: '4px',
@@ -171,10 +197,12 @@ const TextEditor = ({ value, onChange }) => {
             background: editor?.isActive('textAlign', 'left') ? '#007BFF' : '#f9f9f9',
             color: editor?.isActive('textAlign', 'left') ? '#fff' : '#333',
             transition: 'background-color 0.3s',
-          }}>
+          }}
+        >
           <FaAlignLeft />
         </button>
-        <button onClick={() => editor.chain().focus().setTextAlign('center').run()} 
+        <button
+          onClick={() => editor.chain().focus().setTextAlign('center').run()}
           style={{
             padding: '8px 16px',
             borderRadius: '4px',
@@ -183,10 +211,12 @@ const TextEditor = ({ value, onChange }) => {
             background: editor?.isActive('textAlign', 'center') ? '#007BFF' : '#f9f9f9',
             color: editor?.isActive('textAlign', 'center') ? '#fff' : '#333',
             transition: 'background-color 0.3s',
-          }}>
+          }}
+        >
           <FaAlignCenter />
         </button>
-        <button onClick={() => editor.chain().focus().setTextAlign('right').run()} 
+        <button
+          onClick={() => editor.chain().focus().setTextAlign('right').run()}
           style={{
             padding: '8px 16px',
             borderRadius: '4px',
@@ -195,10 +225,12 @@ const TextEditor = ({ value, onChange }) => {
             background: editor?.isActive('textAlign', 'right') ? '#007BFF' : '#f9f9f9',
             color: editor?.isActive('textAlign', 'right') ? '#fff' : '#333',
             transition: 'background-color 0.3s',
-          }}>
+          }}
+        >
           <FaAlignRight />
         </button>
-        <button onClick={addImage} 
+        <button
+          onClick={addImage}
           style={{
             padding: '8px 16px',
             borderRadius: '4px',
@@ -207,10 +239,12 @@ const TextEditor = ({ value, onChange }) => {
             background: '#28a745',
             color: '#fff',
             transition: 'background-color 0.3s',
-          }}>
+          }}
+        >
           <img src="https://img.icons8.com/ios/50/000000/image.png" alt="Insert" />
         </button>
-        <button onClick={insertLink} 
+        <button
+          onClick={insertLink}
           style={{
             padding: '8px 16px',
             borderRadius: '4px',
@@ -219,23 +253,26 @@ const TextEditor = ({ value, onChange }) => {
             background: '#6f42c1',
             color: '#fff',
             transition: 'background-color 0.3s',
-          }}>
+          }}
+        >
           <FaLink />
         </button>
       </div>
 
       {/* Editor Content */}
-      <div style={{
-        height: '500px',
-        width: '100%',
-        border: '1px solid #ddd',
-        borderRadius: '8px',
-        padding: '15px',
-        backgroundColor: '#fff',
-        overflowY: 'auto',
-        fontSize: '16px',
-        lineHeight: '1.6',
-      }}>
+      <div
+        style={{
+          height: '500px',
+          width: '100%',
+          border: '1px solid #ddd',
+          borderRadius: '8px',
+          padding: '15px',
+          backgroundColor: '#fff',
+          overflowY: 'auto',
+          fontSize: '16px',
+          lineHeight: '1.6',
+        }}
+      >
         <EditorContent editor={editor} />
       </div>
     </div>

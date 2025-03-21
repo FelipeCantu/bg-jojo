@@ -5,9 +5,7 @@ import styled from "styled-components";
 import ArticleCounters from "./ArticleCounters";
 import CommentSection from "./CommentSection";
 import { auth, onAuthStateChanged } from "../firestore";
-import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import { portableTextToHtml } from "./utils/portableTextHtml";
+import { PortableText } from "@portabletext/react";
 
 const ArticleDetail = () => {
   const { id } = useParams();
@@ -15,13 +13,6 @@ const ArticleDetail = () => {
   const [author, setAuthor] = useState(null);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  // Initialize Tiptap editor
-  const editor = useEditor({
-    extensions: [StarterKit],
-    content: "", // Start with empty content
-    editable: false, // Read-only mode for displaying articles
-  });
 
   useEffect(() => {
     const getArticle = async () => {
@@ -58,16 +49,6 @@ const ArticleDetail = () => {
     });
   }, [id]);
 
-  // Update editor content when article changes
-  useEffect(() => {
-    if (editor && article?.content) {
-      console.log("Article Content (PortableText):", article.content); // Debugging
-      const htmlContent = portableTextToHtml(article.content);
-      console.log("Converted HTML Content:", htmlContent); // Debugging
-      editor.commands.setContent(htmlContent);
-    }
-  }, [editor, article]);
-
   const fetchAuthorData = async (authorRef) => {
     try {
       const authorData = await client.fetch(`*[_type == "user" && _id == $id][0]`, { id: authorRef });
@@ -83,10 +64,37 @@ const ArticleDetail = () => {
 
   return (
     <ArticleDetailContainer>
-      {/* Add the CSS for blockquotes */}
       <style>
         {`
-          .tiptap blockquote {
+          .portable-text a {
+            color: #007BFF;
+            text-decoration: underline;
+          }
+
+          .portable-text a:hover {
+            color: #0056b3;
+            text-decoration: none;
+          }
+
+          .portable-text ul,
+          .portable-text ol {
+            padding-left: 1.5em;
+            margin: 1em 0;
+          }
+
+          .portable-text ul {
+            list-style-type: disc;
+          }
+
+          .portable-text ol {
+            list-style-type: decimal;
+          }
+
+          .portable-text li {
+            margin: 0.5em 0;
+          }
+
+          .portable-text blockquote {
             border-left: 4px solid #ddd;
             margin: 1.5em 0;
             padding: 0.5em 1em;
@@ -95,7 +103,7 @@ const ArticleDetail = () => {
             background-color: #f9f9f9;
           }
 
-          .tiptap blockquote p {
+          .portable-text blockquote p {
             margin: 0;
           }
         `}
@@ -121,8 +129,17 @@ const ArticleDetail = () => {
         <ArticleImage src="https://via.placeholder.com/800x400" alt="No image available" />
       )}
 
-      <ContentWrapper>
-        {editor ? <EditorContent editor={editor} /> : <p>Loading content...</p>}
+      <ContentWrapper className="portable-text">
+        <PortableText
+          value={article.content}
+          components={{
+            list: {
+              bullet: ({ children }) => <ul className="list-disc pl-5">{children}</ul>,
+              number: ({ children }) => <ol className="list-decimal pl-5">{children}</ol>,
+            },
+            listItem: ({ children }) => <li>{children}</li>,
+          }}
+        />
       </ContentWrapper>
 
       <Divider />
