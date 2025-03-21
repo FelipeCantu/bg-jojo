@@ -5,7 +5,9 @@ import styled from "styled-components";
 import ArticleCounters from "./ArticleCounters";
 import CommentSection from "./CommentSection";
 import { auth, onAuthStateChanged } from "../firestore";
-import { PortableText } from '@portabletext/react';
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import { portableTextToHtml } from "./utils/portableTextHtml";
 
 const ArticleDetail = () => {
   const { id } = useParams();
@@ -14,11 +16,19 @@ const ArticleDetail = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Initialize Tiptap editor
+  const editor = useEditor({
+    extensions: [StarterKit],
+    content: "", // Start with empty content
+    editable: false, // Read-only mode for displaying articles
+  });
+
   useEffect(() => {
     const getArticle = async () => {
       setLoading(true);
       try {
         const fetchedArticle = await fetchArticleById(id);
+        console.log("Fetched Article:", fetchedArticle); // Debugging
         if (fetchedArticle) {
           const authorData = await fetchAuthorData(fetchedArticle.author._ref);
           setArticle(fetchedArticle);
@@ -48,6 +58,16 @@ const ArticleDetail = () => {
     });
   }, [id]);
 
+  // Update editor content when article changes
+  useEffect(() => {
+    if (editor && article?.content) {
+      console.log("Article Content (PortableText):", article.content); // Debugging
+      const htmlContent = portableTextToHtml(article.content);
+      console.log("Converted HTML Content:", htmlContent); // Debugging
+      editor.commands.setContent(htmlContent);
+    }
+  }, [editor, article]);
+
   const fetchAuthorData = async (authorRef) => {
     try {
       const authorData = await client.fetch(`*[_type == "user" && _id == $id][0]`, { id: authorRef });
@@ -61,11 +81,26 @@ const ArticleDetail = () => {
   if (loading) return <LoadingMessage>Loading article...</LoadingMessage>;
   if (!article) return <ErrorMessage>Article not found.</ErrorMessage>;
 
-  const isAuthor = user && article.authorUid && article.authorUid === user.uid;
-  console.log(article.content);
-
   return (
     <ArticleDetailContainer>
+      {/* Add the CSS for blockquotes */}
+      <style>
+        {`
+          .tiptap blockquote {
+            border-left: 4px solid #ddd;
+            margin: 1.5em 0;
+            padding: 0.5em 1em;
+            color: #555;
+            font-style: italic;
+            background-color: #f9f9f9;
+          }
+
+          .tiptap blockquote p {
+            margin: 0;
+          }
+        `}
+      </style>
+
       <HeaderSection>
         <Title>{article.title}</Title>
         <TopRightSection>
@@ -87,94 +122,17 @@ const ArticleDetail = () => {
       )}
 
       <ContentWrapper>
-        <PortableText
-          value={article.content}
-          components={{
-            types: {
-              image: ({ value }) => (
-                <img
-                  src={urlFor(value.asset).url()}
-                  alt={value.alt || "Image"}
-                  style={{ maxWidth: "100%", height: "auto", borderRadius: "10px", margin: "10px 0" }}
-                />
-              ),
-            },
-            block: {
-              h1: ({ children }) => <h1 style={{ fontSize: "2.5rem", fontWeight: "bold", margin: "20px 0" }}>{children}</h1>,
-              h2: ({ children }) => <h2 style={{ fontSize: "2rem", fontWeight: "bold", margin: "15px 0" }}>{children}</h2>,
-              h3: ({ children }) => <h3 style={{ fontSize: "1.75rem", fontWeight: "bold", margin: "10px 0" }}>{children}</h3>,
-              h4: ({ children }) => <h4 style={{ fontSize: "1.5rem", fontWeight: "bold", margin: "10px 0" }}>{children}</h4>,
-              normal: ({ children }) => <p style={{ marginBottom: "15px", lineHeight: "1.6" }}>{children}</p>,
-              blockquote: ({ children }) => (
-                <blockquote
-                  style={{
-                    fontStyle: 'italic',  // Ensure italic style is applied
-                    borderLeft: '6px solid #007bff', // Thicker border for emphasis
-                    paddingLeft: '20px', // More padding
-                    margin: '20px 0', // Spacing around the blockquote
-                    backgroundColor: '#f9f9f9', // Light background color
-                    color: '#555', // Text color
-                    fontSize: '1.2rem', // Larger font size
-                    borderRadius: '5px', // Rounded corners
-                    boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)', // Subtle shadow
-                  }}
-                >
-                  {children}
-                </blockquote>
-              )
-            },              
-            marks: {
-                link: ({ value, children }) => {
-                  let href = value?.href;
-                  if (!href) {
-                    console.warn("Invalid or missing href in link:", value);
-                    return <span style={{ color: "red", fontWeight: "bold" }}>{children}</span>;
-                  }
-                  if (!/^https?:\/\//.test(href)) {
-                    href = `https://${href}`;
-                  }
-                  return (
-                    <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: "#007bff", textDecoration: "none" }}>
-                      {children}
-                    </a>
-                  );
-                },
-                code: ({ children }) => (
-                  <code style={{ fontFamily: "monospace", backgroundColor: "#f4f4f4", padding: "2px 4px", borderRadius: "4px" }}>
-                    {children}
-                  </code>
-                ),
-                strong: ({ children }) => <strong style={{ fontWeight: "bold" }}>{children}</strong>,
-                em: ({ children }) => <em style={{ fontStyle: "italic" }}>{children}</em>,
-              },
-              list: {
-                bullet: ({ children }) => <ul style={{ margin: "10px 0", paddingLeft: "20px" }}>{children}</ul>,
-                number: ({ children }) => <ol style={{ margin: "10px 0", paddingLeft: "20px" }}>{children}</ol>,
-              },
-              listItem: {
-                bullet: ({ children }) => <li style={{ marginBottom: "5px" }}>{children}</li>,
-                number: ({ children }) => <li style={{ marginBottom: "5px" }}>{children}</li>,
-              },
-            }
-          }
-            />
+        {editor ? <EditorContent editor={editor} /> : <p>Loading content...</p>}
       </ContentWrapper>
 
       <Divider />
       <ArticleCounters articleId={id} user={user} />
       <CommentSection articleId={id} user={user} />
-
-      {isAuthor && user && (
-        <UserInfo>
-          <UserImage src={user.photo} alt={user.name} />
-          <UserName>{user.name}</UserName>
-        </UserInfo>
-      )}
     </ArticleDetailContainer>
   );
 };
 
-// Styled Components
+// Styled Components (unchanged)
 const ArticleDetailContainer = styled.div`
   padding: 20px;
   max-width: 900px;
@@ -254,63 +212,6 @@ const ContentWrapper = styled.div`
   font-size: 16px;
   line-height: 1.6;
   color: #333;
-  
-  img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 10px;
-    margin: 10px 0;
-  }
-  
-  h1, h2, h3, h4 {
-    margin-top: 20px;
-    margin-bottom: 10px;
-  }
-
-  p {
-    margin-bottom: 15px;
-  }
-
-  a {
-    color: #007bff;
-    text-decoration: none;
-
-    &:hover {
-      text-decoration: underline;
-    }
-  }
-
-  blockquote {
-    font-style: italic;
-    border-left: 6px solid #007bff;
-    padding-left: 20px;
-    margin: 20px 0;
-    background-color: #f9f9f9;
-    color: #555;
-    font-size: 1.2rem;
-    border-radius: 5px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  }
-
-  ul, ol {
-    margin: 10px 0;
-    padding-left: 20px;
-  }
-
-  li {
-    margin-bottom: 5px;
-  }
-
-  code {
-    font-family: monospace;
-    background-color: #f4f4f4;
-    padding: 2px 4px;
-    border-radius: 4px;
-  }
-
-  em {
-    font-style: italic;
-  }
 `;
 
 const Divider = styled.hr`
@@ -329,24 +230,6 @@ const ErrorMessage = styled.p`
   font-size: 18px;
   color: red;
   text-align: center;
-`;
-
-const UserInfo = styled.div`
-  margin-top: 30px;
-  display: flex;
-  gap: 10px;
-  align-items: center;
-`;
-
-const UserImage = styled.img`
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-`;
-
-const UserName = styled.p`
-  font-size: 16px;
-  font-weight: bold;
 `;
 
 export default ArticleDetail;

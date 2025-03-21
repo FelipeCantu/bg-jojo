@@ -5,8 +5,6 @@ export const convertHtmlToPortableText = (html) => {
   const doc = parser.parseFromString(html, 'text/html');
 
   doc.body.childNodes.forEach((node) => {
-    console.log('Processing Node:', node); // Log each node being processed
-
     if (node.nodeName === 'IMG') {
       portableText.push({
         _type: 'image',
@@ -43,7 +41,6 @@ export const convertHtmlToPortableText = (html) => {
     if (blockElements.includes(node.nodeName.toLowerCase())) {
       const tag = node.nodeName.toLowerCase();
       const style = tag === 'blockquote' ? 'blockquote' : (tag === 'p' ? 'normal' : tag);
-      console.log('Found block element:', tag, 'with style:', style); // Log block elements found
 
       const children = [];
       const markDefs = [];
@@ -103,6 +100,5 @@ export const convertHtmlToPortableText = (html) => {
     }
   });
 
-  console.log('Generated Portable Text:', portableText); // Log the final Portable Text
   return portableText;
 };
