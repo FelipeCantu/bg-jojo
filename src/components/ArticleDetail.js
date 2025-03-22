@@ -19,13 +19,10 @@ const ArticleDetail = () => {
       setLoading(true);
       try {
         const fetchedArticle = await fetchArticleById(id);
-        console.log("Fetched Article:", fetchedArticle);
         if (fetchedArticle) {
           const authorData = await fetchAuthorData(fetchedArticle.author._ref);
           setArticle(fetchedArticle);
           setAuthor(authorData);
-        } else {
-          console.error("Article not found");
         }
       } catch (error) {
         console.error("Error fetching article:", error);
@@ -51,8 +48,7 @@ const ArticleDetail = () => {
 
   const fetchAuthorData = async (authorRef) => {
     try {
-      const authorData = await client.fetch(`*[_type == "user" && _id == $id][0]`, { id: authorRef });
-      return authorData;
+      return await client.fetch(`*[_type == "user" && _id == $id][0]`, { id: authorRef });
     } catch (error) {
       console.error("Error fetching author data:", error);
       return null;
@@ -66,8 +62,6 @@ const ArticleDetail = () => {
     (block) => block.children && block.children.length > 0
   ) || [];
 
-  console.log("Filtered Content:", contentToRender);
-
   return (
     <ArticleDetailContainer>
       <style>
@@ -76,36 +70,30 @@ const ArticleDetail = () => {
             color: #007BFF;
             text-decoration: underline;
           }
-
           .portable-text a:hover {
             color: #0056b3;
             text-decoration: none;
           }
-
           .portable-text ul,
           .portable-text ol {
             padding-left: 1.5em;
             margin: 1em 0;
           }
-
           .portable-text ul {
             list-style-type: disc;
           }
-
           .portable-text ol {
             list-style-type: decimal;
           }
-
           .portable-text li {
             margin: 0.5em 0;
           }
-
-          .portable-text blockquote {
-            border-left: 4px solid #ddd;
-            margin: 1.5em 0;
-            padding: 0.5em 1em;
-            background-color: #f9f9f9;
+          .custom-quote {
+            border-left: 4px solid #007BFF;
+            padding: 10px 20px;
+            margin: 20px 0;
             font-style: italic;
+            background-color: #f9f9f9;
           }
         `}
       </style>
@@ -139,19 +127,18 @@ const ArticleDetail = () => {
               h1: ({ children }) => <h1>{children}</h1>,
               h2: ({ children }) => <h2>{children}</h2>,
               h3: ({ children }) => <h3>{children}</h3>,
-              h4: ({ children }) => <h4>{children}</h4>,
-              h5: ({ children }) => <h5>{children}</h5>,
-              h6: ({ children }) => <h6>{children}</h6>,
-              blockquote: ({ children }) => <blockquote>{children}</blockquote>,
+              blockquote: ({ children }) => (
+                <blockquote className="custom-quote">{children}</blockquote>
+              ),
             },
             list: {
               bullet: ({ children }) => <ul className="custom-list">{children}</ul>,
               number: ({ children }) => <ol className="custom-list">{children}</ol>,
             },
-            listItem: ({ value, children }) => <li>{children}</li>,
+            listItem: ({ children }) => <li>{children}</li>,
             marks: {
               link: ({ value, children }) => (
-                <a href={value.href} target="_blank" rel="noopener noreferrer">
+                <a href={value.href} target="_blank" rel="noopener noreferrer" className="text-blue-500 underline">
                   {children}
                 </a>
               ),
@@ -169,48 +156,32 @@ const ArticleDetail = () => {
   );
 };
 
-// Styled Components
 const ArticleDetailContainer = styled.div`
   padding: 20px;
   max-width: 900px;
   margin: 0 auto;
-  @media (max-width: 768px) {
-    padding: 10px;
-    max-width: 100%;
-  }
 `;
 
 const HeaderSection = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 20px;
-  @media (max-width: 768px) {
-    flex-direction: column;
-    gap: 10px;
-  }
 `;
 
 const Title = styled.h1`
   font-size: 2.5rem;
   color: #333;
-  margin: 0;
 `;
 
 const TopRightSection = styled.div`
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 5px;
-  @media (max-width: 768px) {
-    align-items: flex-start;
-  }
 `;
 
 const AuthorInfo = styled.div`
   display: flex;
   align-items: center;
-  gap: 10px;
 `;
 
 const AuthorImage = styled.img`
@@ -220,21 +191,15 @@ const AuthorImage = styled.img`
 `;
 
 const AuthorName = styled.p`
-  font-size: 16px;
   font-weight: bold;
-  color: #333;
 `;
 
 const PublishedDate = styled.p`
   font-size: 14px;
-  color: #555;
-  margin: 0;
 `;
 
 const ReadingTime = styled.p`
   font-size: 14px;
-  color: #777;
-  margin: 0;
 `;
 
 const ArticleImage = styled.img`
@@ -246,20 +211,15 @@ const ArticleImage = styled.img`
 
 const ContentWrapper = styled.div`
   margin-top: 30px;
-  font-size: 16px;
-  line-height: 1.6;
-  color: #333;
 `;
 
 const Divider = styled.hr`
   margin-top: 20px;
   border: 1px solid #ddd;
-  margin-bottom: 0;
 `;
 
 const LoadingMessage = styled.p`
   font-size: 18px;
-  color: #555;
   text-align: center;
 `;
 

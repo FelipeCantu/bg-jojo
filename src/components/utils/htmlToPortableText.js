@@ -1,119 +1,117 @@
 export const convertHtmlToPortableText = (html) => {
-  const blockElements = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'p'];
+  const doc = new DOMParser().parseFromString(html, 'text/html');
   const portableText = [];
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, 'text/html');
+  let markDefs = [];
+  const visitedNodes = new WeakSet();
 
-  /**
-   * Processes a node and converts it to PortableText format.
-   * @param {Node} node - The DOM node to process.
-   */
-  const processNode = (node) => {
-    // Handle images
-    if (node.nodeName === 'IMG') {
-      portableText.push({
-        _type: 'image',
-        asset: {
-          _type: 'reference',
-          _ref: node.getAttribute('data-sanity-ref') || node.getAttribute('src'),
-        },
-        alt: node.getAttribute('alt') || '',
-      });
-      return;
-    }
+  function processChildNodes(node) {
+    if (!node || visitedNodes.has(node)) return { children: [], markDefs: [] };
+    visitedNodes.add(node);
 
-    // Handle lists (ordered and unordered)
-    if (node.nodeName === 'UL' || node.nodeName === 'OL') {
-      const listType = node.nodeName === 'UL' ? 'bullet' : 'number';
-      Array.from(node.childNodes).forEach((child) => {
-        if (child.nodeName === 'LI') {
-          const { children, markDefs } = processChildNodes(child);
-          portableText.push({
-            _type: 'block',
-            style: 'normal',
-            listItem: listType,
-            children,
-            markDefs,
+    const children = [];
+    const localMarkDefs = [];
+
+    node.childNodes.forEach((child) => {
+      if (node === child) {
+        console.warn('Skipping recursive node reference!');
+        return;
+      }
+
+      if (child.nodeType === Node.TEXT_NODE) {
+        const text = child.textContent.trim();
+        if (text) {
+          children.push({
+            _type: 'span',
+            text,
           });
         }
-      });
-      return;
-    }
+      } else if (child.nodeType === Node.ELEMENT_NODE) {
+        let markKey;
+        if (child.tagName === 'STRONG') markKey = 'strong';
+        if (child.tagName === 'EM') markKey = 'em';
+        if (child.tagName === 'U') markKey = 'underline';
 
-    // Handle block elements (headings, paragraphs, blockquotes)
-    if (blockElements.includes(node.nodeName.toLowerCase())) {
-      const tag = node.nodeName.toLowerCase();
-      const style = tag === 'blockquote' ? 'blockquote' : tag === 'p' ? 'normal' : tag;
+        if (child.tagName === 'A' && child.hasAttribute('href')) {
+          // Handle links
+          const href = child.getAttribute('href');
+          const linkId = `link-${Math.random().toString(36).substr(2, 9)}`;
 
-      const { children, markDefs } = processChildNodes(node);
+          localMarkDefs.push({
+            _key: linkId,
+            _type: 'link',
+            href,
+          });
 
-      // Add the block to PortableText
-      portableText.push({
-        _type: 'block',
-        style,
-        children,
-        markDefs,
-      });
-    }
-  };
+          const { children: innerChildren, markDefs: innerMarkDefs } = processChildNodes(child);
+          children.push(
+            ...innerChildren.map((span) => ({
+              ...span,
+              marks: [...(span.marks || []), linkId],
+            }))
+          );
+          localMarkDefs.push(...innerMarkDefs);
+        } else if (markKey) {
+          const markId = `${markKey}-${Math.random().toString(36).substr(2, 9)}`;
+          localMarkDefs.push({ _key: markId, _type: markKey });
 
-  /**
-   * Processes child nodes of a block element and returns PortableText-compatible children and markDefs.
-   * @param {Node} node - The parent node whose children need to be processed.
-   * @returns {Object} - An object containing `children` and `markDefs`.
-   */
-  const processChildNodes = (node) => {
-    const children = [];
-    const markDefs = [];
-
-    Array.from(node.childNodes).forEach((child) => {
-      if (child.nodeName === 'A') {
-        // Handle links
-        const href = child.getAttribute('href');
-        const markKey = `link-${Math.random().toString(36).substr(2, 9)}`;
-        markDefs.push({
-          _key: markKey,
-          _type: 'link',
-          href,
-        });
-        children.push({
-          _key: Math.random().toString(36).substr(2, 9),
-          _type: 'span',
-          text: child.textContent || '',
-          marks: [markKey],
-        });
-      } else if (['STRONG', 'B'].includes(child.nodeName)) {
-        // Handle bold text
-        children.push({
-          _key: Math.random().toString(36).substr(2, 9),
-          _type: 'span',
-          text: child.textContent || '',
-          marks: ['strong'],
-        });
-      } else if (['EM', 'I'].includes(child.nodeName)) {
-        // Handle italic text
-        children.push({
-          _key: Math.random().toString(36).substr(2, 9),
-          _type: 'span',
-          text: child.textContent || '',
-          marks: ['em'],
-        });
-      } else if (child.nodeType === 3 && child.textContent?.trim()) {
-        // Handle text nodes
-        children.push({
-          _key: Math.random().toString(36).substr(2, 9),
-          _type: 'span',
-          text: child.textContent.trim(),
-        });
+          const { children: innerChildren, markDefs: innerMarkDefs } = processChildNodes(child);
+          children.push(
+            ...innerChildren.map((span) => ({
+              ...span,
+              marks: [...(span.marks || []), markId],
+            }))
+          );
+          localMarkDefs.push(...innerMarkDefs);
+        } else {
+          const { children: innerChildren, markDefs: innerMarkDefs } = processChildNodes(child);
+          children.push(...innerChildren);
+          localMarkDefs.push(...innerMarkDefs);
+        }
       }
     });
 
-    return { children, markDefs };
-  };
+    return { children, markDefs: localMarkDefs };
+  }
 
-  // Process all top-level nodes in the document
-  Array.from(doc.body.childNodes).forEach((node) => {
-    processNode(node);
+  doc.body.childNodes.forEach((node) => {
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      if (node.nodeName === 'P' || node.nodeName.match(/^H[1-6]$/) || node.nodeName === 'BLOCKQUOTE') {
+        const style = node.nodeName.toLowerCase() === 'blockquote' ? 'blockquote' : node.nodeName.toLowerCase();
+        const { children, markDefs: blockMarkDefs } = processChildNodes(node);
+
+        portableText.push({
+          _type: 'block',
+          style,
+          children,
+          markDefs: blockMarkDefs,
+        });
+
+        markDefs.push(...blockMarkDefs);
+      }
+
+      // Handle lists (unordered and ordered)
+      if (node.nodeName === 'UL' || node.nodeName === 'OL') {
+        const listType = node.nodeName === 'UL' ? 'bullet' : 'number';
+        const listItems = [];
+
+        Array.from(node.childNodes).forEach((child) => {
+          if (child.nodeName === 'LI') {
+            const { children, markDefs: listMarkDefs } = processChildNodes(child);
+            listItems.push({
+              _type: 'block',
+              style: 'normal',
+              listItem: listType,
+              children,
+              markDefs: listMarkDefs,
+            });
+
+            markDefs.push(...listMarkDefs);
+          }
+        });
+
+        portableText.push(...listItems);
+      }
+    }
   });
 
   return portableText;
