@@ -1,17 +1,19 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
 import TextAlign from '@tiptap/extension-text-align';
+import Placeholder from '@tiptap/extension-placeholder';
 import { client } from '../sanityClient';
 import { convertHtmlToPortableText } from './utils/htmlToPortableText';
 import { portableTextToHtml } from './utils/portableTextHtml';
-import { FaBold, FaItalic, FaListUl, FaListOl, FaQuoteLeft, FaAlignLeft, FaAlignCenter, FaAlignRight, FaLink } from 'react-icons/fa';
-import Placeholder from '@tiptap/extension-placeholder';
-import { debounce } from 'lodash';
+import { FaBold, FaItalic, FaListUl, FaListOl, FaQuoteLeft, FaAlignLeft, FaAlignCenter, FaAlignRight, FaLink, FaUndo, FaRedo } from 'react-icons/fa';
+import debounce from 'lodash/debounce';
 
 const TextEditor = ({ value, onChange }) => {
+  const debouncedOnChangeRef = useRef();
+
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -30,12 +32,26 @@ const TextEditor = ({ value, onChange }) => {
       }),
     ],
     content: portableTextToHtml(value),
-    onUpdate: debounce(({ editor }) => {
+    onUpdate: ({ editor }) => {
+      if (!debouncedOnChangeRef.current) {
+        debouncedOnChangeRef.current = debounce((html) => {
+          const portableText = convertHtmlToPortableText(html);
+          onChange(portableText);
+        }, 300);
+      }
       const html = editor.getHTML();
-      const portableText = convertHtmlToPortableText(html);
-      onChange(portableText);
-    }, 300),
+      debouncedOnChangeRef.current(html);
+    },
   });
+
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (debouncedOnChangeRef.current) {
+        debouncedOnChangeRef.current.cancel(); // Cancel the debounced function
+      }
+    };
+  }, []);
 
   // Handle image upload
   const handleImageUpload = useCallback(async (file) => {
@@ -47,6 +63,7 @@ const TextEditor = ({ value, onChange }) => {
       }
     } catch (error) {
       console.error('Error uploading image to Sanity:', error);
+      alert('Failed to upload image. Please try again.');
     }
   }, [editor]);
 
@@ -72,6 +89,11 @@ const TextEditor = ({ value, onChange }) => {
     } else if (url) {
       alert('Please enter a valid URL starting with http:// or https://');
     }
+  }, [editor]);
+
+  // Remove link button handler
+  const removeLink = useCallback(() => {
+    editor.chain().focus().unsetLink().run();
   }, [editor]);
 
   return (
@@ -115,148 +137,69 @@ const TextEditor = ({ value, onChange }) => {
         }}
       >
         {/* Formatting Buttons */}
-        <button
+        <ToolbarButton
           onClick={() => editor.chain().focus().toggleBold().run()}
-          style={{
-            fontWeight: editor?.isActive('bold') ? 'bold' : 'normal',
-            padding: '8px 16px',
-            borderRadius: '4px',
-            border: '1px solid #ddd',
-            cursor: 'pointer',
-            background: editor?.isActive('bold') ? '#007BFF' : '#f9f9f9',
-            color: editor?.isActive('bold') ? '#fff' : '#333',
-            transition: 'background-color 0.3s',
-          }}
-        >
-          <FaBold />
-        </button>
-        <button
+          active={editor?.isActive('bold')}
+          icon={<FaBold />}
+        />
+        <ToolbarButton
           onClick={() => editor.chain().focus().toggleItalic().run()}
-          style={{
-            fontStyle: editor?.isActive('italic') ? 'italic' : 'normal',
-            padding: '8px 16px',
-            borderRadius: '4px',
-            border: '1px solid #ddd',
-            cursor: 'pointer',
-            background: editor?.isActive('italic') ? '#007BFF' : '#f9f9f9',
-            color: editor?.isActive('italic') ? '#fff' : '#333',
-            transition: 'background-color 0.3s',
-          }}
-        >
-          <FaItalic />
-        </button>
-        <button
+          active={editor?.isActive('italic')}
+          icon={<FaItalic />}
+        />
+        <ToolbarButton
           onClick={() => editor.chain().focus().toggleBulletList().run()}
-          style={{
-            padding: '8px 16px',
-            borderRadius: '4px',
-            border: '1px solid #ddd',
-            cursor: 'pointer',
-            background: editor?.isActive('bulletList') ? '#007BFF' : '#f9f9f9',
-            color: editor?.isActive('bulletList') ? '#fff' : '#333',
-            transition: 'background-color 0.3s',
-          }}
-        >
-          <FaListUl />
-        </button>
-        <button
+          active={editor?.isActive('bulletList')}
+          icon={<FaListUl />}
+        />
+        <ToolbarButton
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
-          style={{
-            padding: '8px 16px',
-            borderRadius: '4px',
-            border: '1px solid #ddd',
-            cursor: 'pointer',
-            background: editor?.isActive('orderedList') ? '#007BFF' : '#f9f9f9',
-            color: editor?.isActive('orderedList') ? '#fff' : '#333',
-            transition: 'background-color 0.3s',
-          }}
-        >
-          <FaListOl />
-        </button>
-        <button
+          active={editor?.isActive('orderedList')}
+          icon={<FaListOl />}
+        />
+        <ToolbarButton
           onClick={() => editor.chain().focus().toggleBlockquote().run()}
-          style={{
-            padding: '8px 16px',
-            borderRadius: '4px',
-            border: '1px solid #ddd',
-            cursor: 'pointer',
-            background: editor?.isActive('blockquote') ? '#007BFF' : '#f9f9f9',
-            color: editor?.isActive('blockquote') ? '#fff' : '#333',
-            transition: 'background-color 0.3s',
-          }}
-        >
-          <FaQuoteLeft />
-        </button>
-        <button
+          active={editor?.isActive('blockquote')}
+          icon={<FaQuoteLeft />}
+        />
+        <ToolbarButton
           onClick={() => editor.chain().focus().setTextAlign('left').run()}
-          style={{
-            padding: '8px 16px',
-            borderRadius: '4px',
-            border: '1px solid #ddd',
-            cursor: 'pointer',
-            background: editor?.isActive('textAlign', 'left') ? '#007BFF' : '#f9f9f9',
-            color: editor?.isActive('textAlign', 'left') ? '#fff' : '#333',
-            transition: 'background-color 0.3s',
-          }}
-        >
-          <FaAlignLeft />
-        </button>
-        <button
+          active={editor?.isActive('textAlign', 'left')}
+          icon={<FaAlignLeft />}
+        />
+        <ToolbarButton
           onClick={() => editor.chain().focus().setTextAlign('center').run()}
-          style={{
-            padding: '8px 16px',
-            borderRadius: '4px',
-            border: '1px solid #ddd',
-            cursor: 'pointer',
-            background: editor?.isActive('textAlign', 'center') ? '#007BFF' : '#f9f9f9',
-            color: editor?.isActive('textAlign', 'center') ? '#fff' : '#333',
-            transition: 'background-color 0.3s',
-          }}
-        >
-          <FaAlignCenter />
-        </button>
-        <button
+          active={editor?.isActive('textAlign', 'center')}
+          icon={<FaAlignCenter />}
+        />
+        <ToolbarButton
           onClick={() => editor.chain().focus().setTextAlign('right').run()}
-          style={{
-            padding: '8px 16px',
-            borderRadius: '4px',
-            border: '1px solid #ddd',
-            cursor: 'pointer',
-            background: editor?.isActive('textAlign', 'right') ? '#007BFF' : '#f9f9f9',
-            color: editor?.isActive('textAlign', 'right') ? '#fff' : '#333',
-            transition: 'background-color 0.3s',
-          }}
-        >
-          <FaAlignRight />
-        </button>
-        <button
+          active={editor?.isActive('textAlign', 'right')}
+          icon={<FaAlignRight />}
+        />
+        <ToolbarButton
           onClick={addImage}
-          style={{
-            padding: '8px 16px',
-            borderRadius: '4px',
-            border: '1px solid #ddd',
-            cursor: 'pointer',
-            background: '#28a745',
-            color: '#fff',
-            transition: 'background-color 0.3s',
-          }}
-        >
-          <img src="https://img.icons8.com/ios/50/000000/image.png" alt="Insert" />
-        </button>
-        <button
+          icon={<img src="https://img.icons8.com/ios/50/000000/image.png" alt="Insert" />}
+          style={{ background: '#28a745', color: '#fff' }}
+        />
+        <ToolbarButton
           onClick={insertLink}
-          style={{
-            padding: '8px 16px',
-            borderRadius: '4px',
-            border: '1px solid #ddd',
-            cursor: 'pointer',
-            background: '#6f42c1',
-            color: '#fff',
-            transition: 'background-color 0.3s',
-          }}
-        >
-          <FaLink />
-        </button>
+          icon={<FaLink />}
+          style={{ background: '#6f42c1', color: '#fff' }}
+        />
+        <ToolbarButton
+          onClick={removeLink}
+          icon={<FaLink />}
+          style={{ background: '#dc3545', color: '#fff' }}
+        />
+        <ToolbarButton
+          onClick={() => editor.chain().focus().undo().run()}
+          icon={<FaUndo />}
+        />
+        <ToolbarButton
+          onClick={() => editor.chain().focus().redo().run()}
+          icon={<FaRedo />}
+        />
       </div>
 
       {/* Editor Content */}
@@ -278,5 +221,24 @@ const TextEditor = ({ value, onChange }) => {
     </div>
   );
 };
+
+// Toolbar Button Component
+const ToolbarButton = ({ onClick, active, icon, style }) => (
+  <button
+    onClick={onClick}
+    style={{
+      padding: '8px 16px',
+      borderRadius: '4px',
+      border: '1px solid #ddd',
+      cursor: 'pointer',
+      background: active ? '#007BFF' : '#f9f9f9',
+      color: active ? '#fff' : '#333',
+      transition: 'background-color 0.3s',
+      ...style,
+    }}
+  >
+    {icon}
+  </button>
+);
 
 export default TextEditor;

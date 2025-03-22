@@ -19,7 +19,7 @@ const ArticleDetail = () => {
       setLoading(true);
       try {
         const fetchedArticle = await fetchArticleById(id);
-        console.log("Fetched Article:", fetchedArticle); // Debugging
+        console.log("Fetched Article:", fetchedArticle);
         if (fetchedArticle) {
           const authorData = await fetchAuthorData(fetchedArticle.author._ref);
           setArticle(fetchedArticle);
@@ -62,6 +62,12 @@ const ArticleDetail = () => {
   if (loading) return <LoadingMessage>Loading article...</LoadingMessage>;
   if (!article) return <ErrorMessage>Article not found.</ErrorMessage>;
 
+  const contentToRender = article?.content.filter(
+    (block) => block.children && block.children.length > 0
+  ) || [];
+
+  console.log("Filtered Content:", contentToRender);
+
   return (
     <ArticleDetailContainer>
       <style>
@@ -98,13 +104,8 @@ const ArticleDetail = () => {
             border-left: 4px solid #ddd;
             margin: 1.5em 0;
             padding: 0.5em 1em;
-            color: #555;
-            font-style: italic;
             background-color: #f9f9f9;
-          }
-
-          .portable-text blockquote p {
-            margin: 0;
+            font-style: italic;
           }
         `}
       </style>
@@ -129,15 +130,34 @@ const ArticleDetail = () => {
         <ArticleImage src="https://via.placeholder.com/800x400" alt="No image available" />
       )}
 
-      <ContentWrapper className="portable-text">
+      <ContentWrapper className="portable-text tiptap">
         <PortableText
-          value={article.content}
+          value={contentToRender}
           components={{
-            list: {
-              bullet: ({ children }) => <ul className="list-disc pl-5">{children}</ul>,
-              number: ({ children }) => <ol className="list-decimal pl-5">{children}</ol>,
+            block: {
+              normal: ({ children }) => <p>{children}</p>,
+              h1: ({ children }) => <h1>{children}</h1>,
+              h2: ({ children }) => <h2>{children}</h2>,
+              h3: ({ children }) => <h3>{children}</h3>,
+              h4: ({ children }) => <h4>{children}</h4>,
+              h5: ({ children }) => <h5>{children}</h5>,
+              h6: ({ children }) => <h6>{children}</h6>,
+              blockquote: ({ children }) => <blockquote>{children}</blockquote>,
             },
-            listItem: ({ children }) => <li>{children}</li>,
+            list: {
+              bullet: ({ children }) => <ul className="custom-list">{children}</ul>,
+              number: ({ children }) => <ol className="custom-list">{children}</ol>,
+            },
+            listItem: ({ value, children }) => <li>{children}</li>,
+            marks: {
+              link: ({ value, children }) => (
+                <a href={value.href} target="_blank" rel="noopener noreferrer">
+                  {children}
+                </a>
+              ),
+              strong: ({ children }) => <strong>{children}</strong>,
+              em: ({ children }) => <em>{children}</em>,
+            },
           }}
         />
       </ContentWrapper>
@@ -149,7 +169,7 @@ const ArticleDetail = () => {
   );
 };
 
-// Styled Components (unchanged)
+// Styled Components
 const ArticleDetailContainer = styled.div`
   padding: 20px;
   max-width: 900px;

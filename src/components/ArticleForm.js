@@ -11,9 +11,8 @@ const ArticleForm = ({ onArticleSubmitted }) => {
   const [formData, setFormData] = useState({
     title: '',
     mainImage: '',
-    content: [], // default as an array if you're using Portable Text
+    content: [], // Default as an array for Portable Text
   });
-  
   const [uploading, setUploading] = useState(false);
   const [errors, setErrors] = useState({});
   const [user, setUser] = useState(null);
@@ -33,21 +32,23 @@ const ArticleForm = ({ onArticleSubmitted }) => {
       try {
         const userDocRef = doc(db, 'users', currentUser.uid);
         const userDoc = await getDoc(userDocRef);
-        const fetchedUser = userDoc.exists() ? {
-          name: userDoc.data().name || currentUser.displayName,
-          photo: userDoc.data().photo || currentUser.photoURL || 'https://via.placeholder.com/40',
-          uid: currentUser.uid,
-          role: userDoc.data().role || 'user',
-        } : {
-          name: currentUser.displayName,
-          photo: currentUser.photoURL || 'https://via.placeholder.com/40',
-          uid: currentUser.uid,
-        };
+        const fetchedUser = userDoc.exists()
+          ? {
+              name: userDoc.data().name || currentUser.displayName,
+              photo: userDoc.data().photo || currentUser.photoURL || 'https://via.placeholder.com/40',
+              uid: currentUser.uid,
+              role: userDoc.data().role || 'user',
+            }
+          : {
+              name: currentUser.displayName,
+              photo: currentUser.photoURL || 'https://via.placeholder.com/40',
+              uid: currentUser.uid,
+            };
 
         setUser(fetchedUser);
         await ensureUserExistsInSanity(fetchedUser.uid, fetchedUser.name, fetchedUser.photo);
       } catch (error) {
-        console.error("❌ Error fetching user data:", error);
+        console.error('❌ Error fetching user data:', error);
       } finally {
         setIsUserLoading(false);
       }
@@ -61,14 +62,14 @@ const ArticleForm = ({ onArticleSubmitted }) => {
 
   const validateForm = () => {
     const newErrors = {};
-  
+
     if (!formData.title.trim()) newErrors.title = 'Title is required';
-  
+
     // Validate Portable Text array content
     if (!Array.isArray(formData.content) || formData.content.length === 0) {
       newErrors.content = 'Content is required';
     } else {
-      // Optional: Check if blocks have any text
+      // Check if blocks have any text
       const hasText = formData.content.some(
         (block) =>
           block._type === 'block' &&
@@ -77,15 +78,11 @@ const ArticleForm = ({ onArticleSubmitted }) => {
       );
       if (!hasText) newErrors.content = 'Content is required';
     }
-  
+
     if (imageError) newErrors.image = imageError;
     return newErrors;
   };
-  
-  console.log('Content Type:', typeof formData.content);
-  console.log('Content Value:', formData.content);
-    
-  
+
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -109,36 +106,36 @@ const ArticleForm = ({ onArticleSubmitted }) => {
     }
   };
 
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     const validationErrors = validateForm();
     setErrors(validationErrors);
     if (Object.keys(validationErrors).length > 0) return;
-  
+
     if (!user || !user.uid) {
       alert('You must be signed in to submit an article.');
       return;
     }
-  
+
     setIsSubmitting(true);
     try {
-      const portableTextContent = formData.content; // Already Portable Text
-  
-      const submittedArticle = await submitArticle({
-        title: formData.title,
-        content: portableTextContent,
-        mainImage: formData.mainImage ? { asset: { _ref: formData.mainImage } } : null,
-        publishedDate: new Date().toISOString(),
-        readingTime: Math.ceil(portableTextContent.length / 5), // Rough estimate
-        author: {
-          _type: 'reference',
-          _ref: user.uid,
+      const submittedArticle = await submitArticle(
+        {
+          title: formData.title,
+          content: formData.content,
+          mainImage: formData.mainImage ? { asset: { _ref: formData.mainImage } } : null,
+          publishedDate: new Date().toISOString(),
+          readingTime: Math.ceil(formData.content.length / 5), // Rough estimate
+          author: {
+            _type: 'reference',
+            _ref: user.uid,
+          },
         },
-      }, user);
-  
+        user
+      );
+
       alert('Article submitted successfully!');
-      setFormData({ title: '', mainImage: '', content: [] }); // Reset content as array
+      setFormData({ title: '', mainImage: '', content: [] }); // Reset form
       navigate(`/article/${submittedArticle._id}`);
     } catch (error) {
       console.error('Error submitting article:', error);
@@ -147,7 +144,6 @@ const ArticleForm = ({ onArticleSubmitted }) => {
       setIsSubmitting(false);
     }
   };
-  
 
   return (
     <PageContainer>
@@ -205,184 +201,184 @@ const ArticleForm = ({ onArticleSubmitted }) => {
 
 // Styled Components (unchanged)
 const PageContainer = styled.div`
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    align-items: center;
-    overflow-x: hidden;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  overflow-x: hidden;
 `;
 
 const Container = styled.div`
-    padding: 40px;
+  padding: 40px;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  background: #f4f4f4;
+  border-radius: 10px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+
+  @media (max-width: 768px) {
+    padding: 20px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 15px;
     width: 100%;
-    max-width: 800px;
-    margin: 0 auto;
-    background: #f4f4f4;
-    border-radius: 10px;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    box-sizing: border-box;
-
-    @media (max-width: 768px) {
-        padding: 20px;
-    }
-
-    @media (max-width: 480px) {
-        padding: 15px;
-        width: 100%;
-        margin: 0 10px;
-    }
+    margin: 0 10px;
+  }
 `;
 
 const AuthorSection = styled.div`
-    display: flex;
-    align-items: center;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-    justify-content: center;
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
 `;
 
 const AuthorPhoto = styled.img`
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    margin-right: 15px;
-    object-fit: cover;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  margin-right: 15px;
+  object-fit: cover;
 
-    @media (max-width: 480px) {
-        width: 40px;
-        height: 40px;
-    }
+  @media (max-width: 480px) {
+    width: 40px;
+    height: 40px;
+  }
 `;
 
 const AuthorName = styled.p`
-    font-weight: bold;
-    font-size: 18px;
+  font-weight: bold;
+  font-size: 18px;
 
-    @media (max-width: 480px) {
-        font-size: 14px;
-    }
+  @media (max-width: 480px) {
+    font-size: 14px;
+  }
 `;
 
 const Form = styled.form`
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  max-width: 600px;
+  justify-content: center;
+  align-items: center;
+
+  @media (max-width: 768px) {
+    width: 90%;
+  }
+
+  @media (max-width: 480px) {
     width: 100%;
-    max-width: 600px;
-    justify-content: center;
-    align-items: center;
-
-    @media (max-width: 768px) {
-        width: 90%;
-    }
-
-    @media (max-width: 480px) {
-        width: 100%;
-        margin: 0;
-    }
+    margin: 0;
+  }
 `;
 
 const TitleInput = styled.input`
-    padding: 12px;
-    font-size: 18px;
-    border: none;
-    border-bottom: 2px solid #ddd;
-    margin-bottom: 20px;
-    background: transparent;
-    width: 100%;
+  padding: 12px;
+  font-size: 18px;
+  border: none;
+  border-bottom: 2px solid #ddd;
+  margin-bottom: 20px;
+  background: transparent;
+  width: 100%;
 
-    &::placeholder {
-        color: #aaa;
-    }
+  &::placeholder {
+    color: #aaa;
+  }
 
-    &:focus {
-        outline: none;
-        border-bottom: 2px solid #007bff;
-    }
+  &:focus {
+    outline: none;
+    border-bottom: 2px solid #007bff;
+  }
 
-    @media (max-width: 480px) {
-        font-size: 16px;
-    }
+  @media (max-width: 480px) {
+    font-size: 16px;
+  }
 `;
 
 const ImageInput = styled.input`
-    padding: 10px;
-    border: none;
-    border-bottom: 2px solid #ddd;
-    margin-bottom: 20px;
-    background: transparent;
-    width: 100%;
+  padding: 10px;
+  border: none;
+  border-bottom: 2px solid #ddd;
+  margin-bottom: 20px;
+  background: transparent;
+  width: 100%;
 `;
 
 const PreviewImage = styled.img`
-    width: 100px;
-    height: 100px;
-    object-fit: cover;
-    border-radius: 5px;
-    margin-top: 10px;
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 5px;
+  margin-top: 10px;
 
-    @media (max-width: 768px) {
-        width: 80px;
-        height: 80px;
-    }
+  @media (max-width: 768px) {
+    width: 80px;
+    height: 80px;
+  }
 
-    @media (max-width: 480px) {
-        width: 60px;
-        height: 60px;
-    }
+  @media (max-width: 480px) {
+    width: 60px;
+    height: 60px;
+  }
 `;
 
 const ErrorMessage = styled.p`
-    color: red;
-    font-size: 12px;
-    margin-top: -10px;
+  color: red;
+  font-size: 12px;
+  margin-top: -10px;
 
-    @media (max-width: 480px) {
-        font-size: 10px;
-    }
+  @media (max-width: 480px) {
+    font-size: 10px;
+  }
 `;
 
 const SubmitButton = styled.button`
-    padding: 12px 20px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-    width: 100%;
-    max-width: 200px;
+  padding: 12px 20px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  width: 100%;
+  max-width: 200px;
 
-    &:disabled {
-        background-color: #ccc;
-        cursor: not-allowed;
-    }
+  &:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
 
-    @media (max-width: 480px) {
-        font-size: 14px;
-    }
+  @media (max-width: 480px) {
+    font-size: 14px;
+  }
 `;
 
 const BackButton = styled.button`
-    background: none;
-    border: none;
-    color: #007bff;
-    cursor: pointer;
-    font-size: 18px;
-    padding: 10px;
+  background: none;
+  border: none;
+  color: #007bff;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 10px;
 
-    &:hover {
-        color: #0056b3;
-    }
+  &:hover {
+    color: #0056b3;
+  }
 
-    @media (max-width: 480px) {
-        font-size: 16px;
-    }
+  @media (max-width: 480px) {
+    font-size: 16px;
+  }
 `;
 
 export default ArticleForm;
