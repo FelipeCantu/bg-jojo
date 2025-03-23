@@ -19,6 +19,7 @@ const ArticleDetail = () => {
       setLoading(true);
       try {
         const fetchedArticle = await fetchArticleById(id);
+        console.log('Fetched Article:', fetchedArticle); // Debugging log
         if (fetchedArticle) {
           const authorData = await fetchAuthorData(fetchedArticle.author._ref);
           setArticle(fetchedArticle);
@@ -58,9 +59,8 @@ const ArticleDetail = () => {
   if (loading) return <LoadingMessage>Loading article...</LoadingMessage>;
   if (!article) return <ErrorMessage>Article not found.</ErrorMessage>;
 
-  const contentToRender = article?.content.filter(
-    (block) => block.children && block.children.length > 0
-  ) || [];
+  const contentToRender = article?.content || [];
+  console.log('Content to Render:', contentToRender); // Debugging log
 
   return (
     <ArticleDetailContainer>
@@ -95,6 +95,12 @@ const ArticleDetail = () => {
             font-style: italic;
             background-color: #f9f9f9;
           }
+          .portable-text img {
+            max-width: 100%;
+            height: auto;
+            margin: 20px 0;
+            border-radius: 8px;
+          }
         `}
       </style>
 
@@ -118,10 +124,20 @@ const ArticleDetail = () => {
         <ArticleImage src="https://via.placeholder.com/800x400" alt="No image available" />
       )}
 
-      <ContentWrapper className="portable-text tiptap">
+      <ContentWrapper className="portable-text">
         <PortableText
           value={contentToRender}
           components={{
+            types: {
+              // Handle image blocks
+              image: ({ value }) => (
+                <img
+                  src={urlFor(value.asset).url()}
+                  alt={value.alt || "Image"}
+                  style={{ maxWidth: "100%", height: "auto" }}
+                />
+              ),
+            },
             block: {
               normal: ({ children }) => <p>{children}</p>,
               h1: ({ children }) => <h1>{children}</h1>,
@@ -138,7 +154,7 @@ const ArticleDetail = () => {
             listItem: ({ children }) => <li>{children}</li>,
             marks: {
               link: ({ value, children }) => (
-                <a href={value.href} target="_blank" rel="noopener noreferrer" className="text-blue-500 underline">
+                <a href={value.href} target="_blank" rel="noopener noreferrer">
                   {children}
                 </a>
               ),
@@ -156,6 +172,7 @@ const ArticleDetail = () => {
   );
 };
 
+// Styled Components
 const ArticleDetailContainer = styled.div`
   padding: 20px;
   max-width: 900px;

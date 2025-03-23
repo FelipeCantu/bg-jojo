@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { submitArticle, urlFor, uploadImageToSanity, ensureUserExistsInSanity } from '../sanityClient';
+import { submitArticle, uploadImageToSanity, ensureUserExistsInSanity } from '../sanityClient';
 import { auth, onAuthStateChanged } from '../firestore';
 import { db } from '../firestore';
 import { doc, getDoc } from 'firebase/firestore';
@@ -10,7 +10,7 @@ import TextEditor from './TextEditor';
 const ArticleForm = ({ onArticleSubmitted }) => {
   const [formData, setFormData] = useState({
     title: '',
-    mainImage: '',
+    mainImage: '', // Store the main image reference
     content: [], // Default as an array for Portable Text
   });
   const [uploading, setUploading] = useState(false);
@@ -19,6 +19,7 @@ const ArticleForm = ({ onArticleSubmitted }) => {
   const [imageError, setImageError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUserLoading, setIsUserLoading] = useState(true);
+  const [imagePreview, setImagePreview] = useState(null); // State for image preview
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -62,10 +63,13 @@ const ArticleForm = ({ onArticleSubmitted }) => {
 
   const validateForm = () => {
     const newErrors = {};
-
-    if (!formData.title.trim()) newErrors.title = 'Title is required';
-
-    // Validate Portable Text array content
+  
+    // Validate title
+    if (!formData.title.trim()) {
+      newErrors.title = 'Title is required';
+    }
+  
+    // Validate content
     if (!Array.isArray(formData.content) || formData.content.length === 0) {
       newErrors.content = 'Content is required';
     } else {
@@ -76,10 +80,16 @@ const ArticleForm = ({ onArticleSubmitted }) => {
           block.children &&
           block.children.some((child) => child.text && child.text.trim() !== '')
       );
-      if (!hasText) newErrors.content = 'Content is required';
+      if (!hasText) {
+        newErrors.content = 'Content is required';
+      }
     }
-
-    if (imageError) newErrors.image = imageError;
+  
+    // Validate main image (if required)
+    if (!formData.mainImage) {
+      newErrors.mainImage = 'Main image is required';
+    }
+  
     return newErrors;
   };
 
@@ -97,7 +107,14 @@ const ArticleForm = ({ onArticleSubmitted }) => {
     }
 
     try {
+      // Upload the image to Sanity
       const imageAsset = await uploadImageToSanity(file);
+
+      // Set the image preview URL
+      const imageUrl = URL.createObjectURL(file);
+      setImagePreview(imageUrl);
+
+      // Store the image reference in formData
       setFormData((prev) => ({ ...prev, mainImage: imageAsset.asset._ref }));
     } catch (error) {
       setImageError('Failed to upload image. Please try again.');
@@ -110,19 +127,24 @@ const ArticleForm = ({ onArticleSubmitted }) => {
     e.preventDefault();
     const validationErrors = validateForm();
     setErrors(validationErrors);
+    console.log('Form Data Before Submission:', formData); // Debugging log
+  
     if (Object.keys(validationErrors).length > 0) return;
-
+  
     if (!user || !user.uid) {
       alert('You must be signed in to submit an article.');
       return;
     }
-
+  
     setIsSubmitting(true);
     try {
+      // No need to convert, formData.content is already in Portable Text format
+      const portableTextContent = formData.content;
+  
       const submittedArticle = await submitArticle(
         {
           title: formData.title,
-          content: formData.content,
+          content: portableTextContent, // Use the existing Portable Text
           mainImage: formData.mainImage ? { asset: { _ref: formData.mainImage } } : null,
           publishedDate: new Date().toISOString(),
           readingTime: Math.ceil(formData.content.length / 5), // Rough estimate
@@ -133,7 +155,8 @@ const ArticleForm = ({ onArticleSubmitted }) => {
         },
         user
       );
-
+  
+      console.log('Submitted Article:', submittedArticle); // Debugging log
       alert('Article submitted successfully!');
       setFormData({ title: '', mainImage: '', content: [] }); // Reset form
       navigate(`/article/${submittedArticle._id}`);
@@ -178,8 +201,8 @@ const ArticleForm = ({ onArticleSubmitted }) => {
             required
           />
           {uploading && <p>Uploading image...</p>}
-          {formData.mainImage && (
-            <PreviewImage src={urlFor({ asset: { _ref: formData.mainImage } }).url()} alt="Uploaded Preview" />
+          {imagePreview && ( // Show image preview if available
+            <PreviewImage src={imagePreview} alt="Uploaded Preview" />
           )}
           {imageError && <ErrorMessage>{imageError}</ErrorMessage>}
 

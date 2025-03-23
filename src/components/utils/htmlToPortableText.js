@@ -1,22 +1,31 @@
-export const convertHtmlToPortableText = (html) => {
+import { client } from '../../sanityClient'
+
+export const convertHtmlToPortableText = async (html) => {
   const doc = new DOMParser().parseFromString(html, 'text/html');
   const portableText = [];
-  let markDefs = [];
-  const visitedNodes = new WeakSet();
+  const markDefs = []; // Define markDefs in the outer scope
 
-  function processChildNodes(node) {
-    if (!node || visitedNodes.has(node)) return { children: [], markDefs: [] };
-    visitedNodes.add(node);
+  // Helper function to upload an image to Sanity
+  const uploadImage = async (src) => {
+    try {
+      const response = await fetch(src);
+      const blob = await response.blob();
+      const file = new File([blob], 'image.jpg', { type: blob.type });
 
+      const result = await client.assets.upload('image', file);
+      return result._id; // Return the image reference
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      throw new Error('Failed to upload image.');
+    }
+  };
+
+  // Helper function to process child nodes
+  const processChildNodes = async (node) => {
     const children = [];
-    const localMarkDefs = [];
+    const localMarkDefs = []; // Local markDefs for this node
 
-    node.childNodes.forEach((child) => {
-      if (node === child) {
-        console.warn('Skipping recursive node reference!');
-        return;
-      }
-
+    for (const child of node.childNodes) {
       if (child.nodeType === Node.TEXT_NODE) {
         const text = child.textContent.trim();
         if (text) {
@@ -26,11 +35,13 @@ export const convertHtmlToPortableText = (html) => {
           });
         }
       } else if (child.nodeType === Node.ELEMENT_NODE) {
+        // Handle text formatting (bold, italic, underline)
         let markKey;
-        if (child.tagName === 'STRONG') markKey = 'strong';
-        if (child.tagName === 'EM') markKey = 'em';
+        if (child.tagName === 'STRONG' || child.tagName === 'B') markKey = 'strong';
+        if (child.tagName === 'EM' || child.tagName === 'I') markKey = 'em';
         if (child.tagName === 'U') markKey = 'underline';
 
+        // Handle links
         if (child.tagName === 'A' && child.hasAttribute('href')) {
           const href = child.getAttribute('href');
           const linkId = `link-${Math.random().toString(36).substr(2, 9)}`;
@@ -41,60 +52,68 @@ export const convertHtmlToPortableText = (html) => {
             href,
           });
 
-          const { children: innerChildren, markDefs: innerMarkDefs } = processChildNodes(child);
+          const { children: innerChildren } = await processChildNodes(child);
           children.push(
             ...innerChildren.map((span) => ({
               ...span,
               marks: [...(span.marks || []), linkId],
             }))
           );
-          localMarkDefs.push(...innerMarkDefs);
         } else if (markKey) {
+          // Handle text marks (bold, italic, underline)
           const markId = `${markKey}-${Math.random().toString(36).substr(2, 9)}`;
           localMarkDefs.push({ _key: markId, _type: markKey });
 
-          const { children: innerChildren, markDefs: innerMarkDefs } = processChildNodes(child);
+          const { children: innerChildren } = await processChildNodes(child);
           children.push(
             ...innerChildren.map((span) => ({
               ...span,
               marks: [...(span.marks || []), markId],
             }))
           );
-          localMarkDefs.push(...innerMarkDefs);
         } else if (child.tagName === 'IMG') {
-          // Add image as a separate block
+          // Handle images
           const src = child.getAttribute('src') || '';
           const alt = child.getAttribute('alt') || '';
+
+          // Upload the image to Sanity and get the reference
+          const imageRef = await uploadImage(src);
+
           portableText.push({
             _type: 'image',
-            asset: { _ref: src },
+            asset: {
+              _type: 'reference',
+              _ref: imageRef, // Use the Sanity image reference
+            },
             alt,
           });
         } else {
-          const { children: innerChildren, markDefs: innerMarkDefs } = processChildNodes(child);
+          // Handle other elements (e.g., spans, divs)
+          const { children: innerChildren } = await processChildNodes(child);
           children.push(...innerChildren);
-          localMarkDefs.push(...innerMarkDefs);
         }
       }
-    });
+    }
 
-    return { children, markDefs: localMarkDefs };
-  }
+    // Add local markDefs to the global markDefs array
+    markDefs.push(...localMarkDefs);
+    return { children };
+  };
 
-  doc.body.childNodes.forEach((node) => {
+  // Process the document body
+  for (const node of doc.body.childNodes) {
     if (node.nodeType === Node.ELEMENT_NODE) {
+      // Handle paragraphs, headings, and blockquotes
       if (node.nodeName === 'P' || node.nodeName.match(/^H[1-6]$/) || node.nodeName === 'BLOCKQUOTE') {
         const style = node.nodeName.toLowerCase() === 'blockquote' ? 'blockquote' : node.nodeName.toLowerCase();
-        const { children, markDefs: blockMarkDefs } = processChildNodes(node);
+        const { children } = await processChildNodes(node);
 
         portableText.push({
           _type: 'block',
           style,
           children,
-          markDefs: blockMarkDefs,
+          markDefs: markDefs.filter((def) => children.some((child) => child.marks?.includes(def._key))),
         });
-
-        markDefs.push(...blockMarkDefs);
       }
 
       // Handle lists (unordered and ordered)
@@ -102,20 +121,18 @@ export const convertHtmlToPortableText = (html) => {
         const listType = node.nodeName === 'UL' ? 'bullet' : 'number';
         const listItems = [];
 
-        Array.from(node.childNodes).forEach((child) => {
+        for (const child of node.childNodes) {
           if (child.nodeName === 'LI') {
-            const { children, markDefs: listMarkDefs } = processChildNodes(child);
+            const { children } = await processChildNodes(child);
             listItems.push({
               _type: 'block',
               style: 'normal',
               listItem: listType,
               children,
-              markDefs: listMarkDefs,
+              markDefs: markDefs.filter((def) => children.some((child) => child.marks?.includes(def._key))),
             });
-
-            markDefs.push(...listMarkDefs);
           }
-        });
+        }
 
         portableText.push(...listItems);
       }
@@ -124,14 +141,21 @@ export const convertHtmlToPortableText = (html) => {
       if (node.tagName === 'IMG') {
         const src = node.getAttribute('src') || '';
         const alt = node.getAttribute('alt') || '';
+
+        // Upload the image to Sanity and get the reference
+        const imageRef = await uploadImage(src);
+
         portableText.push({
           _type: 'image',
-          asset: { _ref: src },
+          asset: {
+            _type: 'reference',
+            _ref: imageRef, // Use the Sanity image reference
+          },
           alt,
         });
       }
     }
-  });
+  }
 
   return portableText;
 };

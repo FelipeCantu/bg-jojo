@@ -1,3 +1,5 @@
+import { urlFor } from '../sanityClient'; // Import the urlFor function
+
 export const portableTextToHtml = (portableText) => {
   let html = '';
   let currentListType = null;
@@ -79,7 +81,7 @@ export const portableTextToHtml = (portableText) => {
 
     // Handle images
     if (block._type === 'image' && block.asset) {
-      const imageUrl = block.asset.url || block.asset._ref;
+      const imageUrl = urlFor(block.asset).url(); // Generate the image URL using urlFor
       const altText = block.alt || '';
       html += `<img src="${imageUrl}" alt="${altText}" />`;
     }

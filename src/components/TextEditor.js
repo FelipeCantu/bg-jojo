@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
@@ -6,58 +6,46 @@ import Link from '@tiptap/extension-link';
 import TextAlign from '@tiptap/extension-text-align';
 import Placeholder from '@tiptap/extension-placeholder';
 import { client } from '../sanityClient';
+import { FaBold, FaItalic, FaListUl, FaListOl, FaQuoteLeft, FaAlignLeft, FaAlignCenter, FaAlignRight, FaLink, FaUndo, FaRedo, FaImage } from 'react-icons/fa';
 import { convertHtmlToPortableText } from './utils/htmlToPortableText';
-import { portableTextToHtml } from './utils/portableTextHtml';
-import { FaBold, FaItalic, FaListUl, FaListOl, FaQuoteLeft, FaAlignLeft, FaAlignCenter, FaAlignRight, FaLink, FaUndo, FaRedo } from 'react-icons/fa';
-import debounce from 'lodash/debounce';
 
 const TextEditor = ({ value, onChange }) => {
-  const debouncedOnChangeRef = useRef();
-
   const editor = useEditor({
     extensions: [
       StarterKit,
-      Image,
+      Image.configure({
+        inline: true,
+        HTMLAttributes: {
+          class: 'editor-image',
+        },
+      }),
       Link.configure({
         HTMLAttributes: {
           target: '_blank',
           rel: 'noopener noreferrer',
           class: 'external-link',
         },
-        validate: (href) => /^https?:\/\//.test(href), // Validate URLs
+        validate: (href) => /^https?:\/\//.test(href),
       }),
       TextAlign.configure({ types: ['paragraph', 'heading'] }),
       Placeholder.configure({
         placeholder: 'Start typing your article...',
       }),
     ],
-    content: portableTextToHtml(value),
-    onUpdate: ({ editor }) => {
-      if (!debouncedOnChangeRef.current) {
-        debouncedOnChangeRef.current = debounce((html) => {
-          const portableText = convertHtmlToPortableText(html);
-          onChange(portableText);
-        }, 300);
-      }
+    content: value,
+    onUpdate: async ({ editor }) => {
       const html = editor.getHTML();
-      debouncedOnChangeRef.current(html);
+      const portableText = await convertHtmlToPortableText(html); // Await the result
+      onChange(portableText); // Pass Portable Text to the parent component
     },
   });
-
-  // Cleanup debounce on unmount
-  useEffect(() => {
-    return () => {
-      if (debouncedOnChangeRef.current) {
-        debouncedOnChangeRef.current.cancel(); // Cancel the debounced function
-      }
-    };
-  }, []);
 
   // Handle image upload
   const handleImageUpload = useCallback(async (file) => {
     try {
       const result = await client.assets.upload('image', file);
       const imageUrl = result.url;
+
       if (editor) {
         editor.chain().focus().setImage({ src: imageUrl }).run();
       }
@@ -99,14 +87,14 @@ const TextEditor = ({ value, onChange }) => {
   return (
     <div
       style={{
-        maxWidth: '100%',
-        padding: '20px',
-        backgroundColor: '#f4f6f9',
-        borderRadius: '8px',
-        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
+        maxWidth: "100%",
+        padding: "20px",
+        backgroundColor: "#f4f6f9",
+        borderRadius: "8px",
+        boxShadow: "0 2px 10px rgba(0, 0, 0, 0.1)",
       }}
     >
-      {/* Add CSS for links and placeholder */}
+      {/* Add CSS for links, images, and placeholder */}
       <style>
         {`
           .tiptap a.external-link {
@@ -124,73 +112,79 @@ const TextEditor = ({ value, onChange }) => {
             height: 0;
             font-style: italic;
           }
+          .tiptap img.editor-image {
+            max-width: 100%;
+            height: auto;
+            margin: 10px 0;
+            border-radius: 4px;
+          }
         `}
       </style>
 
       {/* Toolbar */}
       <div
         style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '10px',
-          marginBottom: '20px',
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "10px",
+          marginBottom: "20px",
         }}
       >
         {/* Formatting Buttons */}
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBold().run()}
-          active={editor?.isActive('bold')}
+          active={editor?.isActive("bold")}
           icon={<FaBold />}
         />
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleItalic().run()}
-          active={editor?.isActive('italic')}
+          active={editor?.isActive("italic")}
           icon={<FaItalic />}
         />
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBulletList().run()}
-          active={editor?.isActive('bulletList')}
+          active={editor?.isActive("bulletList")}
           icon={<FaListUl />}
         />
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
-          active={editor?.isActive('orderedList')}
+          active={editor?.isActive("orderedList")}
           icon={<FaListOl />}
         />
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBlockquote().run()}
-          active={editor?.isActive('blockquote')}
+          active={editor?.isActive("blockquote")}
           icon={<FaQuoteLeft />}
         />
         <ToolbarButton
-          onClick={() => editor.chain().focus().setTextAlign('left').run()}
-          active={editor?.isActive('textAlign', 'left')}
+          onClick={() => editor.chain().focus().setTextAlign("left").run()}
+          active={editor?.isActive("textAlign", "left")}
           icon={<FaAlignLeft />}
         />
         <ToolbarButton
-          onClick={() => editor.chain().focus().setTextAlign('center').run()}
-          active={editor?.isActive('textAlign', 'center')}
+          onClick={() => editor.chain().focus().setTextAlign("center").run()}
+          active={editor?.isActive("textAlign", "center")}
           icon={<FaAlignCenter />}
         />
         <ToolbarButton
-          onClick={() => editor.chain().focus().setTextAlign('right').run()}
-          active={editor?.isActive('textAlign', 'right')}
+          onClick={() => editor.chain().focus().setTextAlign("right").run()}
+          active={editor?.isActive("textAlign", "right")}
           icon={<FaAlignRight />}
         />
         <ToolbarButton
           onClick={addImage}
-          icon={<img src="https://img.icons8.com/ios/50/000000/image.png" alt="Insert" />}
-          style={{ background: '#28a745', color: '#fff' }}
+          icon={<FaImage />}
+          style={{ background: "#28a745", color: "#fff" }}
         />
         <ToolbarButton
           onClick={insertLink}
           icon={<FaLink />}
-          style={{ background: '#6f42c1', color: '#fff' }}
+          style={{ background: "#6f42c1", color: "#fff" }}
         />
         <ToolbarButton
           onClick={removeLink}
           icon={<FaLink />}
-          style={{ background: '#dc3545', color: '#fff' }}
+          style={{ background: "#dc3545", color: "#fff" }}
         />
         <ToolbarButton
           onClick={() => editor.chain().focus().undo().run()}
@@ -205,15 +199,15 @@ const TextEditor = ({ value, onChange }) => {
       {/* Editor Content */}
       <div
         style={{
-          height: '500px',
-          width: '100%',
-          border: '1px solid #ddd',
-          borderRadius: '8px',
-          padding: '15px',
-          backgroundColor: '#fff',
-          overflowY: 'auto',
-          fontSize: '16px',
-          lineHeight: '1.6',
+          height: "500px",
+          width: "100%",
+          border: "1px solid #ddd",
+          borderRadius: "8px",
+          padding: "15px",
+          backgroundColor: "#fff",
+          overflowY: "auto",
+          fontSize: "16px",
+          lineHeight: "1.6",
         }}
       >
         <EditorContent editor={editor} />
@@ -225,16 +219,16 @@ const TextEditor = ({ value, onChange }) => {
 // Toolbar Button Component
 const ToolbarButton = ({ onClick, active, icon, style }) => (
   <button
-    type="button"  // 👈 Prevent form submission
+    type="button"
     onClick={onClick}
     style={{
-      padding: '8px 16px',
-      borderRadius: '4px',
-      border: '1px solid #ddd',
-      cursor: 'pointer',
-      background: active ? '#007BFF' : '#f9f9f9',
-      color: active ? '#fff' : '#333',
-      transition: 'background-color 0.3s',
+      padding: "8px 16px",
+      borderRadius: "4px",
+      border: "1px solid #ddd",
+      cursor: "pointer",
+      background: active ? "#007BFF" : "#f9f9f9",
+      color: active ? "#fff" : "#333",
+      transition: "background-color 0.3s",
       ...style,
     }}
   >
