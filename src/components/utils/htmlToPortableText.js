@@ -32,7 +32,6 @@ export const convertHtmlToPortableText = (html) => {
         if (child.tagName === 'U') markKey = 'underline';
 
         if (child.tagName === 'A' && child.hasAttribute('href')) {
-          // Handle links
           const href = child.getAttribute('href');
           const linkId = `link-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -62,6 +61,15 @@ export const convertHtmlToPortableText = (html) => {
             }))
           );
           localMarkDefs.push(...innerMarkDefs);
+        } else if (child.tagName === 'IMG') {
+          // Add image as a separate block
+          const src = child.getAttribute('src') || '';
+          const alt = child.getAttribute('alt') || '';
+          portableText.push({
+            _type: 'image',
+            asset: { _ref: src },
+            alt,
+          });
         } else {
           const { children: innerChildren, markDefs: innerMarkDefs } = processChildNodes(child);
           children.push(...innerChildren);
@@ -110,6 +118,17 @@ export const convertHtmlToPortableText = (html) => {
         });
 
         portableText.push(...listItems);
+      }
+
+      // Handle top-level images
+      if (node.tagName === 'IMG') {
+        const src = node.getAttribute('src') || '';
+        const alt = node.getAttribute('alt') || '';
+        portableText.push({
+          _type: 'image',
+          asset: { _ref: src },
+          alt,
+        });
       }
     }
   });

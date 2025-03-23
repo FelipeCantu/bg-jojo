@@ -225,6 +225,7 @@ const TextEditor = ({ value, onChange }) => {
 // Toolbar Button Component
 const ToolbarButton = ({ onClick, active, icon, style }) => (
   <button
+    type="button"  // 👈 Prevent form submission
     onClick={onClick}
     style={{
       padding: '8px 16px',
