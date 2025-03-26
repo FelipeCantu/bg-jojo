@@ -6,6 +6,7 @@ import ArticleCounters from "./ArticleCounters";
 import CommentSection from "./CommentSection";
 import { auth, onAuthStateChanged } from "../firestore";
 import { PortableText } from "@portabletext/react";
+import LoadingContainer from "./LoadingContainer";
 
 const ArticleDetail = () => {
   const { id } = useParams();
@@ -56,7 +57,7 @@ const ArticleDetail = () => {
     }
   };
 
-  if (loading) return <LoadingMessage>Loading article...</LoadingMessage>;
+  if (loading) return <LoadingContainer message="Loading article..." size="large" spinnerColor="#fea500" textColor="#555" />;
   if (!article) return <ErrorMessage>Article not found.</ErrorMessage>;
 
   const contentToRender = article?.content || [];
@@ -233,11 +234,6 @@ const ContentWrapper = styled.div`
 const Divider = styled.hr`
   margin-top: 20px;
   border: 1px solid #ddd;
-`;
-
-const LoadingMessage = styled.p`
-  font-size: 18px;
-  text-align: center;
 `;
 
 const ErrorMessage = styled.p`

@@ -6,6 +6,7 @@ import ArticleCounters from './ArticleCounters';
 import CreateArticleButton from './CreateArticleButton';
 import styled from 'styled-components';
 import { FaSearch } from 'react-icons/fa';
+import LoadingContainer from './LoadingContainer';
 
 const ArticleList = () => {
   const [articles, setArticles] = useState([]);
@@ -39,7 +40,7 @@ const ArticleList = () => {
     );
   }, [searchQuery, articles]);
 
-  if (loading) return <LoadingMessage>Loading articles...</LoadingMessage>;
+  if (loading) return <LoadingContainer message="Fetching latest articles..." size="large" spinnerColor="#fea500" textColor="#555" />;
   if (error) return <ErrorMessage>{error}</ErrorMessage>;
 
   return (
@@ -103,11 +104,6 @@ const ArticleList = () => {
   );
 };
 
-const LoadingMessage = styled.p`
-  font-size: 1.2rem;
-  color: #555;
-  text-align: center;
-`;
 
 const ErrorMessage = styled.p`
   font-size: 1.2rem;
