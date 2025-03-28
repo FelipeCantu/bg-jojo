@@ -185,6 +185,7 @@ const MetaInfoContainer = styled.div`
   align-items: center;
   gap: 15px;
   margin-bottom: 20px;
+  // background: #014a47;
 `;
 
 const AuthorInfo = styled.div`

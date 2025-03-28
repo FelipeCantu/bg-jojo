@@ -4,10 +4,11 @@ import { submitArticle, uploadImageToSanity, ensureUserExistsInSanity } from '..
 import { auth, onAuthStateChanged } from '../firestore';
 import { db } from '../firestore';
 import { doc, getDoc } from 'firebase/firestore';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import TextEditor from './TextEditor';
 import { portableTextToHtml } from './utils/portableTextHtml';
 import { convertHtmlToPortableText } from './utils/htmlToPortableText';
+import { FaArrowLeft } from 'react-icons/fa';
 
 const ArticleForm = ({ onArticleSubmitted }) => {
   // State declarations
@@ -72,8 +73,8 @@ const ArticleForm = ({ onArticleSubmitted }) => {
   };
 
   const handleContentChange = useCallback((htmlContent) => {
-    setFormData(prev => ({ 
-      ...prev, 
+    setFormData(prev => ({
+      ...prev,
       htmlContent,
       portableContent: htmlContent === prev.htmlContent ? prev.portableContent : []
     }));
@@ -83,56 +84,56 @@ const ArticleForm = ({ onArticleSubmitted }) => {
   const validateForm = useCallback(() => {
     const newErrors = {};
     const htmlContent = editorRef.current?.getHTML() || formData.htmlContent;
-    
+
     if (!formData.title?.trim()) {
       newErrors.title = 'Title is required';
     }
-  
+
     if (!formData.mainImage) {
       newErrors.mainImage = 'Main image is required';
     }
-  
-    const isEmpty = !htmlContent || 
-                   htmlContent === '<p></p>' || 
-                   htmlContent === '<p><br></p>' ||
-                   editorRef.current?.isEmpty?.();
-    
+
+    const isEmpty = !htmlContent ||
+      htmlContent === '<p></p>' ||
+      htmlContent === '<p><br></p>' ||
+      editorRef.current?.isEmpty?.();
+
     if (isEmpty) {
       newErrors.content = 'Content is required';
     }
-  
+
     return newErrors;
   }, [formData.title, formData.mainImage, formData.htmlContent]);
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-  
+
     setUploading(true);
     setImageError('');
     setErrors(prev => ({ ...prev, mainImage: null }));
-  
+
     const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     if (!validTypes.includes(file.type)) {
       setImageError('Only JPEG, PNG, GIF, and WebP images are allowed.');
       setUploading(false);
       return;
     }
-  
+
     if (file.size > 5 * 1024 * 1024) {
       setImageError('Image must be smaller than 5MB');
       setUploading(false);
       return;
     }
-  
+
     try {
       const imageUrl = URL.createObjectURL(file);
       setImagePreview(imageUrl);
-  
+
       const imageAsset = await uploadImageToSanity(file);
-      setFormData(prev => ({ 
-        ...prev, 
-        mainImage: imageAsset.asset._ref 
+      setFormData(prev => ({
+        ...prev,
+        mainImage: imageAsset.asset._ref
       }));
     } catch (error) {
       console.error('Image upload error:', error);
@@ -176,12 +177,12 @@ const ArticleForm = ({ onArticleSubmitted }) => {
         {
           title: formData.title,
           content: formData.portableContent,
-          mainImage: { 
+          mainImage: {
             _type: 'image',
-            asset: { 
+            asset: {
               _type: 'reference',
-              _ref: formData.mainImage 
-            } 
+              _ref: formData.mainImage
+            }
           },
           publishedDate: new Date().toISOString(),
           author: {
@@ -193,15 +194,15 @@ const ArticleForm = ({ onArticleSubmitted }) => {
       );
 
       // Reset form
-      setFormData({ 
-        title: '', 
-        mainImage: '', 
+      setFormData({
+        title: '',
+        mainImage: '',
         htmlContent: '',
-        portableContent: [] 
+        portableContent: []
       });
       editorRef.current?.clearContent();
       setImagePreview(null);
-      
+
       if (onArticleSubmitted) {
         onArticleSubmitted(submittedArticle);
       }
@@ -263,8 +264,8 @@ const ArticleForm = ({ onArticleSubmitted }) => {
           />
           {errors.content && <ErrorMessage>{errors.content}</ErrorMessage>}
 
-          <SubmitButton 
-            type="button" 
+          <SubmitButton
+            type="button"
             disabled={isSubmitDisabled}
             onClick={prepareSubmission}
           >
@@ -291,9 +292,9 @@ const ArticleForm = ({ onArticleSubmitted }) => {
           </DialogOverlay>
         )}
 
-        <Link to="/articles">
-          <BackButton>{'←'}</BackButton>
-        </Link>
+        <BackButton onClick={() => navigate(-1)}>
+          <FaArrowLeft />
+        </BackButton>
       </Container>
     </PageContainer>
   );
@@ -444,7 +445,7 @@ const ErrorMessage = styled.p`
 
 const SubmitButton = styled.button`
   padding: 12px 20px;
-  background-color: ${({ disabled }) => disabled ? '#ccc' : '#007bff'};
+  background-color: ${({ disabled }) => disabled ? '#ccc' : '#014a47'};
   color: white;
   border: none;
   border-radius: 5px;
@@ -455,7 +456,7 @@ const SubmitButton = styled.button`
   transition: background-color 0.2s;
 
   &:hover {
-    background-color: ${({ disabled }) => disabled ? '#ccc' : '#0056b3'};
+    background-color: ${({ disabled }) => disabled ? '#ccc' : '#012f2d'};
   }
 
   @media (max-width: 480px) {
@@ -463,22 +464,29 @@ const SubmitButton = styled.button`
   }
 `;
 
+
 const BackButton = styled.button`
+  position: absolute;
+  top: 20px;
+  left: 20px;
   background: none;
   border: none;
-  color: #007bff;
+  color: #014a47;
   cursor: pointer;
   font-size: 18px;
-  padding: 10px;
+  text-decoration: none;
 
   &:hover {
-    color: #0056b3;
+    color: #012f2d;
   }
 
   @media (max-width: 480px) {
     font-size: 16px;
+    top: 10px;
+    left: 10px;
   }
 `;
+
 
 const DialogOverlay = styled.div`
   position: fixed;

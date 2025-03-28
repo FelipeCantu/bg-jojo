@@ -14,7 +14,7 @@ const FloatingButton = styled.button`
     position: fixed;
     bottom: 30px;
     right: 30px;
-    background-color: #fe592a; /* Updated color */
+    background-color: #014a47; /* Updated color */
     color: white;
     border: none;
     border-radius: 50%; /* Ensures the button remains circular */
@@ -30,7 +30,7 @@ const FloatingButton = styled.button`
     z-index: 1000; /* Ensure it's on top of other elements */
 
     &:hover {
-        background-color: #f14e1f; 
+        background-color: #012f2d; /* Darker shade for hover effect */
     }
 
     &:focus {
@@ -39,15 +39,15 @@ const FloatingButton = styled.button`
 
     /* For mobile responsiveness */
     @media (max-width: 600px) {
-        width: 50px;
-        height: 50px;
-        font-size: 30px;
+        width: 60px; /* Keep the width constant */
+        height: 60px; /* Keep the height constant */
+        font-size: 30px; /* Adjust font size for mobile */
     }
 
     @media (max-width: 400px) {
-        width: 45px;
-        height: 45px;
-        font-size: 28px;
+        width: 60px; /* Keep the width constant */
+        height: 60px; /* Keep the height constant */
+        font-size: 28px; /* Adjust font size for very small screens */
     }
 `;
 

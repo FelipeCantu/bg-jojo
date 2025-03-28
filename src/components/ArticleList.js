@@ -162,7 +162,7 @@ const SearchBar = styled.input`
     color: #aaa;
   }
   &:focus {
-    border-bottom: 2px solid #fe592a;
+    border-bottom: 2px solid #014a47;
   }
 `;
 

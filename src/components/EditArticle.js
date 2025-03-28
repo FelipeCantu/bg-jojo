@@ -198,7 +198,7 @@ const EditArticle = () => {
     <EditContainer>
       <Header>
         <BackButton onClick={() => navigate(-1)}>
-          <FaArrowLeft /> Back to Article
+          <FaArrowLeft /> Back to Profile
         </BackButton>
         <Title>Edit Article</Title>
       </Header>
@@ -340,11 +340,14 @@ const ImageUploader = ({ image, onUpload, onRemove, uploadProgress }) => {
   );
 };
 
-// Styled Components
 const EditContainer = styled.div`
   max-width: 1000px;
   margin: 0 auto;
   padding: 20px;
+
+  @media (max-width: 768px) {
+    padding: 15px;
+  }
 `;
 
 const Header = styled.div`
@@ -353,6 +356,12 @@ const Header = styled.div`
   margin-bottom: 30px;
   padding-bottom: 15px;
   border-bottom: 1px solid #eee;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
 `;
 
 const BackButton = styled.button`
@@ -361,7 +370,7 @@ const BackButton = styled.button`
   gap: 8px;
   background: none;
   border: none;
-  color: #007BFF;
+  color: #014a47;
   cursor: pointer;
   font-size: 16px;
   margin-right: 20px;
@@ -373,12 +382,21 @@ const BackButton = styled.button`
     background: #f0f7ff;
     text-decoration: none;
   }
+
+  @media (max-width: 768px) {
+    font-size: 14px;
+    margin-right: 0;
+  }
 `;
 
 const Title = styled.h1`
   font-size: 28px;
   margin: 0;
   color: #333;
+
+  @media (max-width: 768px) {
+    font-size: 24px;
+  }
 `;
 
 const Form = styled.form`
@@ -386,10 +404,18 @@ const Form = styled.form`
   padding: 30px;
   border-radius: 8px;
   box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+
+  @media (max-width: 768px) {
+    padding: 20px;
+  }
 `;
 
 const FormGroup = styled.div`
   margin-bottom: 30px;
+
+  @media (max-width: 768px) {
+    margin-bottom: 20px;
+  }
 `;
 
 const Label = styled.label`
@@ -398,6 +424,10 @@ const Label = styled.label`
   font-weight: 600;
   color: #444;
   font-size: 15px;
+
+  @media (max-width: 768px) {
+    font-size: 14px;
+  }
 `;
 
 const Input = styled.input`
@@ -413,6 +443,11 @@ const Input = styled.input`
     outline: none;
     box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
   }
+
+  @media (max-width: 768px) {
+    padding: 10px;
+    font-size: 14px;
+  }
 `;
 
 const SlugContainer = styled.div`
@@ -421,6 +456,11 @@ const SlugContainer = styled.div`
   background: #f9f9f9;
   border-radius: 6px;
   overflow: hidden;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
 `;
 
 const SlugPrefix = styled.span`
@@ -428,6 +468,11 @@ const SlugPrefix = styled.span`
   background: #eee;
   color: #666;
   font-size: 16px;
+
+  @media (max-width: 768px) {
+    padding: 10px;
+    font-size: 14px;
+  }
 `;
 
 const SlugInput = styled(Input)`
@@ -436,6 +481,134 @@ const SlugInput = styled(Input)`
   background: #f9f9f9;
   border-radius: 0;
   padding-left: 10px;
+
+  @media (max-width: 768px) {
+    padding: 10px;
+  }
+`;
+
+const ButtonGroup = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  margin-top: 30px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 10px;
+  }
+`;
+
+const SaveButton = styled.button`
+  padding: 12px 20px;
+  background-color: ${({ disabled }) => (disabled ? '#ccc' : '#014a47')};
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: ${({ disabled }) => (disabled ? 'not-allowed' : 'pointer')};
+  font-size: 16px;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: ${({ disabled }) => (disabled ? '#ccc' : '#012f2d')};
+  }
+
+  @media (max-width: 768px) {
+    font-size: 14px;
+    padding: 10px 15px;
+  }
+`;
+
+const CancelButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;  /* Add this line */
+  gap: 8px;
+  padding: 12px 24px;
+  background: #f8f9fa;
+  color: #495057;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #e9ecef;
+    border-color: #ced4da;
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+
+  @media (max-width: 768px) {
+    font-size: 14px;
+    padding: 10px 15px;
+  }
+`;
+
+const MetaInfo = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin: 25px 0;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #495057;
+
+  @media (max-width: 768px) {
+    font-size: 13px;
+    gap: 10px;
+  }
+
+  div {
+    display: flex;
+    gap: 5px;
+  }
+
+  strong {
+    font-weight: 600;
+  }
+`;
+
+const LoadingMessage = styled.div`
+  padding: 40px;
+  text-align: center;
+  font-size: 18px;
+  color: #6c757d;
+`;
+
+const ErrorMessage = styled.div`
+  padding: 40px;
+  text-align: center;
+  font-size: 18px;
+  color: #dc3545;
+  background: #fff8f8;
+  border-radius: 8px;
+  max-width: 800px;
+  margin: 0 auto;
+`;
+
+const Spinner = styled.span`
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s ease-in-out infinite;
+  margin-right: 8px;
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
 `;
 
 const ImageUploadContainer = styled.div`
@@ -512,119 +685,6 @@ const ProgressFill = styled.div`
   height: 100%;
   background: #007BFF;
   transition: width 0.3s ease;
-`;
-
-const MetaInfo = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 15px;
-  margin: 25px 0;
-  padding: 15px;
-  background: #f8f9fa;
-  border-radius: 6px;
-  font-size: 14px;
-  color: #495057;
-
-  div {
-    display: flex;
-    gap: 5px;
-  }
-
-  strong {
-    font-weight: 600;
-  }
-`;
-
-const ButtonGroup = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  gap: 15px;
-  margin-top: 30px;
-`;
-
-const SaveButton = styled.button`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
-  background: #28a745;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:hover {
-    background: #218838;
-  }
-
-  &:disabled {
-    background: #6c757d;
-    cursor: not-allowed;
-    opacity: 0.7;
-  }
-`;
-
-const CancelButton = styled.button`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
-  background: #f8f9fa;
-  color: #495057;
-  border: 1px solid #dee2e6;
-  border-radius: 6px;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:hover {
-    background: #e9ecef;
-    border-color: #ced4da;
-  }
-
-  &:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-  }
-`;
-
-const LoadingMessage = styled.div`
-  padding: 40px;
-  text-align: center;
-  font-size: 18px;
-  color: #6c757d;
-`;
-
-const ErrorMessage = styled.div`
-  padding: 40px;
-  text-align: center;
-  font-size: 18px;
-  color: #dc3545;
-  background: #fff8f8;
-  border-radius: 8px;
-  max-width: 800px;
-  margin: 0 auto;
-`;
-
-const Spinner = styled.span`
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: white;
-  animation: spin 1s ease-in-out infinite;
-  margin-right: 8px;
-
-  @keyframes spin {
-    to { 
-      transform: rotate(360deg); 
-    }
-  }
 `;
 
 export default EditArticle;
