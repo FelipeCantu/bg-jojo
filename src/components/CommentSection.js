@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { db, collection, addDoc, getDocs } from "../firestore";
+import { db, collection, addDoc, getDocs, deleteDoc, doc } from "../firestore";
 import styled from "styled-components";
 
 const CommentSection = ({ articleId, user }) => {
@@ -7,24 +7,23 @@ const CommentSection = ({ articleId, user }) => {
   const [newComment, setNewComment] = useState("");
   const [isCommentBoxExpanded, setIsCommentBoxExpanded] = useState(false);
 
-  // Fetch the comments for this article
   useEffect(() => {
     const fetchComments = async () => {
       const commentsRef = collection(db, "articles", articleId, "comments");
       const commentsSnapshot = await getDocs(commentsRef);
-      setComments(commentsSnapshot.docs.map((doc) => doc.data()));
+      setComments(commentsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
     };
 
     fetchComments();
   }, [articleId]);
 
-  // Submit a new comment
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
     if (!newComment.trim() || !user) return;
 
     const commentsRef = collection(db, "articles", articleId, "comments");
     await addDoc(commentsRef, {
+      userId: user.uid, // Store user UID for Firestore security rules
       userName: user.name,
       userPhoto: user.photo,
       text: newComment,
@@ -34,9 +33,17 @@ const CommentSection = ({ articleId, user }) => {
     setNewComment("");
     setIsCommentBoxExpanded(false);
 
-    // Refresh comment list
     const commentsSnapshot = await getDocs(commentsRef);
-    setComments(commentsSnapshot.docs.map((doc) => doc.data()));
+    setComments(commentsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    if (!user) return;
+
+    const commentRef = doc(db, "articles", articleId, "comments", commentId);
+    await deleteDoc(commentRef);
+
+    setComments(comments.filter((comment) => comment.id !== commentId));
   };
 
   return (
@@ -49,7 +56,7 @@ const CommentSection = ({ articleId, user }) => {
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
             onFocus={() => setIsCommentBoxExpanded(true)}
-            $isExpanded={isCommentBoxExpanded}  // Use transient prop
+            $isExpanded={isCommentBoxExpanded}
           />
 
           {isCommentBoxExpanded && (
@@ -64,20 +71,22 @@ const CommentSection = ({ articleId, user }) => {
       ) : (
         <p>Please log in to comment.</p>
       )}
-      {comments.map((comment, index) => (
-        <Comment key={index}>
+      {comments.map((comment) => (
+        <Comment key={comment.id}>
           <UserPhoto src={comment.userPhoto} alt={comment.userName} />
           <CommentContent>
             <strong>{comment.userName}</strong>
             <p>{comment.text}</p>
           </CommentContent>
+          {user && user.uid === comment.userId && (
+            <DeleteButton onClick={() => handleDeleteComment(comment.id)}>Delete</DeleteButton>
+          )}
         </Comment>
       ))}
     </CommentSectionContainer>
   );
 };
 
-// Styled Components
 const CommentSectionContainer = styled.div`
   margin-top: 20px;
   margin-bottom: 50px;
@@ -94,13 +103,12 @@ const CommentForm = styled.form`
 const CommentBox = styled.textarea`
   width: 100%;
   max-width: 100%;
-  height: ${(props) => (props.$isExpanded ? "100px" : "40px")};  // Access transient prop here
+  height: ${(props) => (props.$isExpanded ? "100px" : "40px")};
   transition: height 0.3s ease;
   padding: 10px;
   border: 1px solid #ccc;
   border-radius: 5px;
-  position: relative;
-  resize: vertical;  /* Allow vertical resizing only */
+  resize: vertical;
   box-sizing: border-box;
 `;
 
@@ -147,6 +155,18 @@ const UserPhoto = styled.img`
 
 const CommentContent = styled.div`
   margin-left: 10px;
+`;
+
+const DeleteButton = styled.button`
+  background: none;
+  border: none;
+  color: red;
+  cursor: pointer;
+  margin-left: 10px;
+
+  &:hover {
+    text-decoration: underline;
+  }
 `;
 
 export default CommentSection;
