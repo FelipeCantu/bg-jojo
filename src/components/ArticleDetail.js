@@ -105,19 +105,19 @@ const ArticleDetail = () => {
         `}
       </style>
 
-      <HeaderSection>
-        <Title>{article.title}</Title>
-        <TopRightSection>
-          {author && (
-            <AuthorInfo>
-              <AuthorName>{author.name}</AuthorName>
-              <AuthorImage src={author.photoURL || "https://via.placeholder.com/40"} alt={author.name} />
-            </AuthorInfo>
-          )}
-          <PublishedDate>Published on: {new Date(article.publishedDate).toLocaleDateString()}</PublishedDate>
-          <ReadingTime>Estimated Reading Time: {article.readingTime} minutes</ReadingTime>
-        </TopRightSection>
-      </HeaderSection>
+      <MetaInfoContainer>
+        {author && (
+          <AuthorInfo>
+            <AuthorImage src={author.photoURL || "https://via.placeholder.com/40"} alt={author.name} />
+            <AuthorName>{author.name}</AuthorName>
+          </AuthorInfo>
+        )}
+        <MetaText>
+          {new Date(article.publishedDate).toLocaleDateString()} • {article.readingTime} min read
+        </MetaText>
+      </MetaInfoContainer>
+
+      <Title>{article.title}</Title>
 
       {article.mainImage?.asset ? (
         <ArticleImage src={urlFor(article.mainImage.asset).url()} alt={article.title} />
@@ -180,44 +180,40 @@ const ArticleDetailContainer = styled.div`
   margin: 0 auto;
 `;
 
-const HeaderSection = styled.div`
+const MetaInfoContainer = styled.div`
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-`;
-
-const Title = styled.h1`
-  font-size: 2.5rem;
-  color: #333;
-`;
-
-const TopRightSection = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
 `;
 
 const AuthorInfo = styled.div`
   display: flex;
   align-items: center;
+  gap: 10px;
 `;
 
 const AuthorImage = styled.img`
-  width: 50px;
-  height: 50px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
+  object-fit: cover;
 `;
 
-const AuthorName = styled.p`
+const AuthorName = styled.span`
   font-weight: bold;
-`;
-
-const PublishedDate = styled.p`
   font-size: 14px;
 `;
 
-const ReadingTime = styled.p`
+const MetaText = styled.span`
   font-size: 14px;
+  color: #666;
+`;
+
+const Title = styled.h1`
+  font-size: 2.5rem;
+  color: #333;
+  margin-bottom: 20px;
 `;
 
 const ArticleImage = styled.img`
@@ -225,6 +221,7 @@ const ArticleImage = styled.img`
   max-height: 400px;
   object-fit: cover;
   border-radius: 10px;
+  margin-bottom: 30px;
 `;
 
 const ContentWrapper = styled.div`

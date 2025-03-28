@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import styled from 'styled-components';
 import { submitArticle, uploadImageToSanity, ensureUserExistsInSanity } from '../sanityClient';
 import { auth, onAuthStateChanged } from '../firestore';
@@ -6,22 +6,29 @@ import { db } from '../firestore';
 import { doc, getDoc } from 'firebase/firestore';
 import { Link, useNavigate } from 'react-router-dom';
 import TextEditor from './TextEditor';
+import { portableTextToHtml } from './utils/portableTextHtml';
+import { convertHtmlToPortableText } from './utils/htmlToPortableText';
 
 const ArticleForm = ({ onArticleSubmitted }) => {
+  // State declarations
   const [formData, setFormData] = useState({
     title: '',
-    mainImage: '', // Store the main image reference
-    content: [], // Default as an array for Portable Text
+    mainImage: '',
+    htmlContent: '',
+    portableContent: []
   });
+  const editorRef = useRef(null);
   const [uploading, setUploading] = useState(false);
   const [errors, setErrors] = useState({});
   const [user, setUser] = useState(null);
-  const [imageError, setImageError] = useState(null);
+  const [imageError, setImageError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUserLoading, setIsUserLoading] = useState(true);
-  const [imagePreview, setImagePreview] = useState(null); // State for image preview
+  const [imagePreview, setImagePreview] = useState(null);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const navigate = useNavigate();
 
+  // Auth state listener
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (!currentUser) {
@@ -35,21 +42,21 @@ const ArticleForm = ({ onArticleSubmitted }) => {
         const userDoc = await getDoc(userDocRef);
         const fetchedUser = userDoc.exists()
           ? {
-              name: userDoc.data().name || currentUser.displayName,
-              photo: userDoc.data().photo || currentUser.photoURL || 'https://via.placeholder.com/40',
-              uid: currentUser.uid,
-              role: userDoc.data().role || 'user',
-            }
+            name: userDoc.data().name || currentUser.displayName,
+            photo: userDoc.data().photo || currentUser.photoURL || 'https://via.placeholder.com/40',
+            uid: currentUser.uid,
+            role: userDoc.data().role || 'user',
+          }
           : {
-              name: currentUser.displayName,
-              photo: currentUser.photoURL || 'https://via.placeholder.com/40',
-              uid: currentUser.uid,
-            };
+            name: currentUser.displayName,
+            photo: currentUser.photoURL || 'https://via.placeholder.com/40',
+            uid: currentUser.uid,
+          };
 
         setUser(fetchedUser);
         await ensureUserExistsInSanity(fetchedUser.uid, fetchedUser.name, fetchedUser.photo);
       } catch (error) {
-        console.error('❌ Error fetching user data:', error);
+        console.error('Error fetching user data:', error);
       } finally {
         setIsUserLoading(false);
       }
@@ -58,96 +65,125 @@ const ArticleForm = ({ onArticleSubmitted }) => {
     return () => unsubscribe();
   }, []);
 
-  const handleTitleChange = (e) => setFormData({ ...formData, title: e.target.value });
-  const handleContentChange = (value) => setFormData({ ...formData, content: value });
+  // Event handlers
+  const handleTitleChange = (e) => {
+    setFormData({ ...formData, title: e.target.value });
+    setErrors(prev => ({ ...prev, title: null }));
+  };
 
-  const validateForm = () => {
+  const handleContentChange = useCallback((htmlContent) => {
+    setFormData(prev => ({ 
+      ...prev, 
+      htmlContent,
+      portableContent: htmlContent === prev.htmlContent ? prev.portableContent : []
+    }));
+    setErrors(prev => ({ ...prev, content: null }));
+  }, []);
+
+  const validateForm = useCallback(() => {
     const newErrors = {};
-  
-    // Validate title
-    if (!formData.title.trim()) {
+    const htmlContent = editorRef.current?.getHTML() || formData.htmlContent;
+    
+    if (!formData.title?.trim()) {
       newErrors.title = 'Title is required';
     }
   
-    // Validate content
-    if (!Array.isArray(formData.content) || formData.content.length === 0) {
-      newErrors.content = 'Content is required';
-    } else {
-      // Check if blocks have any text
-      const hasText = formData.content.some(
-        (block) =>
-          block._type === 'block' &&
-          block.children &&
-          block.children.some((child) => child.text && child.text.trim() !== '')
-      );
-      if (!hasText) {
-        newErrors.content = 'Content is required';
-      }
-    }
-  
-    // Validate main image (if required)
     if (!formData.mainImage) {
       newErrors.mainImage = 'Main image is required';
     }
   
+    const isEmpty = !htmlContent || 
+                   htmlContent === '<p></p>' || 
+                   htmlContent === '<p><br></p>' ||
+                   editorRef.current?.isEmpty?.();
+    
+    if (isEmpty) {
+      newErrors.content = 'Content is required';
+    }
+  
     return newErrors;
-  };
+  }, [formData.title, formData.mainImage, formData.htmlContent]);
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
+  
     setUploading(true);
-    setImageError(null);
-
-    if (!['image/jpeg', 'image/png', 'image/gif'].includes(file.type)) {
-      setImageError('Only JPEG, PNG, and GIF images are allowed.');
+    setImageError('');
+    setErrors(prev => ({ ...prev, mainImage: null }));
+  
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      setImageError('Only JPEG, PNG, GIF, and WebP images are allowed.');
       setUploading(false);
       return;
     }
-
+  
+    if (file.size > 5 * 1024 * 1024) {
+      setImageError('Image must be smaller than 5MB');
+      setUploading(false);
+      return;
+    }
+  
     try {
-      // Upload the image to Sanity
-      const imageAsset = await uploadImageToSanity(file);
-
-      // Set the image preview URL
       const imageUrl = URL.createObjectURL(file);
       setImagePreview(imageUrl);
-
-      // Store the image reference in formData
-      setFormData((prev) => ({ ...prev, mainImage: imageAsset.asset._ref }));
+  
+      const imageAsset = await uploadImageToSanity(file);
+      setFormData(prev => ({ 
+        ...prev, 
+        mainImage: imageAsset.asset._ref 
+      }));
     } catch (error) {
-      setImageError('Failed to upload image. Please try again.');
+      console.error('Image upload error:', error);
+      setImageError(error.message || 'Failed to upload image. Please try again.');
     } finally {
       setUploading(false);
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const prepareSubmission = async () => {
+    const currentHtml = editorRef.current?.getHTML() || '';
+    const currentPortableText = formData.portableContent.length > 0 && currentHtml === formData.htmlContent
+      ? formData.portableContent
+      : await convertHtmlToPortableText(currentHtml);
+
+    setFormData(prev => ({
+      ...prev,
+      htmlContent: currentHtml,
+      portableContent: currentPortableText
+    }));
+
     const validationErrors = validateForm();
     setErrors(validationErrors);
-    console.log('Form Data Before Submission:', formData); // Debugging log
-  
-    if (Object.keys(validationErrors).length > 0) return;
-  
-    if (!user || !user.uid) {
+
+    if (Object.keys(validationErrors).length === 0) {
+      setShowConfirmDialog(true);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!user?.uid) {
       alert('You must be signed in to submit an article.');
       return;
     }
-  
+
     setIsSubmitting(true);
+    setShowConfirmDialog(false);
+
     try {
-      // No need to convert, formData.content is already in Portable Text format
-      const portableTextContent = formData.content;
-  
       const submittedArticle = await submitArticle(
         {
           title: formData.title,
-          content: portableTextContent, // Use the existing Portable Text
-          mainImage: formData.mainImage ? { asset: { _ref: formData.mainImage } } : null,
+          content: formData.portableContent,
+          mainImage: { 
+            _type: 'image',
+            asset: { 
+              _type: 'reference',
+              _ref: formData.mainImage 
+            } 
+          },
           publishedDate: new Date().toISOString(),
-          readingTime: Math.ceil(formData.content.length / 5), // Rough estimate
           author: {
             _type: 'reference',
             _ref: user.uid,
@@ -155,18 +191,30 @@ const ArticleForm = ({ onArticleSubmitted }) => {
         },
         user
       );
-  
-      console.log('Submitted Article:', submittedArticle); // Debugging log
-      alert('Article submitted successfully!');
-      setFormData({ title: '', mainImage: '', content: [] }); // Reset form
+
+      // Reset form
+      setFormData({ 
+        title: '', 
+        mainImage: '', 
+        htmlContent: '',
+        portableContent: [] 
+      });
+      editorRef.current?.clearContent();
+      setImagePreview(null);
+      
+      if (onArticleSubmitted) {
+        onArticleSubmitted(submittedArticle);
+      }
       navigate(`/article/${submittedArticle._id}`);
     } catch (error) {
-      console.error('Error submitting article:', error);
-      alert('Failed to submit article. Please try again later.');
+      console.error('Submission error:', error);
+      alert(error.message || 'Failed to submit article. Please try again later.');
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  const isSubmitDisabled = uploading || isSubmitting || isUserLoading || !user;
 
   return (
     <PageContainer>
@@ -183,7 +231,7 @@ const ArticleForm = ({ onArticleSubmitted }) => {
           <p>Please sign in to submit an article.</p>
         )}
 
-        <Form onSubmit={handleSubmit}>
+        <Form onSubmit={(e) => e.preventDefault()}>
           <TitleInput
             type="text"
             name="title"
@@ -191,6 +239,7 @@ const ArticleForm = ({ onArticleSubmitted }) => {
             onChange={handleTitleChange}
             placeholder="Title"
             required
+            aria-invalid={!!errors.title}
           />
           {errors.title && <ErrorMessage>{errors.title}</ErrorMessage>}
 
@@ -199,20 +248,48 @@ const ArticleForm = ({ onArticleSubmitted }) => {
             accept="image/*"
             onChange={handleImageUpload}
             required
+            aria-invalid={!!errors.mainImage}
           />
           {uploading && <p>Uploading image...</p>}
-          {imagePreview && ( // Show image preview if available
-            <PreviewImage src={imagePreview} alt="Uploaded Preview" />
-          )}
+          {imagePreview && <PreviewImage src={imagePreview} alt="Uploaded Preview" />}
           {imageError && <ErrorMessage>{imageError}</ErrorMessage>}
+          {errors.mainImage && <ErrorMessage>{errors.mainImage}</ErrorMessage>}
 
-          <TextEditor value={formData.content} onChange={handleContentChange} />
+          <TextEditor
+            ref={editorRef}
+            value={portableTextToHtml(formData.portableContent)}
+            onChange={handleContentChange}
+            error={errors.content}
+          />
           {errors.content && <ErrorMessage>{errors.content}</ErrorMessage>}
 
-          <SubmitButton type="submit" disabled={uploading || isSubmitting || isUserLoading}>
+          <SubmitButton 
+            type="button" 
+            disabled={isSubmitDisabled}
+            onClick={prepareSubmission}
+          >
             {isSubmitting ? 'Publishing...' : 'Publish Article'}
           </SubmitButton>
         </Form>
+
+        {showConfirmDialog && (
+          <DialogOverlay>
+            <Dialog>
+              <DialogTitle>Confirm Submission</DialogTitle>
+              <DialogContent>
+                Are you sure you want to publish this article?
+              </DialogContent>
+              <DialogActions>
+                <DialogButton onClick={() => setShowConfirmDialog(false)}>
+                  Cancel
+                </DialogButton>
+                <DialogButton $primary onClick={handleSubmit}>
+                  Publish
+                </DialogButton>
+              </DialogActions>
+            </Dialog>
+          </DialogOverlay>
+        )}
 
         <Link to="/articles">
           <BackButton>{'←'}</BackButton>
@@ -221,8 +298,7 @@ const ArticleForm = ({ onArticleSubmitted }) => {
     </PageContainer>
   );
 };
-
-// Styled Components (unchanged)
+// Styled components
 const PageContainer = styled.div`
   min-height: 100vh;
   display: flex;
@@ -368,18 +444,18 @@ const ErrorMessage = styled.p`
 
 const SubmitButton = styled.button`
   padding: 12px 20px;
-  background-color: #007bff;
+  background-color: ${({ disabled }) => disabled ? '#ccc' : '#007bff'};
   color: white;
   border: none;
   border-radius: 5px;
-  cursor: pointer;
+  cursor: ${({ disabled }) => disabled ? 'not-allowed' : 'pointer'};
   font-size: 16px;
   width: 100%;
   max-width: 200px;
+  transition: background-color 0.2s;
 
-  &:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
+  &:hover {
+    background-color: ${({ disabled }) => disabled ? '#ccc' : '#0056b3'};
   }
 
   @media (max-width: 480px) {
@@ -401,6 +477,55 @@ const BackButton = styled.button`
 
   @media (max-width: 480px) {
     font-size: 16px;
+  }
+`;
+
+const DialogOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+`;
+
+const Dialog = styled.div`
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+`;
+
+const DialogTitle = styled.h3`
+  margin-top: 0;
+`;
+
+const DialogContent = styled.div`
+  margin: 20px 0;
+`;
+
+const DialogActions = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+`;
+
+const DialogButton = styled.button`
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  background-color: ${({ $primary }) => $primary ? '#007bff' : '#f0f0f0'};
+  color: ${({ $primary }) => $primary ? 'white' : '#333'};
+  cursor: pointer;
+  
+  &:hover {
+    background-color: ${({ $primary }) => $primary ? '#0056b3' : '#e0e0e0'};
   }
 `;
 

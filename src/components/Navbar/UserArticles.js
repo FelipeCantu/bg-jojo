@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { client, urlFor } from "../../sanityClient";
 import useCurrentUser from "../../hook/useCurrentUser";
@@ -13,6 +13,7 @@ const UserArticles = () => {
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [articleToDelete, setArticleToDelete] = useState(null);
   const [openDropdownId, setOpenDropdownId] = useState(null);
+  const navigate = useNavigate(); // Add useNavigate hook
 
   useEffect(() => {
     const fetchArticles = async () => {
@@ -36,6 +37,7 @@ const UserArticles = () => {
           mainImage,
           publishedDate,
           readingTime,
+          slug,
           author->{
             _id,
             name,
@@ -83,6 +85,11 @@ const UserArticles = () => {
     setOpenDropdownId(openDropdownId === articleId ? null : articleId);
   };
 
+  const handleEditArticle = (articleId) => {
+    navigate(`/edit-article/${articleId}`); // Navigate to edit page
+    setOpenDropdownId(null); // Close dropdown
+  };
+
   if (loading) return <LoadingMessage>Loading...</LoadingMessage>;
   if (error) return <ErrorMessage>{error.message}</ErrorMessage>;
   if (!currentUser?.uid) return <ErrorMessage>You must be logged in to view your articles.</ErrorMessage>;
@@ -97,7 +104,7 @@ const UserArticles = () => {
             <HorizontalScrollContainer>
               {articles.map((article) => (
                 <ArticleItem key={article._id}>
-                  <LinkWrapper to={`/article/${article._id}`}>
+                  <LinkWrapper to={`/article/${article.slug?.current || article._id}`}>
                     <ArticleCard>
                       <TopLeftSection>
                         <UserInfo>
@@ -139,7 +146,7 @@ const UserArticles = () => {
                     {openDropdownId === article._id && (
                       <DropdownMenu>
                         <MenuItem onClick={() => openConfirmDelete(article._id)}>Delete</MenuItem>
-                        <MenuItem>Edit</MenuItem>
+                        <MenuItem onClick={() => handleEditArticle(article._id)}>Edit</MenuItem>
                       </DropdownMenu>
                     )}
                   </DropdownWrapper>
@@ -166,7 +173,6 @@ const UserArticles = () => {
     </Container>
   );
 };
-
 const Container = styled.div`
   max-width: 1200px;
   margin: 0 auto;

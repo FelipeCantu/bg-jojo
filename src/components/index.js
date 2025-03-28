@@ -15,6 +15,7 @@ export { default as Donate } from './Donate';
 export { default as YourGift } from './YourGift';
 export { default as SupportingGiveBackJojo } from './SupportingGiveBackJojo';
 export { default as ArticleForm } from './ArticleForm';
+export { default as EditArticle } from './EditArticle';
 
 // Navbar & Related Pages
 export { default as Navbar } from './Navbar/Navbar';

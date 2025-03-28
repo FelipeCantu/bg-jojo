@@ -1,19 +1,22 @@
-import React, { createContext, useState, useEffect, useContext } from "react";
+import React, { createContext, useState, useEffect, useContext, useMemo } from "react";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { app } from "./firebaseconfig"; // Ensure Firebase is initialized
-
-const auth = getAuth(app);
+import { app } from "./firebaseconfig";
 
 // Create the AuthContext with a default value
 const AuthContext = createContext({
   currentUser: null,
   loading: true,
   error: null,
+  isAuthenticated: false,
 });
 
 // Custom hook to access auth context
 export function useAuth() {
-  return useContext(AuthContext);
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
 }
 
 export function AuthProvider({ children }) {
@@ -22,35 +25,50 @@ export function AuthProvider({ children }) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    const auth = getAuth(app);
+    
     // Set up the auth state listener
     const unsubscribe = onAuthStateChanged(
       auth,
       (user) => {
         setCurrentUser(user);
         setLoading(false);
-        setError(null); // Reset error on successful auth state change
+        setError(null);
       },
-      (error) => {
-        console.error("Error in onAuthStateChanged:", error);
-        setError(error.message); // Set error if auth state change fails
+      (err) => {
+        console.error("Auth state error:", err);
+        setError(err.message || "Failed to check authentication");
         setLoading(false);
       }
     );
 
     // Cleanup the listener on unmount
-    return () => unsubscribe();
+    return () => {
+      try {
+        unsubscribe();
+      } catch (cleanupError) {
+        console.error("Error during auth cleanup:", cleanupError);
+      }
+    };
   }, []);
 
-  // Provide the auth context value
-  const value = {
+  // Memoize the context value to prevent unnecessary re-renders
+  const value = useMemo(() => ({
     currentUser,
     loading,
     error,
-  };
+    isAuthenticated: !!currentUser,
+  }), [currentUser, loading, error]);
 
   return (
     <AuthContext.Provider value={value}>
-      {children}
+      {!loading && error ? (
+        <div className="auth-error">
+          Authentication error: {error}. Please refresh the page.
+        </div>
+      ) : (
+        children
+      )}
     </AuthContext.Provider>
   );
 }

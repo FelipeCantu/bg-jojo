@@ -21,7 +21,8 @@ import {
   Subscriptions,
   Footer,
   NotFound,
-  ArticleForm 
+  ArticleForm,
+  EditArticle
 } from './components';
 
 function App() {
@@ -42,6 +43,7 @@ function App() {
           <Route path="/events/:id" element={<EventDetail />} />
           <Route path="/articles" element={<ArticleList />} />
           <Route path="/article/:id" element={<ArticleDetail />} />
+          <Route path="/edit-article/:articleId" element={<EditArticle />} />
           <Route path="/tributes" element={<TributeGallery />} />
           <Route path="/tribute/:slug" element={<TributeDetail />} />
           <Route path="/yourgift" element={<YourGift />} />
