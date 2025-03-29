@@ -8,18 +8,18 @@ import Placeholder from '@tiptap/extension-placeholder';
 import Underline from '@tiptap/extension-underline';
 import { client } from '../sanityClient';
 import { convertHtmlToPortableText } from './utils/htmlToPortableText';
-import { 
-  FaBold, 
-  FaItalic, 
-  FaListUl, 
-  FaListOl, 
-  FaQuoteLeft, 
-  FaAlignLeft, 
-  FaAlignCenter, 
-  FaAlignRight, 
-  FaLink, 
-  FaUndo, 
-  FaRedo, 
+import {
+  FaBold,
+  FaItalic,
+  FaListUl,
+  FaListOl,
+  FaQuoteLeft,
+  FaAlignLeft,
+  FaAlignCenter,
+  FaAlignRight,
+  FaLink,
+  FaUndo,
+  FaRedo,
   FaImage,
   FaUnderline,
   FaHeading,
@@ -28,11 +28,11 @@ import {
 import styled from 'styled-components';
 import { toast } from 'react-toastify';
 
-const TextEditor = forwardRef(({ 
-  value, 
-  onChange, 
-  placeholder = 'Start typing your article...', 
-  error 
+const TextEditor = forwardRef(({
+  value,
+  onChange,
+  placeholder = 'Start typing your article...',
+  error
 }, ref) => {
   const editorRef = useRef(null);
   const isInitialized = useRef(false);
@@ -81,7 +81,7 @@ const TextEditor = forwardRef(({
       },
     },
   });
-  
+
   useEffect(() => {
     if (editor && value && !isInitialized.current) {
       editor.commands.setContent(value);
@@ -160,28 +160,28 @@ const TextEditor = forwardRef(({
 
   const addImage = useCallback(async () => {
     if (!editor) return;
-    
+
     const input = document.createElement('input');
     input.setAttribute('type', 'file');
     input.setAttribute('accept', 'image/*');
-    
+
     input.onchange = async () => {
       const file = input.files?.[0];
       if (!file) return;
-      
+
       const imageUrl = await handleImageUpload(file);
       if (imageUrl) {
         editor.chain().focus().setImage({ src: imageUrl }).run();
         setHasUnsavedChanges(true);
       }
     };
-    
+
     input.click();
   }, [editor, handleImageUpload]);
 
   const insertLink = useCallback(() => {
     if (!editor) return;
-    
+
     const previousUrl = editor.getAttributes('link').href;
     const url = prompt('Enter the URL', previousUrl);
 
@@ -206,24 +206,59 @@ const TextEditor = forwardRef(({
     editor.chain().focus().toggleHeading({ level }).run();
     setHasUnsavedChanges(true);
   }, [editor]);
-  
+
   const handleSaveClick = useCallback(async () => {
+    // Early return if editor isn't ready or already saving
     if (!editor || isSaving) return;
     
+    // Get current HTML content
+    const html = editor.getHTML();
+    
+    // Skip saving if content hasn't changed
+    if (html === lastContentRef.current && !hasUnsavedChanges) {
+      toast.info('No changes to save');
+      return;
+    }
+  
     try {
       setIsSaving(true);
-      const html = editor.getHTML();
+      toast.info('Saving changes...', { autoClose: false, toastId: 'saving-toast' });
+  
+      // Convert to PortableText
       const portableText = await convertHtmlToPortableText(html);
-      onChange(portableText);
+      
+      // Validate the converted content
+      if (!portableText || portableText.length === 0) {
+        throw new Error('Content conversion failed');
+      }
+  
+      // Update parent component and local state
+      await onChange(portableText);
+      lastContentRef.current = html;
       setHasUnsavedChanges(false);
-      toast.success('Changes saved');
+      
+      // Update success notification
+      toast.update('saving-toast', {
+        render: 'Changes saved successfully',
+        type: toast.TYPE.SUCCESS,
+        autoClose: 3000
+      });
     } catch (error) {
-      console.error('Error saving content:', error);
-      toast.error('Failed to save content');
+      console.error('Save error:', error);
+      
+      // Update error notification
+      toast.update('saving-toast', {
+        render: error.message || 'Failed to save changes',
+        type: toast.TYPE.ERROR,
+        autoClose: 5000
+      });
+      
+      // Preserve unsaved changes state if save failed
+      setHasUnsavedChanges(true);
     } finally {
       setIsSaving(false);
     }
-  }, [editor, isSaving, onChange]);
+  }, [editor, isSaving, onChange, hasUnsavedChanges]);
 
   return (
     <EditorContainer>
@@ -319,6 +354,7 @@ const TextEditor = forwardRef(({
       <Toolbar>
         <ToolbarGroup>
           <ToolbarButton
+            type="button"
             onClick={handleSaveClick}
             title="Save Changes"
             disabled={!hasUnsavedChanges ? 'true' : undefined}
@@ -512,6 +548,7 @@ const ToolbarButton = styled.button`
   cursor: ${props => props.disabled === 'true' ? 'not-allowed' : 'pointer'};
   opacity: ${props => props.disabled === 'true' ? 0.5 : 1};
   transition: all 0.2s;
+  type: "button"; // Add this line
 
   &:hover:not([disabled]) {
     background: ${props => props['data-active'] === 'true' ? '#2c5282' : '#edf2f7'};

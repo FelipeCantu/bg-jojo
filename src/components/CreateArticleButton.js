@@ -42,12 +42,14 @@ const FloatingButton = styled.button`
         width: 60px; /* Keep the width constant */
         height: 60px; /* Keep the height constant */
         font-size: 30px; /* Adjust font size for mobile */
+        line-height: 60px; // Added this
     }
 
     @media (max-width: 400px) {
         width: 60px; /* Keep the width constant */
         height: 60px; /* Keep the height constant */
         font-size: 28px; /* Adjust font size for very small screens */
+        line-height: 60px; // Added this
     }
 `;
 

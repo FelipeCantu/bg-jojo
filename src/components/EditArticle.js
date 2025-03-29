@@ -14,42 +14,31 @@ const EditArticle = () => {
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
   const [formTitle, setFormTitle] = useState('');
   const [formMainImage, setFormMainImage] = useState(null);
   const [formSlug, setFormSlug] = useState('');
-  const [readingTime, setReadingTime] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [imageUploadProgress, setImageUploadProgress] = useState(0);
-  const [htmlContent, setHtmlContent] = useState(''); // New state for HTML content
+  const [htmlContent, setHtmlContent] = useState('');
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const fetchArticle = useCallback(async () => {
     try {
       setLoading(true);
       const query = `*[_type == "article" && _id == $articleId][0]{
-        _id,
-        title,
-        content,
-        mainImage,
-        readingTime,
-        slug,
-        publishedDate,
-        author->{
-          _id,
-          name,
-          photoURL
-        }
+        _id, title, content, mainImage, slug,
+        publishedDate, updatedAt, author->{ _id, name, photoURL }
       }`;
       const result = await client.fetch(query, { articleId });
 
-      if (!result) throw new Error('Article not found');
+      if (!result) {
+        throw new Error('Article not found');
+      }
 
       setArticle(result);
       setFormTitle(result.title || '');
-      setHtmlContent(portableTextToHtml(result.content || '')); // Fixed syntax error here
+      setHtmlContent(portableTextToHtml(result.content || ''));
       setFormMainImage(result.mainImage || null);
       setFormSlug(result.slug?.current || '');
-      setReadingTime(result.readingTime || 0);
     } catch (err) {
       console.error('Fetch error:', err);
       setError(err.message || 'Failed to fetch article');
@@ -63,20 +52,29 @@ const EditArticle = () => {
     fetchArticle();
   }, [fetchArticle]);
 
-  const handleImageUpload = useCallback(async (file) => {
-    try {
-      if (!file) return null;
-      setImageUploadProgress(0);
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
 
+  const handleImageUpload = useCallback(async (file) => {
+    if (!file) return null;
+
+    try {
       const result = await client.assets.upload('image', file, {
         contentType: file.type,
         filename: file.name,
-        onProgress: (event) => {
-          setImageUploadProgress(Math.round((event.loaded * 100) / event.total));
-        },
       });
 
-      if (!result?._id) throw new Error('Image upload failed');
+      if (!result?._id) {
+        throw new Error('Image upload failed');
+      }
 
       const newImage = {
         _type: 'image',
@@ -87,21 +85,20 @@ const EditArticle = () => {
       };
 
       setFormMainImage(newImage);
-      setImageUploadProgress(0);
+      setHasUnsavedChanges(true);
       toast.success('Image uploaded successfully');
       return newImage;
     } catch (error) {
       console.error('Upload error:', error);
-      setImageUploadProgress(0);
       toast.error(error.message || 'Failed to upload image');
       return null;
     }
   }, []);
 
-  const calculateReadingTime = useCallback(async (content) => {
+  const calculateReadingTime = useCallback((content) => {
     if (!content) return 0;
-
-    // If content is Portable Text array
+  
+    // Handle Portable Text array
     if (Array.isArray(content)) {
       let wordCount = 0;
       content.forEach((block) => {
@@ -115,27 +112,28 @@ const EditArticle = () => {
       });
       return Math.max(1, Math.ceil(wordCount / 200));
     }
-
-    // If content is HTML string (fallback)
-    return Math.max(1, Math.ceil(content.split(/\s+/).length / 200));
+  
+    // Handle HTML string
+    if (typeof content === 'string') {
+      const textContent = content.replace(/<[^>]*>/g, ' '); // Remove HTML tags
+      return Math.max(1, Math.ceil(textContent.split(/\s+/).length / 200));
+    }
+  
+    return 5; // Default average reading time
   }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    // Basic validation
+  const handleSubmit = async () => {
     if (!formTitle.trim()) {
       toast.error('Please enter a title');
       return;
     }
 
-    if (!htmlContent || htmlContent === '<p></p>') {
+    const trimmedContent = htmlContent.replace(/<[^>]*>/g, '').trim();
+    if (!trimmedContent) {
       toast.error('Please add some content');
       return;
     }
 
-    // Add confirmation dialog
     const shouldSubmit = window.confirm('Are you sure you want to publish these changes?');
     if (!shouldSubmit) return;
 
@@ -143,23 +141,23 @@ const EditArticle = () => {
 
     try {
       const portableContent = await convertHtmlToPortableText(htmlContent);
-      const updatedReadingTime = await calculateReadingTime(portableContent);
-      const updatedAt = new Date().toISOString();
+      const updatedReadingTime = calculateReadingTime(portableContent);
 
-      const updateData = {
-        title: formTitle,
-        content: portableContent,
-        readingTime: updatedReadingTime,
-        updatedAt,
-        ...(formMainImage && { mainImage: formMainImage }),
-      };
+      const patch = client.patch(articleId)
+        .set({
+          title: formTitle,
+          content: portableContent,
+          readingTime: updatedReadingTime,
+          updatedAt: new Date().toISOString(),
+          ...(formMainImage && { mainImage: formMainImage }),
+          ...(formSlug && { slug: { current: formSlug } }),
+        });
 
-      await client.patch(articleId).set(updateData).commit();
+      await patch.commit();
 
       toast.success('Article updated successfully');
-      setTimeout(() => {
-        navigate(`/article/${formSlug || articleId}`);
-      }, 1000);
+      setHasUnsavedChanges(false);
+      setTimeout(() => navigate(`/article/${formSlug || articleId}`), 1000);
     } catch (err) {
       console.error('Update error:', err);
       toast.error(err.message || 'Failed to update article');
@@ -170,20 +168,22 @@ const EditArticle = () => {
 
   const handleContentChange = useCallback((newHtmlContent) => {
     setHtmlContent(newHtmlContent);
+    setHasUnsavedChanges(true);
   }, []);
 
-  const generateSlug = (title) => {
+  const generateSlug = useCallback((title) => {
     return title
       .toLowerCase()
       .replace(/[^\w\s-]/g, '')
       .replace(/\s+/g, '-')
       .replace(/--+/g, '-')
       .substring(0, 100);
-  };
+  }, []);
 
   const handleTitleChange = (e) => {
     const newTitle = e.target.value;
     setFormTitle(newTitle);
+    setHasUnsavedChanges(true);
 
     if (!formSlug || formSlug === generateSlug(formTitle)) {
       setFormSlug(generateSlug(newTitle));
@@ -197,13 +197,16 @@ const EditArticle = () => {
   return (
     <EditContainer>
       <Header>
-        <BackButton onClick={() => navigate(-1)}>
+        <BackButton onClick={() => {
+          if (hasUnsavedChanges && !window.confirm('You have unsaved changes. Are you sure you want to leave?')) return;
+          navigate(-1);
+        }}>
           <FaArrowLeft /> Back to Profile
         </BackButton>
         <Title>Edit Article</Title>
       </Header>
 
-      <Form onSubmit={handleSubmit}>
+      <FormContainer>
         <FormGroup>
           <Label htmlFor="title">Title *</Label>
           <Input
@@ -218,27 +221,60 @@ const EditArticle = () => {
 
         <FormGroup>
           <Label htmlFor="slug">Slug (URL)</Label>
-          <SlugContainer>
-            <SlugPrefix>/article/</SlugPrefix>
-            <SlugInput
+          <div className="slug-container">
+            <span className="slug-prefix">/article/</span>
+            <Input
               type="text"
               id="slug"
               value={formSlug}
-              onChange={(e) => setFormSlug(generateSlug(e.target.value))}
+              onChange={(e) => {
+                setFormSlug(generateSlug(e.target.value));
+                setHasUnsavedChanges(true);
+              }}
               placeholder="article-slug"
               readOnly
+              className="slug-input"
             />
-          </SlugContainer>
+          </div>
         </FormGroup>
 
         <FormGroup>
           <Label>Featured Image</Label>
-          <ImageUploader
-            image={formMainImage}
-            onUpload={handleImageUpload}
-            onRemove={() => setFormMainImage(null)}
-            uploadProgress={imageUploadProgress}
-          />
+          <ImageUploadContainer>
+            {formMainImage?.asset ? (
+              <div className="image-preview">
+                <img
+                  src={urlFor(formMainImage).width(400).url()}
+                  alt="Featured preview"
+                  onError={(e) => {
+                    e.target.src = 'https://via.placeholder.com/400x225?text=Image+not+found';
+                  }}
+                />
+                <button 
+                  className="remove-button"
+                  onClick={() => {
+                    setFormMainImage(null);
+                    setHasUnsavedChanges(true);
+                  }}
+                >
+                  <FaTimes /> Remove
+                </button>
+              </div>
+            ) : (
+              <div className="upload-button">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={async (e) => await handleImageUpload(e.target.files[0])}
+                  style={{ display: 'none' }}
+                  id="image-upload"
+                />
+                <label htmlFor="image-upload">
+                  Choose Image
+                </label>
+              </div>
+            )}
+          </ImageUploadContainer>
         </FormGroup>
 
         <FormGroup>
@@ -250,100 +286,61 @@ const EditArticle = () => {
               onChange={handleContentChange}
               placeholder="Write your article content here..."
             />
-
             <p style={{ fontSize: '14px', color: '#555', marginTop: '5px' }}>
               Word count: {htmlContent.split(/\s+/).length}
             </p>
           </div>
-
         </FormGroup>
 
-        <MetaInfo>
+        <div className="meta-info">
           <div>
-            <strong>Reading Time:</strong> {readingTime} min
+            <strong>Author:</strong> {article.author?.name || 'Unknown'}
           </div>
           <div>
             <strong>Last Updated:</strong> {new Date(article.updatedAt || article.publishedDate).toLocaleString()}
           </div>
-          <div>
-            <strong>Author:</strong> {article.author?.name || 'Unknown'}
-          </div>
-        </MetaInfo>
+        </div>
+      </FormContainer>
 
-        <ButtonGroup>
-          <CancelButton type="button" onClick={() => navigate(-1)} disabled={isSubmitting}>
-            <FaTimes /> Cancel
-          </CancelButton>
-          <SaveButton
-            type="submit"
-            disabled={isSubmitting || !formTitle.trim() || !htmlContent || htmlContent === '<p></p>'}
-          >
-            {isSubmitting ? (
-              <>
-                <Spinner /> Saving...
-              </>
-            ) : (
-              <>
-                <FaSave /> Save Changes
-              </>
-            )}
-          </SaveButton>
-        </ButtonGroup>
-      </Form>
+      <ButtonGroup>
+        <CancelButton
+          type="button"
+          onClick={() => {
+            if (hasUnsavedChanges && !window.confirm('You have unsaved changes. Are you sure you want to leave?')) return;
+            navigate(-1);
+          }}
+          disabled={isSubmitting}
+        >
+          <FaTimes /> Cancel
+        </CancelButton>
+        <SaveButton
+          type="button"
+          onClick={handleSubmit}
+          disabled={isSubmitting || !formTitle.trim() || !htmlContent || htmlContent === '<p></p>'}
+        >
+          {isSubmitting ? (
+            <>
+              <Spinner /> Saving...
+            </>
+          ) : (
+            <>
+              <FaSave /> Save Changes
+            </>
+          )}
+        </SaveButton>
+      </ButtonGroup>
     </EditContainer>
   );
 };
-// Image Uploader Component with progress indicator
-const ImageUploader = ({ image, onUpload, onRemove, uploadProgress }) => {
-  const handleFileChange = async (e) => {
-    const file = e.target.files[0];
-    if (file) await onUpload(file);
-  };
 
-  return (
-    <ImageUploadContainer>
-      {image?.asset ? (
-        <ImagePreview>
-          <img
-            src={urlFor(image).width(400).url()}
-            alt="Featured preview"
-            onError={(e) => {
-              e.target.src = 'https://via.placeholder.com/400x225?text=Image+not+found';
-            }}
-          />
-          <RemoveButton onClick={onRemove}>
-            <FaTimes /> Remove
-          </RemoveButton>
-        </ImagePreview>
-      ) : (
-        <>
-          <UploadButton>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              style={{ display: 'none' }}
-              id="image-upload"
-            />
-            <label htmlFor="image-upload">
-              {uploadProgress > 0 ? `Uploading... ${uploadProgress}%` : 'Choose Image'}
-            </label>
-          </UploadButton>
-          {uploadProgress > 0 && (
-            <ProgressBar>
-              <ProgressFill style={{ width: `${uploadProgress}%` }} />
-            </ProgressBar>
-          )}
-        </>
-      )}
-    </ImageUploadContainer>
-  );
-};
-
+// Styled Components
 const EditContainer = styled.div`
   max-width: 1000px;
   margin: 0 auto;
   padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 
   @media (max-width: 768px) {
     padding: 15px;
@@ -399,7 +396,7 @@ const Title = styled.h1`
   }
 `;
 
-const Form = styled.form`
+const FormContainer = styled.div`
   background: #fff;
   padding: 30px;
   border-radius: 8px;
@@ -407,6 +404,69 @@ const Form = styled.form`
 
   @media (max-width: 768px) {
     padding: 20px;
+  }
+
+  .slug-container {
+    display: flex;
+    align-items: center;
+    background: #f9f9f9;
+    border-radius: 6px;
+    overflow: hidden;
+
+    @media (max-width: 768px) {
+      flex-direction: column;
+      align-items: stretch;
+    }
+  }
+
+  .slug-prefix {
+    padding: 12px 15px;
+    background: #eee;
+    color: #666;
+    font-size: 16px;
+
+    @media (max-width: 768px) {
+      padding: 10px;
+      font-size: 14px;
+    }
+  }
+
+  .slug-input {
+    flex: 1;
+    border: none;
+    background: #f9f9f9;
+    border-radius: 0;
+    padding-left: 10px;
+
+    @media (max-width: 768px) {
+      padding: 10px;
+    }
+  }
+
+  .meta-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin: 25px 0;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #495057;
+
+    @media (max-width: 768px) {
+      font-size: 13px;
+      gap: 10px;
+    }
+
+    div {
+      display: flex;
+      gap: 5px;
+    }
+
+    strong {
+      font-weight: 600;
+    }
   }
 `;
 
@@ -450,40 +510,64 @@ const Input = styled.input`
   }
 `;
 
-const SlugContainer = styled.div`
-  display: flex;
-  align-items: center;
-  background: #f9f9f9;
-  border-radius: 6px;
-  overflow: hidden;
+const ImageUploadContainer = styled.div`
+  margin-top: 5px;
 
-  @media (max-width: 768px) {
-    flex-direction: column;
-    align-items: stretch;
+  .image-preview {
+    position: relative;
+    max-width: 100%;
+    margin-bottom: 15px;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid #eee;
+
+    img {
+      width: 100%;
+      height: auto;
+      max-height: 300px;
+      object-fit: contain;
+      display: block;
+    }
   }
-`;
 
-const SlugPrefix = styled.span`
-  padding: 12px 15px;
-  background: #eee;
-  color: #666;
-  font-size: 16px;
-
-  @media (max-width: 768px) {
-    padding: 10px;
+  .remove-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(220, 53, 69, 0.9);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 12px;
+    cursor: pointer;
     font-size: 14px;
+    transition: all 0.2s;
+
+    &:hover {
+      background: rgba(200, 35, 51, 0.9);
+    }
   }
-`;
 
-const SlugInput = styled(Input)`
-  flex: 1;
-  border: none;
-  background: #f9f9f9;
-  border-radius: 0;
-  padding-left: 10px;
+  .upload-button {
+    label {
+      display: inline-block;
+      padding: 12px 20px;
+      background: #f8f9fa;
+      border: 2px dashed #dee2e6;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 15px;
+      color: #495057;
 
-  @media (max-width: 768px) {
-    padding: 10px;
+      &:hover {
+        background: #e9ecef;
+        border-color: #adb5bd;
+      }
+    }
   }
 `;
 
@@ -522,7 +606,7 @@ const SaveButton = styled.button`
 const CancelButton = styled.button`
   display: flex;
   align-items: center;
-  justify-content: center;  /* Add this line */
+  justify-content: center;
   gap: 8px;
   padding: 12px 24px;
   background: #f8f9fa;
@@ -547,32 +631,6 @@ const CancelButton = styled.button`
   @media (max-width: 768px) {
     font-size: 14px;
     padding: 10px 15px;
-  }
-`;
-
-const MetaInfo = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 15px;
-  margin: 25px 0;
-  padding: 15px;
-  background: #f8f9fa;
-  border-radius: 6px;
-  font-size: 14px;
-  color: #495057;
-
-  @media (max-width: 768px) {
-    font-size: 13px;
-    gap: 10px;
-  }
-
-  div {
-    display: flex;
-    gap: 5px;
-  }
-
-  strong {
-    font-weight: 600;
   }
 `;
 
@@ -609,82 +667,6 @@ const Spinner = styled.span`
       transform: rotate(360deg);
     }
   }
-`;
-
-const ImageUploadContainer = styled.div`
-  margin-top: 5px;
-`;
-
-const ImagePreview = styled.div`
-  position: relative;
-  max-width: 100%;
-  margin-bottom: 15px;
-  border-radius: 6px;
-  overflow: hidden;
-  border: 1px solid #eee;
-
-  img {
-    width: 100%;
-    height: auto;
-    max-height: 300px;
-    object-fit: contain;
-    display: block;
-  }
-`;
-
-const RemoveButton = styled.button`
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  background: rgba(220, 53, 69, 0.9);
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 8px 12px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s;
-
-  &:hover {
-    background: rgba(200, 35, 51, 0.9);
-  }
-`;
-
-const UploadButton = styled.div`
-  label {
-    display: inline-block;
-    padding: 12px 20px;
-    background: #f8f9fa;
-    border: 2px dashed #dee2e6;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-size: 15px;
-    color: #495057;
-
-    &:hover {
-      background: #e9ecef;
-      border-color: #adb5bd;
-    }
-  }
-`;
-
-const ProgressBar = styled.div`
-  width: 100%;
-  height: 6px;
-  background: #e9ecef;
-  border-radius: 3px;
-  margin-top: 10px;
-  overflow: hidden;
-`;
-
-const ProgressFill = styled.div`
-  height: 100%;
-  background: #007BFF;
-  transition: width 0.3s ease;
 `;
 
 export default EditArticle;
