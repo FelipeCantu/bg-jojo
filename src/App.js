@@ -48,7 +48,7 @@ function App() {
           <Route path="/tribute/:slug" element={<TributeDetail />} />
           <Route path="/yourgift" element={<YourGift />} />
           <Route path="/donate" element={<Donate />} />
-          <Route path="/supporting-givebackjojo" element={<SupportingGiveBackJojo />} />
+          <Route path="/SupportingGiveBackJojo" element={<SupportingGiveBackJojo />} />
           <Route path="/account-settings/*" element={<AccountSettings />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/notifications" element={<Notifications />} />
