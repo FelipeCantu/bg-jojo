@@ -48,19 +48,20 @@ const Nav = styled.nav`
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 70px; /* Reduced from 90px */
+  height: 70px;
   z-index: 1000;
   background-color: var(--primary-color);
   padding: 0 1rem;
   box-shadow: var(--box-shadow);
   
   @media (max-width: 768px) {
-    height: 60px; /* Thinner navbar on mobile */
-    padding: 0.5rem 1rem;
-    justify-content: space-between; /* Align logo left and menu right */
-    flex-direction: row; /* Keep horizontal layout */
+    height: 80px; /* Increased mobile navbar height */
+    padding: 1rem 1.5rem; /* Increased padding */
+    justify-content: space-between;
+    flex-direction: row;
   }
 `;
+
 
 const NavContent = styled.div`
   display: flex;
@@ -87,7 +88,7 @@ const LogoLink = styled(Link)`
 `;
 
 const Logo = styled.img`
-  height: 60px; /* Reduced from 80px */
+  height: 60px;
   width: auto;
   transition: transform 0.3s ease;
   
@@ -96,7 +97,7 @@ const Logo = styled.img`
   }
   
   @media (max-width: 768px) {
-    height: 50px; /* Reduced from 70px */
+    height: 65px; /* Increased mobile logo size */
   }
 `;
 

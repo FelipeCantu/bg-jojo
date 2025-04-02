@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useContext, useMemo } from "react";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { app } from "./firebaseconfig";
+import { motion, AnimatePresence } from "framer-motion";
 
 // Create the AuthContext with a default value
 const AuthContext = createContext({
@@ -60,6 +61,28 @@ export function AuthProvider({ children }) {
     isAuthenticated: !!currentUser,
   }), [currentUser, loading, error]);
 
+  // Animation variants
+  const pageVariants = {
+    initial: { 
+      y: 50, 
+      opacity: 0 
+    },
+    animate: { 
+      y: 0, 
+      opacity: 1,
+      transition: {
+        type: 'spring',
+        stiffness: 100,
+        damping: 20,
+        duration: 0.5
+      }
+    },
+    exit: { 
+      y: 50, 
+      opacity: 0 
+    }
+  };
+
   return (
     <AuthContext.Provider value={value}>
       {!loading && error ? (
@@ -67,7 +90,17 @@ export function AuthProvider({ children }) {
           Authentication error: {error}. Please refresh the page.
         </div>
       ) : (
-        children
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={window.location.pathname}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            variants={pageVariants}
+          >
+            {children}
+          </motion.div>
+        </AnimatePresence>
       )}
     </AuthContext.Provider>
   );

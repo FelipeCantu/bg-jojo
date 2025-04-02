@@ -201,6 +201,7 @@ const LinkWrapper = styled(Link)`
   justify-content: center;
 `;
 
+
 const TopLeftSection = styled.div`
   display: flex;
   flex-direction: column;

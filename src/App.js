@@ -1,5 +1,6 @@
+import { useEffect } from 'react';
 import './App.css';
-import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { Route, Routes, Navigate, useLocation } from 'react-router-dom';
 import {
   Home,
   Navbar,
@@ -24,42 +25,93 @@ import {
   ArticleForm,
   EditArticle
 } from './components';
+import { motion, AnimatePresence } from 'framer-motion';
+
+// Scroll to top component
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+};
+
+// Enhanced animation wrapper with smooth slide-up effect
+const SlideUpRoute = ({ children }) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 100 }}
+      animate={{ 
+        opacity: 1, 
+        y: 0,
+        transition: {
+          type: 'spring',
+          damping: 20,
+          stiffness: 100,
+          mass: 0.5
+        }
+      }}
+      exit={{ 
+        opacity: 0, 
+        y: 100,
+        transition: {
+          duration: 0.3,
+          ease: 'easeInOut'
+        }
+      }}
+      style={{
+        position: 'relative',
+        width: '100%',
+        minHeight: 'calc(100vh - 120px)' // Adjust based on header/footer height
+      }}
+    >
+      {children}
+    </motion.div>
+  );
+};
 
 function App() {
+  const location = useLocation();
+
   return (
     <div className="App">
-      <Router>
-        <Navbar />
-        <Routes>
+      <Navbar />
+      <ScrollToTop />
+      
+      <AnimatePresence mode="wait" initial={false}>
+        <Routes location={location} key={location.pathname}>
           {/* Redirect / to /home */}
-          <Route path="/" element={<Navigate to="/home" />} />
+          <Route path="/" element={<Navigate to="/home" replace />} />
 
-          {/* Define main routes */}
-          <Route path="/home" element={<Home />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/hotlines" element={<Hotlines />} />
-          <Route path="/getinvolved" element={<GetInvolved />} />
-          <Route path="/events" element={<Events />} />
-          <Route path="/events/:id" element={<EventDetail />} />
-          <Route path="/articles" element={<ArticleList />} />
-          <Route path="/article/:id" element={<ArticleDetail />} />
-          <Route path="/edit-article/:articleId" element={<EditArticle />} />
-          <Route path="/tributes" element={<TributeGallery />} />
-          <Route path="/tribute/:slug" element={<TributeDetail />} />
-          <Route path="/yourgift" element={<YourGift />} />
-          <Route path="/donate" element={<Donate />} />
-          <Route path="/SupportingGiveBackJojo" element={<SupportingGiveBackJojo />} />
-          <Route path="/account-settings/*" element={<AccountSettings />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/notifications" element={<Notifications />} />
-          <Route path="/subscriptions" element={<Subscriptions />} />
-          <Route path="/create-article" element={<ArticleForm />} />
+          {/* Main routes with enhanced slide-up animation */}
+          <Route path="/home" element={<SlideUpRoute><Home /></SlideUpRoute>} />
+          <Route path="/about" element={<SlideUpRoute><About /></SlideUpRoute>} />
+          <Route path="/hotlines" element={<SlideUpRoute><Hotlines /></SlideUpRoute>} />
+          <Route path="/getinvolved" element={<SlideUpRoute><GetInvolved /></SlideUpRoute>} />
+          <Route path="/events" element={<SlideUpRoute><Events /></SlideUpRoute>} />
+          <Route path="/events/:id" element={<SlideUpRoute><EventDetail /></SlideUpRoute>} />
+          <Route path="/articles" element={<SlideUpRoute><ArticleList /></SlideUpRoute>} />
+          <Route path="/article/:id" element={<SlideUpRoute><ArticleDetail /></SlideUpRoute>} />
+          <Route path="/edit-article/:articleId" element={<SlideUpRoute><EditArticle /></SlideUpRoute>} />
+          <Route path="/tributes" element={<SlideUpRoute><TributeGallery /></SlideUpRoute>} />
+          <Route path="/tribute/:slug" element={<SlideUpRoute><TributeDetail /></SlideUpRoute>} />
+          <Route path="/yourgift" element={<SlideUpRoute><YourGift /></SlideUpRoute>} />
+          <Route path="/donate" element={<SlideUpRoute><Donate /></SlideUpRoute>} />
+          <Route path="/SupportingGiveBackJojo" element={<SlideUpRoute><SupportingGiveBackJojo /></SlideUpRoute>} />
+          <Route path="/account-settings/*" element={<SlideUpRoute><AccountSettings /></SlideUpRoute>} />
+          <Route path="/profile" element={<SlideUpRoute><Profile /></SlideUpRoute>} />
+          <Route path="/notifications" element={<SlideUpRoute><Notifications /></SlideUpRoute>} />
+          <Route path="/subscriptions" element={<SlideUpRoute><Subscriptions /></SlideUpRoute>} />
+          <Route path="/create-article" element={<SlideUpRoute><ArticleForm /></SlideUpRoute>} />
 
-          {/* Catch-all route for 404 */}
-          <Route path="*" element={<NotFound />} />
+          {/* 404 route */}
+          <Route path="*" element={<SlideUpRoute><NotFound /></SlideUpRoute>} />
         </Routes>
-        <Footer />
-      </Router>
+      </AnimatePresence>
+
+      <Footer />
     </div>
   );
 }

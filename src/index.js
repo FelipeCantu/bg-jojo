@@ -3,18 +3,19 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
-import { AuthProvider } from "./AuthContext"; 
-import { ThemeProvider, studioTheme } from '@sanity/ui'; // Import ThemeProvider from Sanity UI
+import { AuthProvider } from "./AuthContext";
+import { ThemeProvider, studioTheme } from '@sanity/ui';
+import { BrowserRouter } from 'react-router-dom';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, error: null };
   }
 
   static getDerivedStateFromError(error) {
-    return { hasError: true };
+    return { hasError: true, error };
   }
 
   componentDidCatch(error, errorInfo) {
@@ -23,7 +24,15 @@ class ErrorBoundary extends React.Component {
 
   render() {
     if (this.state.hasError) {
-      return <div>Something went wrong. Please refresh the page.</div>;
+      return (
+        <div style={{ padding: '2rem', textAlign: 'center' }}>
+          <h2>Something went wrong</h2>
+          <p>{this.state.error?.message || 'Unknown error'}</p>
+          <button onClick={() => window.location.reload()}>
+            Refresh Page
+          </button>
+        </div>
+      );
     }
 
     return this.props.children;
@@ -34,11 +43,13 @@ const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
     <ErrorBoundary>
-      <AuthProvider>
-        <ThemeProvider theme={studioTheme}> {/* Wrap with ThemeProvider */}
-          <App />
-        </ThemeProvider>
-      </AuthProvider>
+      <BrowserRouter>
+        <AuthProvider>
+          <ThemeProvider theme={studioTheme}>
+            <App />
+          </ThemeProvider>
+        </AuthProvider>
+      </BrowserRouter>
     </ErrorBoundary>
   </React.StrictMode>
 );

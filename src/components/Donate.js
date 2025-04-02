@@ -31,7 +31,6 @@ const Donate = () => {
                 </DonationList>
                 <LearnMore to="/YourGift">Learn More</LearnMore>
 
-                {/* Divider Bar */}
                 <Divider />
 
                 <Sponsorship />
@@ -42,94 +41,163 @@ const Donate = () => {
 
 // Styled Components
 const BackgroundWrapper = styled.div`
-  background: #fb9e8a;  /* Background Color Behind Everything */
-  padding: 60px 0;
+  background: #fb9e8a;
+  padding: 2rem 1rem;
+  
+  @media (min-width: 768px) {
+    padding: 3rem 2rem;
+  }
 `;
 
 const Container = styled.div`
   text-align: center;
-  padding: 40px;
-  background: #fcd3c1; /* Keeps Content Readable */
+  padding: 2rem;
+  background: #fcd3c1;
   border-radius: 10px;
-  max-width: 80%;
-  margin: auto;
+  max-width: 1200px;
+  margin: 0 auto;
   box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  
+  @media (min-width: 768px) {
+    padding: 3rem;
+  }
 `;
 
 const Title = styled.h2`
-  font-size: 50px;
+  font-size: 2rem;
   font-weight: bold;
   color: #cc4200;
+  margin-bottom: 0.5rem;
+  
+  @media (min-width: 768px) {
+    font-size: 3rem;
+  }
 `;
 
 const Subtitle = styled.p`
-  font-size: 16px;
+  font-size: 1rem;
   color: #cc4200;
-  margin: 10px 0 20px;
+  margin: 0 auto 1.5rem;
+  max-width: 800px;
+  line-height: 1.4;
+  
+  @media (min-width: 768px) {
+    font-size: 1.25rem;
+    margin-bottom: 2rem;
+  }
 `;
 
-const StartButton = styled(Link)`  /* Styled as a Link component */
+const StartButton = styled(Link)`
   background: #cc4200;
   color: white;
-  padding: 10px 20px;
+  padding: 0.75rem 1.5rem;
   border: none;
   border-radius: 5px;
-  font-size: 16px;
+  font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.3s;
+  transition: all 0.3s ease;
   display: inline-block;
   text-decoration: none;
+  margin-bottom: 2rem;
+  
   &:hover {
-    background: #003f52;
+    background: #054944;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+  
+  @media (min-width: 768px) {
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
   }
 `;
 
 const DonationList = styled.div`
-  margin: 30px 0;
-  text-align: left;
-`;
-
-const DonationItem = styled.div`
-  background: #f8ddd2;  /* Keeps Each Box Readable */
-  padding: 15px;
-  margin-bottom: 10px;
-  border-radius: 5px;
-  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
-  display: flex;
-  align-items: center;
-  gap: 15px;
-`;
-
-const Amount = styled.span`
-  font-size: 18px;
-  font-weight: bold;
-  color: #a73602;
-`;
-
-const Description = styled.p`
-  font-size: 14px;
-  color: #cc4200;
-  margin: 0;
-`;
-
-const LearnMore = styled(Link)`
-  display: block;
-  margin-top: 20px;
-  font-size: 16px;
-  color: #cc4200;
-  text-decoration: none;
-  cursor: pointer;
-  &:hover {
-    text-decoration: underline;
+  margin: 2rem auto;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  max-width: 800px;
+  
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
   }
 `;
 
-// Divider Bar
+const DonationItem = styled.div`
+  background: #f8ddd2;
+  padding: 1.25rem;
+  border-radius: 8px;
+  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: transform 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+`;
+
+const Amount = styled.span`
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #a73602;
+  min-width: 80px;
+  
+  @media (min-width: 768px) {
+    font-size: 1.5rem;
+    min-width: 100px;
+  }
+`;
+
+const Description = styled.p`
+  font-size: 0.9rem;
+  color: #cc4200;
+  margin: 0;
+  text-align: left;
+  line-height: 1.4;
+  
+  @media (min-width: 768px) {
+    font-size: 1rem;
+  }
+`;
+
+const LearnMore = styled(Link)`
+  display: inline-block;
+  margin-top: 1.5rem;
+  font-size: 1rem;
+  color: #cc4200;
+  text-decoration: none;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    text-decoration: underline;
+    background-color: rgba(204, 66, 0, 0.1);
+  }
+  
+  @media (min-width: 768px) {
+    font-size: 1.1rem;
+    margin-top: 2rem;
+  }
+`;
+
 const Divider = styled.div`
   width: 100%;
-  height: 3px;
-  background: black;
-  margin: 50px 0;
+  height: 2px;
+  background: rgba(0, 0, 0, 0.1);
+  margin: 3rem auto;
+  max-width: 800px;
+  
+  @media (min-width: 768px) {
+    margin: 4rem auto;
+  }
 `;
 
 export default Donate;

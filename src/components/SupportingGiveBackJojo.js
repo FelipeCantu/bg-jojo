@@ -7,181 +7,210 @@ const SupportingGiveBackJojo = () => {
 
     return (
         <BackgroundWrapper>
-            <Wrapper>
-                <Container>
-                    <ContentWrapper>
-                        <Image
-                            src="https://static.wixstatic.com/media/bf5eb5d4973f47119364c3e64d067003.jpg/v1/fill/w_383,h_400,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/bf5eb5d4973f47119364c3e64d067003.jpg"
-                            alt="Supporting Jojo"
-                        />
-                        <TextWrapper>
-                            <Title>Supporting Give Back JoJo</Title>
-                            <Subtitle>Make a Difference</Subtitle>
-                            <Divider />
-                            <Description>
-                                As GoFundMe takes 3% +$.30 per donation, we decided that donations issued via cash, Zelle, Apple Cash, Venmo, etc., would be best.
-                            </Description>
-                            <PaymentOptions>
-                                <StyledLink href={venmoLink} target="_blank" rel="noopener noreferrer">
-                                    <PaymentOption>
-                                        <PaymentTitle>Venmo</PaymentTitle>
-                                    </PaymentOption>
-                                </StyledLink>
-                                <StyledLink href={zelleLink} target="_blank" rel="noopener noreferrer">
-                                    <PaymentOption>
-                                        <PaymentTitle>Zelle</PaymentTitle>
-                                    </PaymentOption>
-                                </StyledLink>
-                            </PaymentOptions>
-                        </TextWrapper>
-                    </ContentWrapper>
-                </Container>
-            </Wrapper>
+            <Container>
+                <ContentWrapper>
+                    <Image
+                        src="https://static.wixstatic.com/media/bf5eb5d4973f47119364c3e64d067003.jpg/v1/fill/w_383,h_400,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/bf5eb5d4973f47119364c3e64d067003.jpg"
+                        alt="Supporting Jojo"
+                    />
+                    <TextWrapper>
+                        <Title>Supporting Give Back JoJo</Title>
+                        <Subtitle>Make a Difference</Subtitle>
+                        <Divider />
+                        <Description>
+                            As GoFundMe takes 3% +$.30 per donation, we decided that donations issued via cash, Zelle, Apple Cash, Venmo, etc., would be best.
+                        </Description>
+                        <PaymentOptions>
+                            <StyledLink href={venmoLink} target="_blank" rel="noopener noreferrer">
+                                <PaymentOption>
+                                    <PaymentTitle>Venmo</PaymentTitle>
+                                </PaymentOption>
+                            </StyledLink>
+                            <StyledLink href={zelleLink} target="_blank" rel="noopener noreferrer">
+                                <PaymentOption>
+                                    <PaymentTitle>Zelle</PaymentTitle>
+                                </PaymentOption>
+                            </StyledLink>
+                        </PaymentOptions>
+                    </TextWrapper>
+                </ContentWrapper>
+            </Container>
         </BackgroundWrapper>
     );
 };
 
 // Styled Components
 const BackgroundWrapper = styled.div`
-    background: #fcd3c1; /* Background color behind everything */
-    min-height: 100vh; /* Ensures the background covers full screen */
+    background: #fcd3c1;
+    min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
-`;
+    padding: 1rem;
 
-const Wrapper = styled.div`
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
+    @media (min-width: 768px) {
+        padding: 2rem;
+    }
 `;
 
 const Container = styled.div`
-    text-align: center;
-    padding: 40px;
-    background: #fb9e8a; /* Keeps content readable */
+    background: #fb9e8a;
     border-radius: 10px;
-    max-width: 60%;
     box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 1200px;
+    padding: 2rem;
+    margin: 0 auto;
+
     @media (max-width: 768px) {
-        max-width: 100%;
-        height: 100vh;
+        padding: 1.5rem;
         border-radius: 0;
     }
 `;
 
-const Title = styled.h2`
-    font-size: 28px;
-    font-weight: normal;
-    color: #cc4200;
-    margin-bottom: 0px;
-`;
-
-const Subtitle = styled.h1`
-    font-size: 50px;
-    font-weight: normal;
-    color: #cc4200;
-    margin-top: 10px;
-`;
-
-const Divider = styled.div`
-  width: 10%;
-  height: 1px;
-  background: black;
-`;
-
 const ContentWrapper = styled.div`
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 30px;
+    gap: 2rem;
 
-    @media (max-width: 768px) {
-        flex-direction: column;
-        gap: 20px;
+    @media (min-width: 992px) {
+        flex-direction: row;
+        align-items: center;
+        gap: 3rem;
     }
 `;
 
 const Image = styled.img`
-    max-width: 50%;
+    width: 100%;
+    max-width: 400px;
     height: auto;
     border-radius: 10px;
+    object-fit: cover;
 
-    @media (max-width: 768px) {
-        max-width: 80%;
+    @media (min-width: 992px) {
+        width: 45%;
+        max-width: 500px;
     }
 `;
 
 const TextWrapper = styled.div`
-    text-align: left;
-    max-width: 50%;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    align-items: flex-start;
-    width: 100%; 
+    width: 100%;
+    text-align: center;
 
-    @media (max-width: 768px) {
-        max-width: 100%;
+    @media (min-width: 992px) {
+        width: 55%;
+        text-align: left;
+    }
+`;
+
+const Title = styled.h2`
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: #cc4200;
+    margin-bottom: 0.5rem;
+
+    @media (min-width: 768px) {
+        font-size: 2rem;
+    }
+`;
+
+const Subtitle = styled.h1`
+    font-size: 2rem;
+    font-weight: 600;
+    color: #cc4200;
+    margin-top: 0.5rem;
+    margin-bottom: 1rem;
+
+    @media (min-width: 768px) {
+        font-size: 2.5rem;
+    }
+`;
+
+const Divider = styled.div`
+    width: 80px;
+    height: 3px;
+    background: #cc4200;
+    margin: 1.5rem auto;
+
+    @media (min-width: 992px) {
+        margin: 1.5rem 0;
     }
 `;
 
 const Description = styled.p`
-    font-size: 16px;
+    font-size: 1rem;
     color: #cc4200;
-    margin-top: 10px;
+    line-height: 1.5;
+    margin-bottom: 2rem;
+
+    @media (min-width: 768px) {
+        font-size: 1.1rem;
+    }
 `;
 
 const PaymentOptions = styled.div`
-    margin-top: 20px;
     display: flex;
-    justify-content: flex-end;
-    gap: 20px;
+    flex-direction: column;
+    gap: 1rem;
     width: 100%;
+    margin-top: 1.5rem;
+
+    @media (min-width: 480px) {
+        flex-direction: row;
+        justify-content: center;
+    }
+
+    @media (min-width: 992px) {
+        justify-content: flex-start;
+    }
 `;
 
 const PaymentOption = styled.button`
-  padding: 5px 20px;
-  border: 1px solid #004d40;
-  background-color: #004d40;
-  color: white;
-  box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.2);
-  cursor: pointer;
-  font-size: 10px;
-  font-weight: 100;
-  font-family: 'Roboto', sans-serif;
-  transition: background 0.3s ease-in-out, color 0.3s ease-in-out;
-  width: 150px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  &:hover {
-    background-color: white;
-    color: #004d40;
-  }
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    gap: 10px;
-    margin-top: 20px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 20px;
+    padding: 0.75rem 1.5rem;
+    border: 1px solid #004d40;
+    background-color: #004d40;
+    color: white;
+    border-radius: 5px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
     width: 100%;
-  }
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+
+    &:hover {
+        background-color: white;
+        color: #004d40;
+    }
+
+    @media (min-width: 480px) {
+        width: auto;
+        min-width: 150px;
+    }
 `;
 
 const PaymentTitle = styled.h4`
-    font-size: 18px;
-    font-weight: bold;
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+
+    @media (min-width: 768px) {
+        font-size: 1.1rem;
+    }
 `;
 
 const StyledLink = styled.a`
-  text-decoration: none;
+    text-decoration: none;
+    color: inherit;
+    width: 100%;
+
+    @media (min-width: 480px) {
+        width: auto;
+    }
 `;
 
 export default SupportingGiveBackJojo;
