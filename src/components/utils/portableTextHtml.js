@@ -62,8 +62,20 @@ export const portableTextToHtml = (portableText) => {
       // Handle both reference and direct asset objects
       if (asset?._ref) {
         const imgBuilder = urlFor(block);
+        
+        // Apply crop if available
+        if (block.crop) {
+          imgBuilder
+            .cropLeft(block.crop.left)
+            .cropRight(block.crop.right)
+            .cropTop(block.crop.top)
+            .cropBottom(block.crop.bottom);
+        }
+
+        // Apply dimensions if specified
         if (block.width) imgBuilder.width(block.width);
         if (block.height) imgBuilder.height(block.height);
+        
         imageUrl = imgBuilder.url();
         
         // Extract dimensions from reference if available
@@ -95,15 +107,21 @@ export const portableTextToHtml = (portableText) => {
       // Handle custom classes
       const customClasses = block.customClass ? ` ${block.customClass}` : '';
       
-      // Handle hotspot/crop if available
-      const hotspot = block.hotspot;
-      const crop = block.crop;
+      // Handle hotspot for focal point
       let objectPosition = '';
-      
-      if (hotspot) {
-        const x = Math.round(hotspot.x * 100);
-        const y = Math.round(hotspot.y * 100);
+      if (block.hotspot) {
+        const x = Math.round(block.hotspot.x * 100);
+        const y = Math.round(block.hotspot.y * 100);
         objectPosition = `object-position: ${x}% ${y}%;`;
+      }
+
+      // Handle crop for aspect ratio
+      let aspectRatio = '';
+      if (block.crop) {
+        const crop = block.crop;
+        const width = 1 - (crop.left + crop.right);
+        const height = 1 - (crop.top + crop.bottom);
+        aspectRatio = `aspect-ratio: ${width}/${height};`;
       }
 
       // Build image attributes
@@ -113,7 +131,7 @@ export const portableTextToHtml = (portableText) => {
         imageWidth ? `width="${imageWidth}"` : '',
         imageHeight ? `height="${imageHeight}"` : '',
         `class="portable-text-image${customClasses}"`,
-        `style="${objectPosition}"`,
+        `style="${objectPosition}${aspectRatio}"`,
         'loading="lazy"'
       ].filter(Boolean).join(' ');
 
