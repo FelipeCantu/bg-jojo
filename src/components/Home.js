@@ -13,11 +13,11 @@ function Home() {
           Your browser does not support the video tag.
         </VideoBackground>
         <Content>
-          <h1>Reach Out For Help</h1>
-          <p>You Are Not Alone</p>
+          <HeroHeading>Reach Out For Help</HeroHeading>
+          <HeroSubtext>You Are Not Alone</HeroSubtext>
           <HotLink to='/Hotlines'>
             <Button>
-              <p>Hotlines</p>
+              <ButtonText>Hotlines</ButtonText>
               <ChevronRightIcon width={20} height={20} />
             </Button>
           </HotLink>
@@ -28,19 +28,22 @@ function Home() {
   );
 }
 
+// Styled Components
 const MainSection = styled.div`
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-  margin-bottom: 0;
-  padding-bottom: 0;
-  gap: 0;
 `;
 
 const VideoWrapper = styled.div`
-  height: 90vh;
-   @media (max-width: 768px) {
-    height: 60vh;
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  
+  @media (max-width: 768px) {
+    height: 90vh;
   }
 `;
 
@@ -50,70 +53,71 @@ const VideoBackground = styled.video`
   left: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover; 
+  object-fit: cover;
+  object-position: center;
+  margin: 0;
+  padding: 0;
   z-index: -1;
-  pointer-events: none;
-  user-select: none;
 `;
 
 const Content = styled.div`
-  position: relative;
-  color: pink;
-  padding: 20px;
-  font-size: 2rem;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  max-width: 1200px;
   text-align: center;
-  margin: 0 auto;
-  width: 70%;
+  color: pink;
+  padding: 0;
+  margin: 0;
+`;
 
-  h1 {
-    font-size: 5em;
-  }
+const HeroHeading = styled.h1`
+  font-size: clamp(2.5rem, 8vw, 5rem);
+  margin: 0 0 1rem 0;
+  line-height: 1.2;
+  text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+`;
 
-  @media (max-width: 768px) {
-    font-size: 1.5rem;
-    width: 90%;
-    
-    h1 {
-      font-size: 2.5em;
-    }
-  }
+const HeroSubtext = styled.p`
+  font-size: clamp(1.25rem, 4vw, 2rem);
+  margin: 0 0 2rem 0;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
 `;
 
 const Button = styled.button`
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 10px 25px;
+  gap: 0.5rem;
+  padding: 0.75rem 1.75rem;
   border: 1px solid #004d40;
   background-color: white;
   color: #004d40;
-  box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.15);
   cursor: pointer;
-  font-size: 16px;
-  font-weight: 500;
-  transition: background 0.3s ease-in-out;
-  width: 150px;
-  margin: 0 auto; /* Centering the button */
-
+  font-size: clamp(0.9rem, 2vw, 1rem);
+  font-weight: 600;
+  transition: all 0.3s ease;
+  min-width: 150px;
+  
   &:hover {
     background-color: #004d40;
     color: white;
+    transform: translateY(-2px);
+    box-shadow: 2px 4px 10px rgba(0, 0, 0, 0.2);
   }
+`;
 
-  p {
-    margin: 0;
-  }
-
-  svg {
-    width: 20px;
-    height: 20px;
-  }
+const ButtonText = styled.p`
+  margin: 0;
 `;
 
 const HotLink = styled(Link)`
   text-decoration: none;
-  display: flex;
+  display: inline-flex;
   justify-content: center;
 `;
 

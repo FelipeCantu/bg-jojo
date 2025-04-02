@@ -7,7 +7,6 @@ const Menu = () => {
 
   const toggleMenu = () => {
     setOpen(!open);
-    console.log('Sidebar is open:', !open); // Check if the state is toggling correctly
   };
 
   return (
@@ -23,20 +22,21 @@ const Menu = () => {
 };
 
 const StyledMenu = styled.div`
-  width: 2rem;
-  height: 2rem;
-  position: fixed;
-  top: 35px;
-  right: 35px;
+  width: 1.6rem;
+  height: 1.6rem;
+  position: sticky;
+  top: 15px;
+  left: calc(100% - 40px); /* Positions from left edge instead */
   z-index: 9999;
   display: flex;
   flex-direction: column;
   justify-content: space-around;
   cursor: pointer;
+  margin-right: 15px; /* Additional adjustment */
 
   div {
-    width: 2rem;
-    height: 0.25rem;
+    width: 1.6rem;
+    height: 0.2rem;
     background-color: ${({ open }) => (open ? '#000' : '#000')};
     border-radius: 10px;
     transform-origin: 1px;

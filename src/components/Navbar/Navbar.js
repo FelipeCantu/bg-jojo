@@ -2,19 +2,16 @@ import React from 'react';
 import Menu from './Menu';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
-import LoginButton from './LoginButton';  // Import LoginButton
+import LoginButton from './LoginButton';
 
 const Navbar = () => {
   return (
-    
     <Nav>
       <NavContent>
-        {/* Wrap the Logo with Link for navigation */}
         <LogoLink to="/Home">
           <Logo src={require('../../assets/jojologo.png')} alt="Logo" />
         </LogoLink>
 
-        {/* Links are shown only on larger screens */}
         <NavLinks>
           <StyledLink to="/Home">Home</StyledLink>
           <StyledLink to="/Donate">Donate</StyledLink>
@@ -22,156 +19,191 @@ const Navbar = () => {
           <StyledLink to="/Hotlines">Hotlines</StyledLink>
           <StyledLink to="/events">Events</StyledLink>
 
-          {/* "More" dropdown */}
           <MoreLink>
             More
             <DropdownMenu>
               <StyledLink to="/Articles">Articles</StyledLink>
               <StyledLink to="/Tributes">Remembering Loved Ones</StyledLink>
               <StyledLink to="/GetInvolved">Get Involved</StyledLink>
-
             </DropdownMenu>
           </MoreLink>
         </NavLinks>
 
-        {/* Hamburger menu is shown only on small screens */}
         <MobileMenu>
           <Menu />
         </MobileMenu>
 
-        {/* Show LoginButton only on desktop */}
         <NavbarLoginContainer>
-        <LoginButton hideInNavbar={false} />
+          <LoginButton hideInNavbar={false} />
         </NavbarLoginContainer>
-
       </NavContent>
     </Nav>
   );
 };
 
 // Styled components
-const Nav = styled.div`
+const Nav = styled.nav`
   position: sticky;
   top: 0;
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 70px;
-  z-index: 999;
-  background-color: orange;
-  padding-top: 10px;
+  height: 70px; /* Reduced from 90px */
+  z-index: 1000;
+  background-color: var(--primary-color);
+  padding: 0 1rem;
+  box-shadow: var(--box-shadow);
+  
   @media (max-width: 768px) {
-    height: 120px;
-    padding-top: 0;
+    height: 60px; /* Thinner navbar on mobile */
+    padding: 0.5rem 1rem;
+    justify-content: space-between; /* Align logo left and menu right */
+    flex-direction: row; /* Keep horizontal layout */
   }
 `;
 
 const NavContent = styled.div`
   display: flex;
-  justify-content: space-between; /* Align items */
-  width: 85%;
+  justify-content: space-between;
   align-items: center;
+  width: 100%;
+  max-width: 1200px;
+  
   @media (max-width: 768px) {
-    flex-direction: column; /* Stack elements on smaller screens */
-    align-items: flex-start; /* Align to left */
+    flex-direction: row; /* Keep horizontal layout */
+    gap: 0;
+    justify-content: space-between; /* Push logo left and menu right */
   }
 `;
 
 const LogoLink = styled(Link)`
-  text-decoration: none; /* Remove default link styling */
-  cursor: pointer;
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  
+  @media (max-width: 768px) {
+    margin-right: auto; /* Push logo to the far left */
+  }
 `;
 
 const Logo = styled.img`
-  height: 100px;
+  height: 60px; /* Reduced from 80px */
   width: auto;
+  transition: transform 0.3s ease;
+  
+  &:hover {
+    transform: scale(1.05);
+  }
+  
   @media (max-width: 768px) {
-    height: 80px; /* Slightly smaller logo on small screens */
+    height: 50px; /* Reduced from 70px */
   }
 `;
 
 const NavLinks = styled.div`
   display: flex;
-  gap: 20px;
+  gap: 1rem;
+  align-items: center;
+  
   @media (max-width: 768px) {
-    display: none; /* Hide navbar links on small screens */
+    display: none;
   }
 `;
 
 const StyledLink = styled(Link)`
-  color: black;
+  color: var(--text-color);
   text-decoration: none;
-  padding: 10px 20px;
-  font-size: 16px;
-  display: flex;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  font-weight: 500;
+  border-radius: var(--border-radius);
+  transition: all 0.3s ease;
+  
   &:hover {
-    text-decoration: underline;
     color: white;
+    background-color: rgba(0, 0, 0, 0.1);
+    text-decoration: none;
+  }
+  
+  &.active {
+    font-weight: bold;
+    color: white;
+    background-color: rgba(0, 0, 0, 0.2);
   }
 `;
 
 const MoreLink = styled.div`
   position: relative;
   cursor: pointer;
-  padding: 10px 20px;
-  font-size: 16px;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-color);
+  border-radius: var(--border-radius);
   
   &:hover {
     color: white;
-  }
-
-  &:hover > div {
-    display: block; /* Show the dropdown menu on hover */
+    background-color: rgba(0, 0, 0, 0.1);
   }
 `;
 
 const DropdownMenu = styled.div`
-  display: block;
   position: absolute;
   top: 100%;
   left: 0;
-  background-color: orange;
-  box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
-  z-index: 99999;
-  width: max-content;
+  background-color: var(--primary-color);
+  box-shadow: var(--box-shadow);
+  border-radius: var(--border-radius);
+  z-index: 1001;
+  min-width: 200px;
   opacity: 0;
-  transform: translateY(-15px);
   visibility: hidden;
-  transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s ease-in-out, visibility 0.4s linear;
-
+  transform: translateY(-10px);
+  transition: all 0.3s ease;
+  
   ${MoreLink}:hover & {
     opacity: 1;
-    transform: translateY(0);
     visibility: visible;
+    transform: translateY(0);
   }
-
-  a {
+  
+  ${StyledLink} {
     display: block;
-    padding: 12px 20px;
-    color: black;
-    text-decoration: none;
-    transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
-
+    padding: 0.75rem 1rem;
+    border-radius: 0;
+    
     &:hover {
-      background-color: black;
-      color: white;
+      background-color: rgba(0, 0, 0, 0.2);
+    }
+    
+    &:first-child {
+      border-top-left-radius: var(--border-radius);
+      border-top-right-radius: var(--border-radius);
+    }
+    
+    &:last-child {
+      border-bottom-left-radius: var(--border-radius);
+      border-bottom-right-radius: var(--border-radius);
     }
   }
 `;
 
 const MobileMenu = styled.div`
-  @media (min-width: 769px) {
-    display: none; /* Hide the mobile menu on larger screens */
+  display: none;
+  
+  @media (max-width: 768px) {
+    display: block;
+    margin-left: auto; /* Push menu to the far right */
   }
 `;
 
 const NavbarLoginContainer = styled.div`
-  display: none;  /* Hide on small screens */
-
+  display: none;
+  
   @media (min-width: 769px) {
     display: flex;
     align-items: center;
-    justify-content: center;
+    margin-left: 1rem;
   }
 `;
 

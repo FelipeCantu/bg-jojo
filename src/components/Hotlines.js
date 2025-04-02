@@ -72,6 +72,7 @@ const Title = styled.h2`
   font-weight: bold;
   color: #1f2937;
   margin-bottom: 1rem;
+  padding-top: 1rem;
 `;
 
 const Description = styled.p`

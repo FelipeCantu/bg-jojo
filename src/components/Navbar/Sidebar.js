@@ -4,10 +4,7 @@ import { Link } from 'react-router-dom';
 import LoginButton from './LoginButton';
 
 const Sidebar = ({ open, setOpen }) => {
-  // Close the sidebar when a link is clicked
-  const handleLinkClick = () => {
-    setOpen(false); // Close the sidebar
-  };
+  const handleLinkClick = () => setOpen(false);
 
   return (
     <SidebarContainer open={open}>
@@ -33,41 +30,44 @@ const Sidebar = ({ open, setOpen }) => {
 const SidebarContainer = styled.div`
   position: fixed;
   top: 0;
-  left: ${({ open }) => (open ? '0' : '-150%')}; /* Sidebar is off-screen when closed */
+  left: ${({ open }) => (open ? '0' : '-100%')};
   width: 100%;
   height: 100vh;
   background-color: #fff;
   box-shadow: 2px 0px 5px rgba(0, 0, 0, 0.1);
-  padding: 20px;
-  transition: left 0.3s ease; /* Smooth transition */
+  transition: left 0.3s ease;
   z-index: 999;
+  display: flex;
+  justify-content: center; /* Center horizontally */
 `;
 
 const SidebarContent = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 90%;
+  max-width: 400px;
   height: 100%;
-  margin-right: 10%;
+  padding: 20px 0;
 `;
 
 const NavLinks = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 15px;
+  width: 100%;
   margin-top: 30px;
-  justify-content: center;
-  align-items: center;
 `;
 
 const StyledLink = styled(Link)`
   color: black;
   text-decoration: none;
-  padding: 10px;
+  padding: 12px;
   font-size: 16px;
   border-bottom: 1px solid #f0f0f0;
-  width: 100%;
   text-align: center;
+  transition: all 0.2s ease;
+  
   &:hover {
     color: white;
     background-color: #333;
@@ -75,7 +75,9 @@ const StyledLink = styled(Link)`
 `;
 
 const SidebarLoginContainer = styled.div`
-  top: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
   margin-bottom: 20px;
 `;
 

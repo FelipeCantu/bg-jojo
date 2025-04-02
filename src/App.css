@@ -1,16 +1,113 @@
+/* Layout Structure */
 .App {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  position: relative;
+  text-decoration: none !important; /* Ensures no text decoration */
 }
 
-/* Remove overflow: hidden from all children */
-.App > * {
+/* Main Content Area */
+.App > *:not(.Nav):not(.Footer) {
   flex-grow: 1;
+  padding: var(--space-xl) 0;
+  position: relative;
+  text-decoration: none;
 }
 
-/* Optional: Apply overflow: visible to specific components if necessary */
-.Nav, .DropdownMenu {
+/* Navigation Component */
+.Nav {
+  background-color: var(--background);
+  box-shadow: var(--box-shadow);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
   overflow: visible;
+  transition: all 0.3s ease;
+  text-decoration: none;
 }
 
+/* Dropdown Menu System */
+.DropdownMenu {
+  position: relative;
+  display: inline-block;
+  text-decoration: none;
+}
+
+.DropdownMenu-content {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.5rem);
+  background-color: var(--background);
+  box-shadow: var(--box-shadow);
+  border-radius: var(--border-radius);
+  min-width: 220px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1001;
+  padding: var(--space-sm) 0;
+  text-decoration: none;
+}
+
+.DropdownMenu:hover .DropdownMenu-content,
+.DropdownMenu:focus-within .DropdownMenu-content {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  text-decoration: none;
+}
+
+/* Footer Component */
+.Footer {
+  background-color: var(--text-color);
+  color: var(--background);
+  padding: var(--space-xl) 0;
+  margin-top: auto;
+  position: relative;
+  z-index: 100;
+  text-decoration: none;
+}
+
+/* Links - Completely remove all text decoration */
+a, a:hover, a:focus, a:active, a:visited {
+  text-decoration: none !important;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .App > *:not(.Nav):not(.Footer) {
+    padding: var(--space-lg) 0;
+  }
+
+  .DropdownMenu-content {
+    position: static;
+    box-shadow: none;
+    transform: none;
+    width: 100%;
+    opacity: 1;
+    visibility: visible;
+    max-height: 0;
+    overflow: hidden;
+    padding: 0;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+  }
+
+  .DropdownMenu:hover .DropdownMenu-content,
+  .DropdownMenu:focus-within .DropdownMenu-content {
+    max-height: 500px;
+    padding: var(--space-sm) 0;
+  }
+}
+
+/* Small mobile devices */
+@media (max-width: 480px) {
+  .App > *:not(.Nav):not(.Footer) {
+    padding: var(--space-md) 0;
+  }
+  
+  .Footer {
+    padding: var(--space-lg) 0;
+  }
+}

@@ -209,7 +209,7 @@ const MetaInfoContainer = styled.div`
   flex-wrap: wrap;
   align-items: center;
   gap: 1.5rem;
-  margin-bottom: 2rem;
+  margin: 2rem 0;
 `;
 
 const AuthorInfo = styled.div`
@@ -307,7 +307,7 @@ const H4 = styled.h4`
 `;
 
 const Blockquote = styled.blockquote`
-  border-left: 4px solid #007BFF;
+  border-left: 4px solid #054944;
   padding: 1rem 1.5rem;
   margin: 1.5rem 0;
   background: #f5f5f5;

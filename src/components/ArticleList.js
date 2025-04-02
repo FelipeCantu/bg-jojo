@@ -77,7 +77,7 @@ const ArticleList = () => {
                     )}
                     {article.publishedDate && article.readingTime && <Dot>·</Dot>}
                     <ReadingTime>
-                      Estimated Reading Time: {article.readingTime || 'N/A'} minutes
+                       Reading Time: {article.readingTime || 'N/A'} mins
                     </ReadingTime>
                   </DateAndTime>
                 </TopLeftSection>
@@ -132,37 +132,49 @@ const ArticleContainer = styled.div`
 const SearchContainer = styled.div`
   display: flex;
   align-items: center;
-  margin-bottom: 40px; /* Increased margin to add spacing */
-  position: relative; /* Changed to relative to avoid overlap */
+  margin: 40px 0 40px 20px;
+  position: relative;
+  width: 100%;
+  justify-content: flex-start;
 `;
 
 const SearchIcon = styled(FaSearch)`
   cursor: pointer;
   font-size: 1.5rem;
   margin-right: 10px;
-  transition: transform 0.3s ease;
+  transition: all 0.3s ease;
+  color: ${({ show }) => (show ? '#054944' : 'inherit')}; /* Teal when active */
   &:hover {
     transform: scale(1.2);
+    color: #054944; /* Teal on hover */
   }
 `;
 
 const SearchBar = styled.input`
-  display: ${({ show }) => (show ? 'block' : 'none')};
   padding: 10px;
   font-size: 1rem;
   border: none;
   border-bottom: 2px solid #ccc;
   background: transparent;
   outline: none;
-  width: 250px;
-  transition: all 0.3s ease-in-out;
+  width: ${({ show }) => (show ? '250px' : '0')};
   opacity: ${({ show }) => (show ? '1' : '0')};
-  transform: ${({ show }) => (show ? 'translateX(0)' : 'translateX(-20px)')};
+  transform: ${({ show }) => (show ? 'translateX(0)' : 'translateX(-10px)')};
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-left: ${({ show }) => (show ? '10px' : '0')};
+  visibility: ${({ show }) => (show ? 'visible' : 'hidden')};
+  
   &::placeholder {
     color: #aaa;
+    transition: color 0.2s ease;
   }
+  
   &:focus {
-    border-bottom: 2px solid #014a47;
+    border-bottom: 2px solid #054944; /* Your teal color */
+    
+    &::placeholder {
+      color: transparent;
+    }
   }
 `;
 
@@ -187,25 +199,6 @@ const LinkWrapper = styled(Link)`
   text-decoration: none;
   display: flex;
   justify-content: center;
-`;
-
-const ArticleCard = styled.div`
-  background: #f8d8a5;
-  padding: 30px 20px 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  position: relative;
-  transition: transform 0.3s ease;
-  height: 550px;
-  width: 350px;
-  overflow: hidden;
-  margin-bottom: 20px;
-  &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.2);
-  }
 `;
 
 const TopLeftSection = styled.div`
@@ -265,27 +258,66 @@ const ArticleImage = styled.img`
   margin-bottom: 15px;
 `;
 
+
+const ArticleCard = styled.div`
+  background: #f8d8a5;
+  padding: 30px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  transition: transform 0.3s ease;
+  height: 550px; /* Fixed height */
+  width: 350px;
+  overflow: hidden; /* Keep this to contain all elements */
+  margin-bottom: 20px;
+
+  /* New: Create consistent sections */
+  & > *:not(:last-child) {
+    margin-bottom: 15px; /* Consistent spacing between sections */
+  }
+
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.2);
+  }
+`;
+
 const Divider = styled.div`
   width: 100%;
-  height: 2px;
+  height: 2px; /* Fixed height */
   background: black;
-  margin: 10px 0;
+  /* Remove margin - now handled by parent */
+  flex-shrink: 0; /* Prevent collapsing */
 `;
 
 const ArticleTitle = styled.h2`
-  font-size: 1.8rem;
-  font-weight: 500;
-  color: black;
-  margin: 15px 0;
-  flex-grow: 1;
+  font-size: clamp(1.4rem, 2vw, 1.8rem);
+  font-weight: 600;
+  color: #222;
+  /* Remove margin - now handled by parent */
+  flex-grow: 1; /* Take available space */
   display: -webkit-box;
-  // -webkit-line-clamp: 2; 
-  -webkit-box-orient: vertical; 
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
   text-align: center;
-  line-height: 1.2;
-  max-width: 100%; 
+  line-height: 1.4;
+  max-width: 100%;
+  padding: 0 10px;
+  transition: color 0.2s ease;
+  word-break: break-word;
+  
+  ${ArticleCard}:hover & {
+    color: #054944;
+  }
+
+  @media (max-width: 768px) {
+    -webkit-line-clamp: 2;
+    font-size: 1.5rem;
+  }
 `;
 
 export default ArticleList;
