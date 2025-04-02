@@ -45,9 +45,39 @@ const TextEditor = forwardRef(({
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
       }),
-      Image.configure({
-        inline: true,
-        HTMLAttributes: { class: 'editor-image' },
+      Image.extend({
+        addOptions() {
+          return {
+            inline: false,
+            allowBase64: false,
+            HTMLAttributes: {
+              class: 'editor-image',
+              style: 'max-width: 100%; height: auto; display: block; margin: 1em auto;',
+            },
+          };
+        },
+        addAttributes() {
+          return {
+            src: {
+              default: null,
+            },
+            alt: {
+              default: null,
+            },
+            title: {
+              default: null,
+            },
+            width: {
+              default: null,
+            },
+            height: {
+              default: null,
+            },
+            style: {
+              default: null,
+            },
+          };
+        },
       }),
       Link.configure({
         HTMLAttributes: {
@@ -71,7 +101,6 @@ const TextEditor = forwardRef(({
       const html = editor.getHTML();
       lastContentRef.current = html;
       setHasUnsavedChanges(true);
-      // Immediately notify parent of HTML changes
       onChange(html);
     },
     editorProps: {
@@ -150,7 +179,11 @@ const TextEditor = forwardRef(({
       toast.info('Uploading image...');
       const result = await client.assets.upload('image', file);
       toast.success('Image uploaded successfully');
-      return result.url;
+      return {
+        url: result.url,
+        alt: file.name.split('.')[0] || 'Uploaded image',
+        title: file.name.split('.')[0] || 'Uploaded image'
+      };
     } catch (error) {
       console.error('Error uploading image:', error);
       toast.error('Failed to upload image');
@@ -169,9 +202,13 @@ const TextEditor = forwardRef(({
       const file = input.files?.[0];
       if (!file) return;
 
-      const imageUrl = await handleImageUpload(file);
-      if (imageUrl) {
-        editor.chain().focus().setImage({ src: imageUrl }).run();
+      const imageData = await handleImageUpload(file);
+      if (imageData) {
+        editor.chain().focus().setImage({
+          src: imageData.url,
+          alt: imageData.alt,
+          title: imageData.title
+        }).run();
         setHasUnsavedChanges(true);
       }
     };
@@ -208,13 +245,10 @@ const TextEditor = forwardRef(({
   }, [editor]);
 
   const handleSaveClick = useCallback(async () => {
-    // Early return if editor isn't ready or already saving
     if (!editor || isSaving) return;
     
-    // Get current HTML content
     const html = editor.getHTML();
     
-    // Skip saving if content hasn't changed
     if (html === lastContentRef.current && !hasUnsavedChanges) {
       toast.info('No changes to save');
       return;
@@ -224,20 +258,16 @@ const TextEditor = forwardRef(({
       setIsSaving(true);
       toast.info('Saving changes...', { autoClose: false, toastId: 'saving-toast' });
   
-      // Convert to PortableText
       const portableText = await convertHtmlToPortableText(html);
       
-      // Validate the converted content
       if (!portableText || portableText.length === 0) {
         throw new Error('Content conversion failed');
       }
   
-      // Update parent component and local state
       await onChange(portableText);
       lastContentRef.current = html;
       setHasUnsavedChanges(false);
       
-      // Update success notification
       toast.update('saving-toast', {
         render: 'Changes saved successfully',
         type: toast.TYPE.SUCCESS,
@@ -246,14 +276,12 @@ const TextEditor = forwardRef(({
     } catch (error) {
       console.error('Save error:', error);
       
-      // Update error notification
       toast.update('saving-toast', {
         render: error.message || 'Failed to save changes',
         type: toast.TYPE.ERROR,
         autoClose: 5000
       });
       
-      // Preserve unsaved changes state if save failed
       setHasUnsavedChanges(true);
     } finally {
       setIsSaving(false);
@@ -321,11 +349,16 @@ const TextEditor = forwardRef(({
             text-decoration: underline;
           }
           
-          .tiptap-editor img {
+          .tiptap-editor img.editor-image {
             max-width: 100%;
             height: auto;
-            margin: 1em 0;
+            display: block;
+            margin: 1em auto;
             border-radius: 4px;
+          }
+          
+          .tiptap-editor img.editor-image.ProseMirror-selectednode {
+            outline: 2px solid #3182ce;
           }
           
           .tiptap-editor .text-align-left {
@@ -365,22 +398,22 @@ const TextEditor = forwardRef(({
 
         <ToolbarGroup>
           <ToolbarButton
-            onClick={() => editor.chain().focus().toggleBold().run()}
-            data-active={editor.isActive('bold') ? 'true' : 'false'}
+            onClick={() => editor?.chain().focus().toggleBold().run()}
+            data-active={editor?.isActive('bold') ? 'true' : 'false'}
             title="Bold"
           >
             <FaBold />
           </ToolbarButton>
           <ToolbarButton
-            onClick={() => editor.chain().focus().toggleItalic().run()}
-            data-active={editor.isActive('italic') ? 'true' : 'false'}
+            onClick={() => editor?.chain().focus().toggleItalic().run()}
+            data-active={editor?.isActive('italic') ? 'true' : 'false'}
             title="Italic"
           >
             <FaItalic />
           </ToolbarButton>
           <ToolbarButton
-            onClick={() => editor.chain().focus().toggleUnderline().run()}
-            data-active={editor.isActive('underline') ? 'true' : 'false'}
+            onClick={() => editor?.chain().focus().toggleUnderline().run()}
+            data-active={editor?.isActive('underline') ? 'true' : 'false'}
             title="Underline"
           >
             <FaUnderline />
@@ -390,21 +423,21 @@ const TextEditor = forwardRef(({
         <ToolbarGroup>
           <ToolbarButton
             onClick={() => setHeading(1)}
-            data-active={editor.isActive('heading', { level: 1 }) ? 'true' : 'false'}
+            data-active={editor?.isActive('heading', { level: 1 }) ? 'true' : 'false'}
             title="Heading 1"
           >
             <FaHeading size={14} />1
           </ToolbarButton>
           <ToolbarButton
             onClick={() => setHeading(2)}
-            data-active={editor.isActive('heading', { level: 2 }) ? 'true' : 'false'}
+            data-active={editor?.isActive('heading', { level: 2 }) ? 'true' : 'false'}
             title="Heading 2"
           >
             <FaHeading size={14} />2
           </ToolbarButton>
           <ToolbarButton
             onClick={() => setHeading(3)}
-            data-active={editor.isActive('heading', { level: 3 }) ? 'true' : 'false'}
+            data-active={editor?.isActive('heading', { level: 3 }) ? 'true' : 'false'}
             title="Heading 3"
           >
             <FaHeading size={14} />3
@@ -413,22 +446,22 @@ const TextEditor = forwardRef(({
 
         <ToolbarGroup>
           <ToolbarButton
-            onClick={() => editor.chain().focus().toggleBulletList().run()}
-            data-active={editor.isActive('bulletList') ? 'true' : 'false'}
+            onClick={() => editor?.chain().focus().toggleBulletList().run()}
+            data-active={editor?.isActive('bulletList') ? 'true' : 'false'}
             title="Bullet List"
           >
             <FaListUl />
           </ToolbarButton>
           <ToolbarButton
-            onClick={() => editor.chain().focus().toggleOrderedList().run()}
-            data-active={editor.isActive('orderedList') ? 'true' : 'false'}
+            onClick={() => editor?.chain().focus().toggleOrderedList().run()}
+            data-active={editor?.isActive('orderedList') ? 'true' : 'false'}
             title="Numbered List"
           >
             <FaListOl />
           </ToolbarButton>
           <ToolbarButton
-            onClick={() => editor.chain().focus().toggleBlockquote().run()}
-            data-active={editor.isActive('blockquote') ? 'true' : 'false'}
+            onClick={() => editor?.chain().focus().toggleBlockquote().run()}
+            data-active={editor?.isActive('blockquote') ? 'true' : 'false'}
             title="Blockquote"
           >
             <FaQuoteLeft />
@@ -437,22 +470,22 @@ const TextEditor = forwardRef(({
 
         <ToolbarGroup>
           <ToolbarButton
-            onClick={() => editor.chain().focus().setTextAlign('left').run()}
-            data-active={editor.isActive({ textAlign: 'left' }) ? 'true' : 'false'}
+            onClick={() => editor?.chain().focus().setTextAlign('left').run()}
+            data-active={editor?.isActive({ textAlign: 'left' }) ? 'true' : 'false'}
             title="Align Left"
           >
             <FaAlignLeft />
           </ToolbarButton>
           <ToolbarButton
-            onClick={() => editor.chain().focus().setTextAlign('center').run()}
-            data-active={editor.isActive({ textAlign: 'center' }) ? 'true' : 'false'}
+            onClick={() => editor?.chain().focus().setTextAlign('center').run()}
+            data-active={editor?.isActive({ textAlign: 'center' }) ? 'true' : 'false'}
             title="Align Center"
           >
             <FaAlignCenter />
           </ToolbarButton>
           <ToolbarButton
-            onClick={() => editor.chain().focus().setTextAlign('right').run()}
-            data-active={editor.isActive({ textAlign: 'right' }) ? 'true' : 'false'}
+            onClick={() => editor?.chain().focus().setTextAlign('right').run()}
+            data-active={editor?.isActive({ textAlign: 'right' }) ? 'true' : 'false'}
             title="Align Right"
           >
             <FaAlignRight />
@@ -462,7 +495,7 @@ const TextEditor = forwardRef(({
         <ToolbarGroup>
           <ToolbarButton
             onClick={insertLink}
-            data-active={editor.isActive('link') ? 'true' : 'false'}
+            data-active={editor?.isActive('link') ? 'true' : 'false'}
             title="Insert Link"
           >
             <FaLink />
@@ -477,15 +510,15 @@ const TextEditor = forwardRef(({
 
         <ToolbarGroup>
           <ToolbarButton
-            onClick={() => editor.chain().focus().undo().run()}
-            disabled={!editor.can().undo() ? 'true' : undefined}
+            onClick={() => editor?.chain().focus().undo().run()}
+            disabled={!editor?.can().undo() ? 'true' : undefined}
             title="Undo"
           >
             <FaUndo />
           </ToolbarButton>
           <ToolbarButton
-            onClick={() => editor.chain().focus().redo().run()}
-            disabled={!editor.can().redo() ? 'true' : undefined}
+            onClick={() => editor?.chain().focus().redo().run()}
+            disabled={!editor?.can().redo() ? 'true' : undefined}
             title="Redo"
           >
             <FaRedo />
@@ -548,7 +581,6 @@ const ToolbarButton = styled.button`
   cursor: ${props => props.disabled === 'true' ? 'not-allowed' : 'pointer'};
   opacity: ${props => props.disabled === 'true' ? 0.5 : 1};
   transition: all 0.2s;
-  type: "button"; // Add this line
 
   &:hover:not([disabled]) {
     background: ${props => props['data-active'] === 'true' ? '#2c5282' : '#edf2f7'};

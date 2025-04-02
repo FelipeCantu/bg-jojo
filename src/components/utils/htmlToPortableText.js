@@ -78,13 +78,39 @@ export const convertHtmlToPortableText = async (html) => {
       if (node.nodeName === 'P' || node.nodeName.match(/^H[1-6]$/) || node.nodeName === 'BLOCKQUOTE') {
         const style = node.nodeName.toLowerCase() === 'blockquote' ? 'blockquote' : node.nodeName.toLowerCase();
         const { children } = await processChildNodes(node);
+        
+        // Get alignment from style attribute or class
+        let alignment = null;
+        if (node.hasAttribute('style')) {
+          const styleText = node.getAttribute('style');
+          const match = styleText.match(/text-align:\s*(left|center|right|justify)/);
+          if (match) {
+            alignment = match[1];
+          }
+        }
+        
+        // Check for alignment classes if not found in style
+        if (!alignment && node.hasAttribute('class')) {
+          const classes = node.getAttribute('class').split(' ');
+          if (classes.includes('text-left')) alignment = 'left';
+          else if (classes.includes('text-center')) alignment = 'center';
+          else if (classes.includes('text-right')) alignment = 'right';
+          else if (classes.includes('text-justify')) alignment = 'justify';
+        }
 
-        portableText.push({
+        const block = {
           _type: 'block',
           style,
           children,
           markDefs: markDefs.filter((def) => children.some((child) => child.marks?.includes(def._key))),
-        });
+        };
+
+        // Add alignment if specified
+        if (alignment) {
+          block.textAlign = alignment;
+        }
+
+        portableText.push(block);
       }
 
       if (node.nodeName === 'UL' || node.nodeName === 'OL') {
@@ -112,11 +138,35 @@ export const convertHtmlToPortableText = async (html) => {
         const alt = node.getAttribute('alt') || '';
         const imageRef = await uploadImage(src);
 
-        portableText.push({
+        const imageBlock = {
           _type: 'image',
           asset: { _type: 'reference', _ref: imageRef },
           alt,
-        });
+        };
+
+        // Handle image alignment
+        let alignment = null;
+        if (node.hasAttribute('style')) {
+          const styleText = node.getAttribute('style');
+          const match = styleText.match(/float:\s*(left|right)/);
+          if (match) {
+            alignment = match[1];
+          }
+        }
+        
+        // Check for alignment classes if not found in style
+        if (!alignment && node.hasAttribute('class')) {
+          const classes = node.getAttribute('class').split(' ');
+          if (classes.includes('float-left') || classes.includes('align-left')) alignment = 'left';
+          else if (classes.includes('float-right') || classes.includes('align-right')) alignment = 'right';
+          else if (classes.includes('align-center') || classes.includes('align-middle')) alignment = 'center';
+        }
+
+        if (alignment) {
+          imageBlock.align = alignment;
+        }
+
+        portableText.push(imageBlock);
       }
     }
   }
