@@ -74,16 +74,26 @@ const Content = styled.div`
 `;
 
 const HeroHeading = styled.h1`
-  font-size: clamp(2.5rem, 8vw, 5rem);
+  font-size: clamp(3rem, 10vw, 6rem); /* Increased base size */
   margin: 0 0 1rem 0;
   line-height: 1.2;
   text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+  
+  @media (max-width: 480px) {
+    font-size: clamp(3.5rem, 12vw, 4rem); /* Larger on very small screens */
+    margin-bottom: 2.5rem;
+  }
 `;
 
 const HeroSubtext = styled.p`
-  font-size: clamp(1.25rem, 4vw, 2rem);
+  font-size: clamp(1.5rem, 5vw, 2.5rem); /* Increased base size */
   margin: 0 0 2rem 0;
   text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+  
+  @media (max-width: 480px) {
+    font-size: clamp(1.8rem, 6vw, 2.2rem); /* Larger on very small screens */
+    margin-bottom: 2.5rem;
+  }
 `;
 
 const Button = styled.button`
@@ -98,7 +108,7 @@ const Button = styled.button`
   border-radius: 4px;
   box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.15);
   cursor: pointer;
-  font-size: clamp(0.9rem, 2vw, 1rem);
+  font-size: clamp(1rem, 2.5vw, 1.2rem); /* Slightly larger */
   font-weight: 600;
   transition: all 0.3s ease;
   min-width: 150px;
@@ -108,6 +118,11 @@ const Button = styled.button`
     color: white;
     transform: translateY(-2px);
     box-shadow: 2px 4px 10px rgba(0, 0, 0, 0.2);
+  }
+
+  @media (max-width: 480px) {
+    padding: 0.9rem 2rem;
+    min-width: 160px;
   }
 `;
 

@@ -1,32 +1,35 @@
-/* Layout Structure */
 .App {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  position: relative;
-  text-decoration: none !important; /* Ensures no text decoration */
+  /* Remove position: relative as it creates a new stacking context */
+  text-decoration: none;
+  /* Ensure no overflow constraints */
 }
 
 /* Main Content Area */
 .App > *:not(.Nav):not(.Footer) {
   flex-grow: 1;
   padding: var(--space-xl) 0;
-  position: relative;
+  /* Remove position: relative unless absolutely needed */
   text-decoration: none;
 }
-
 /* Navigation Component */
 .Nav {
   background-color: var(--background);
   box-shadow: var(--box-shadow);
   position: sticky;
   top: 0;
+  width: 100%; /* Ensure full width */
   z-index: 1000;
-  overflow: visible;
+  /* Remove overflow: visible - not needed here */
   transition: all 0.3s ease;
   text-decoration: none;
+  
+  /* Force hardware acceleration for smooth performance */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
-
 /* Dropdown Menu System */
 .DropdownMenu {
   position: relative;
