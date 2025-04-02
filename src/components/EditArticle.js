@@ -16,7 +16,6 @@ const EditArticle = () => {
   const [error, setError] = useState(null);
   const [formTitle, setFormTitle] = useState('');
   const [formMainImage, setFormMainImage] = useState(null);
-  const [formSlug, setFormSlug] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [htmlContent, setHtmlContent] = useState('');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -25,7 +24,7 @@ const EditArticle = () => {
     try {
       setLoading(true);
       const query = `*[_type == "article" && _id == $articleId][0]{
-        _id, title, content, mainImage, slug,
+        _id, title, content, mainImage,
         publishedDate, updatedAt, author->{ _id, name, photoURL }
       }`;
       const result = await client.fetch(query, { articleId });
@@ -38,7 +37,6 @@ const EditArticle = () => {
       setFormTitle(result.title || '');
       setHtmlContent(portableTextToHtml(result.content || ''));
       setFormMainImage(result.mainImage || null);
-      setFormSlug(result.slug?.current || '');
     } catch (err) {
       console.error('Fetch error:', err);
       setError(err.message || 'Failed to fetch article');
@@ -150,14 +148,13 @@ const EditArticle = () => {
           readingTime: updatedReadingTime,
           updatedAt: new Date().toISOString(),
           ...(formMainImage && { mainImage: formMainImage }),
-          ...(formSlug && { slug: { current: formSlug } }),
         });
 
       await patch.commit();
 
       toast.success('Article updated successfully');
       setHasUnsavedChanges(false);
-      setTimeout(() => navigate(`/article/${formSlug || articleId}`), 1000);
+      setTimeout(() => navigate(`/article/${articleId}`), 1000);
     } catch (err) {
       console.error('Update error:', err);
       toast.error(err.message || 'Failed to update article');
@@ -171,23 +168,9 @@ const EditArticle = () => {
     setHasUnsavedChanges(true);
   }, []);
 
-  const generateSlug = useCallback((title) => {
-    return title
-      .toLowerCase()
-      .replace(/[^\w\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/--+/g, '-')
-      .substring(0, 100);
-  }, []);
-
   const handleTitleChange = (e) => {
-    const newTitle = e.target.value;
-    setFormTitle(newTitle);
+    setFormTitle(e.target.value);
     setHasUnsavedChanges(true);
-
-    if (!formSlug || formSlug === generateSlug(formTitle)) {
-      setFormSlug(generateSlug(newTitle));
-    }
   };
 
   if (loading) return <LoadingMessage>Loading article data...</LoadingMessage>;
@@ -217,25 +200,6 @@ const EditArticle = () => {
             required
             placeholder="Enter article title"
           />
-        </FormGroup>
-
-        <FormGroup>
-          <Label htmlFor="slug">Slug (URL)</Label>
-          <div className="slug-container">
-            <span className="slug-prefix">/article/</span>
-            <Input
-              type="text"
-              id="slug"
-              value={formSlug}
-              onChange={(e) => {
-                setFormSlug(generateSlug(e.target.value));
-                setHasUnsavedChanges(true);
-              }}
-              placeholder="article-slug"
-              readOnly
-              className="slug-input"
-            />
-          </div>
         </FormGroup>
 
         <FormGroup>
@@ -333,7 +297,6 @@ const EditArticle = () => {
   );
 };
 
-// Styled Components
 const EditContainer = styled.div`
   max-width: 1000px;
   margin: 0 auto;

@@ -67,43 +67,60 @@ const ArticleDetail = () => {
     <ArticleDetailContainer>
       <style>
         {`
-          .portable-text a {
-            color: #007BFF;
-            text-decoration: underline;
-          }
-          .portable-text a:hover {
-            color: #0056b3;
-            text-decoration: none;
-          }
-          .portable-text ul,
-          .portable-text ol {
-            padding-left: 1.5em;
-            margin: 1em 0;
-          }
-          .portable-text ul {
-            list-style-type: disc;
-          }
-          .portable-text ol {
-            list-style-type: decimal;
-          }
-          .portable-text li {
-            margin: 0.5em 0;
-          }
-          .custom-quote {
-            border-left: 4px solid #007BFF;
-            padding: 10px 20px;
-            margin: 20px 0;
-            font-style: italic;
-            background-color: #f9f9f9;
-          }
-          .portable-text img {
-            max-width: 100%;
-            height: auto;
-            margin: 20px 0;
-            border-radius: 8px;
-          }
-        `}
+    .portable-text {
+      line-height: 1.6;
+    }
+
+    .portable-text a {
+      color: #007BFF;
+      text-decoration: underline;
+    }
+    
+    .portable-text a:hover {
+      color: #0056b3;
+      text-decoration: none;
+    }
+
+    .portable-text ul,
+    .portable-text ol {
+      padding-left: 1.8em;
+      margin: 1.2em 0;
+    }
+
+    .portable-text ul {
+      list-style-type: disc;
+    }
+
+    .portable-text ol {
+      list-style-type: decimal;
+    }
+
+    .portable-text li {
+      margin-bottom: 0.6em;
+    }
+
+    .portable-text p {
+      margin-bottom: 1em;
+    }
+
+    .custom-quote {
+      border-left: 4px solid #007BFF;
+      padding: 12px 20px;
+      margin: 20px 0;
+      font-style: italic;
+      background-color: #f9f9f9;
+    }
+
+    .portable-text img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 20px auto;
+      border-radius: 8px;
+    }
+  `}
       </style>
+
 
       <MetaInfoContainer>
         {author && (
