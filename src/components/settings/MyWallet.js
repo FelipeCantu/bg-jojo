@@ -1,15 +1,20 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
+import { useForm } from "react-hook-form";
+import InputMask from "react-input-mask";
 import { db, collection, doc, addDoc, getDocs, deleteDoc } from "../../firestore";
-import { useAuth } from "../../AuthContext"; // Import useAuth
+import { useAuth } from "../../AuthContext";
+import toast from "react-hot-toast";
+import 'react-credit-cards-2/dist/es/styles-compiled.css';
+import Cards from 'react-credit-cards-2';
 
 const Wallet = () => {
-  const { currentUser, loading } = useAuth(); // Use useAuth to get current user and loading state
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { currentUser, loading } = useAuth();
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [defaultCardId, setDefaultCardId] = useState(null);
-  const [form, setForm] = useState({ cardholderName: "", cardNumber: "", expiry: "", cvv: "" });
-  const [errors, setErrors] = useState({});
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [focused, setFocused] = useState("");
+  const { register, handleSubmit, watch, formState: { errors }, reset } = useForm();
 
   useEffect(() => {
     if (!currentUser || loading) return;
@@ -19,384 +24,514 @@ const Wallet = () => {
         const userRef = doc(db, "users", currentUser.uid);
         const paymentMethodsRef = collection(userRef, "paymentMethods");
         const querySnapshot = await getDocs(paymentMethodsRef);
-        const methods = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const methods = querySnapshot.docs.map(doc => ({ 
+          id: doc.id, 
+          ...doc.data(),
+          isDefault: doc.id === defaultCardId
+        }));
         setPaymentMethods(methods);
       } catch (error) {
+        toast.error("Error loading payment methods");
         console.error("Error fetching payment methods: ", error);
       }
     };
 
     fetchPaymentMethods();
-  }, [currentUser, loading]);
+  }, [currentUser, loading, defaultCardId]);
 
-  if (loading) {
-    return <div>Loading user data...</div>;
-  }
-
-  const validateForm = () => {
-    const newErrors = {};
-    let isValid = true;
-
-    if (!form.cardholderName || !/^[a-zA-Z\s]+$/.test(form.cardholderName)) {
-      newErrors.cardholderName = "Cardholder Name is required and must contain only letters and spaces.";
-      isValid = false;
-    }
-
-    if (!form.cardNumber || !/^\d{16}$/.test(form.cardNumber)) {
-      newErrors.cardNumber = "Card Number must be 16 digits.";
-      isValid = false;
-    }
-
-    if (!form.expiry || !/^(0[1-9]|1[0-2])\/\d{2}$/.test(form.expiry)) {
-      newErrors.expiry = "Expiry must be in MM/YY format.";
-      isValid = false;
-    }
-
-    if (!form.cvv || !/^\d{3}$/.test(form.cvv)) {
-      newErrors.cvv = "CVV must be 3 digits.";
-      isValid = false;
-    }
-
-    setErrors(newErrors);
-    return isValid;
-  };
-
-  const handleSave = async () => {
-    if (!currentUser) {
-      console.error("No user is logged in.");
-      return;
-    }
-  
-    if (validateForm()) {
-      const newMethod = {
-        cardholderName: form.cardholderName,
-        cardNumber: `**** **** **** ${form.cardNumber.slice(-4)}`,
-        expiry: form.expiry,
-      };
-  
-      try {
-        const userRef = doc(db, "users", currentUser.uid);
-        const paymentMethodsRef = collection(userRef, "paymentMethods");
-        const docRef = await addDoc(paymentMethodsRef, newMethod);
-  
-        // Fetch updated list to ensure the new card is included
-        const querySnapshot = await getDocs(paymentMethodsRef);
-        const updatedMethods = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setPaymentMethods(updatedMethods);
-  
-        if (updatedMethods.length === 1) {
-          setDefaultCardId(docRef.id);
-        }
-  
-        setForm({ cardholderName: "", cardNumber: "", expiry: "", cvv: "" });
-        setIsModalOpen(false);
-      } catch (error) {
-        console.error("Error adding document: ", error);
-      }
-    }
-  };
-  
-
-  const handleDelete = async (id) => {
+  const onSubmit = async (data) => {
     try {
       const userRef = doc(db, "users", currentUser.uid);
-      const paymentMethodsRef = doc(userRef, "paymentMethods", id);
-      await deleteDoc(paymentMethodsRef);
-      setPaymentMethods(paymentMethods.filter((method) => method.id !== id));
+      const paymentMethodsRef = collection(userRef, "paymentMethods");
+      
+      const newMethod = {
+        cardholderName: data.cardholderName,
+        cardNumber: data.cardNumber.replace(/\s/g, ''),
+        expiry: data.expiry,
+        cvc: data.cvc,
+        isDefault: paymentMethods.length === 0
+      };
 
-      if (defaultCardId === id) {
-        setDefaultCardId(paymentMethods.length > 1 ? paymentMethods[1].id : null);
+      const docRef = await addDoc(paymentMethodsRef, newMethod);
+
+      if (paymentMethods.length === 0) {
+        setDefaultCardId(docRef.id);
       }
+
+      toast.success("Payment method added successfully!");
+      setIsModalOpen(false);
+      reset();
     } catch (error) {
-      console.error("Error deleting document: ", error);
+      toast.error("Failed to add payment method");
+      console.error("Error adding document: ", error);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm("Are you sure you want to delete this payment method?")) {
+      try {
+        const userRef = doc(db, "users", currentUser.uid);
+        await deleteDoc(doc(userRef, "paymentMethods", id));
+        setPaymentMethods(paymentMethods.filter(method => method.id !== id));
+        toast.success("Payment method deleted");
+        
+        if (defaultCardId === id) {
+          setDefaultCardId(paymentMethods.length > 1 ? paymentMethods[1].id : null);
+        }
+      } catch (error) {
+        toast.error("Failed to delete payment method");
+        console.error("Error deleting document: ", error);
+      }
     }
   };
 
   const handleSetDefault = (id) => {
     setDefaultCardId(id);
+    toast.success("Default payment method updated");
   };
 
+  if (loading) {
+    return <Loading>Loading payment methods...</Loading>;
+  }
+
   if (!currentUser) {
-    return <div>Please log in to manage your payment methods.</div>;
+    return <Message>Please log in to manage your payment methods.</Message>;
   }
 
   return (
     <WalletContainer>
       <Title>Wallet</Title>
-      <Description>Save your payment details for faster checkout.</Description>
-      <AddButton onClick={() => setIsModalOpen(true)}>+ Add Payment Method</AddButton>
-
-      {paymentMethods.length > 0 && (
-        <SavedMethods>
-          {paymentMethods.map((method, index) => (
-            <div key={method.id}>
-              {index !== 0 && <Divider />}
-              <CardInfo>
-                <div>
-                  <CardHolder>
-                    {method.cardholderName} {method.id === defaultCardId && <DefaultTag>Default</DefaultTag>}
-                  </CardHolder>
-                  <CardNumber>{method.cardNumber}</CardNumber>
-                  <Expiry>Expires: {method.expiry}</Expiry>
-                </div>
-                <ButtonContainer>
-                  <SetDefaultButton onClick={() => handleSetDefault(method.id)} disabled={method.id === defaultCardId}>
-                    Set as Default
-                  </SetDefaultButton>
-                  <DeleteButton onClick={() => handleDelete(method.id)}>Delete</DeleteButton>
-                </ButtonContainer>
-              </CardInfo>
-            </div>
+      <Description>Manage your saved payment methods</Description>
+      {paymentMethods.length > 0 ? (
+        <CardsList>
+          {paymentMethods.map((method) => (
+            <CardItem key={method.id} isDefault={method.id === defaultCardId}>
+              <CardPreview>
+                <Cards
+                  number={`•••• •••• •••• ${method.cardNumber.slice(-4)}`}
+                  name={method.cardholderName}
+                  expiry={method.expiry}
+                  cvc="•••"
+                  focused={focused}
+                />
+              </CardPreview>
+              
+              <CardDetails>
+                <CardHolder>
+                  {method.cardholderName}
+                  {method.id === defaultCardId && <DefaultBadge>Default</DefaultBadge>}
+                </CardHolder>
+                <CardNumber>•••• •••• •••• {method.cardNumber.slice(-4)}</CardNumber>
+                <Expiry>Expires: {method.expiry}</Expiry>
+                
+                <CardActions>
+                  {method.id !== defaultCardId && (
+                    <SetDefaultButton onClick={() => handleSetDefault(method.id)}>
+                      <StarIcon /> Set as Default
+                    </SetDefaultButton>
+                  )}
+                  <DeleteButton onClick={() => handleDelete(method.id)}>
+                    <DeleteIcon /> Delete
+                  </DeleteButton>
+                </CardActions>
+              </CardDetails>
+            </CardItem>
           ))}
-        </SavedMethods>
+        </CardsList>
+      ) : (
+        <EmptyState>No payment methods saved yet</EmptyState>
       )}
 
-      {isModalOpen && (
-        <ModalOverlay>
-          <ModalContent>
-            <ModalTitle>Add Payment Method</ModalTitle>
-            <Form>
-              <Input
-                type="text"
-                placeholder="Cardholder Name"
-                value={form.cardholderName}
-                onChange={(e) => setForm({ ...form, cardholderName: e.target.value })}
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+        <ModalContent>
+          <ModalTitle>Add New Payment Method</ModalTitle>
+          
+          <Form onSubmit={handleSubmit(onSubmit)}>
+            <CardPreviewContainer>
+              <Cards
+                number={watch("cardNumber", "").replace(/\s/g, '') || "•••• •••• •••• ••••"}
+                name={watch("cardholderName", "") || "FULL NAME"}
+                expiry={watch("expiry", "") || "••/••"}
+                cvc={watch("cvc", "") || "•••"}
+                focused={focused}
               />
-              {errors.cardholderName && <Error>{errors.cardholderName}</Error>}
+            </CardPreviewContainer>
 
+            <FormGroup>
+              <Label>Cardholder Name</Label>
               <Input
-                type="text"
-                placeholder="Card Number"
-                value={form.cardNumber}
-                onChange={(e) => setForm({ ...form, cardNumber: e.target.value })}
+                {...register("cardholderName", { required: "Cardholder name is required" })}
+                onFocus={() => setFocused("name")}
+                placeholder="John Doe"
               />
-              {errors.cardNumber && <Error>{errors.cardNumber}</Error>}
+              {errors.cardholderName && <Error>{errors.cardholderName.message}</Error>}
+            </FormGroup>
 
-              <Row>
+            <FormGroup>
+              <Label>Card Number</Label>
+              <InputMask 
+                mask="9999 9999 9999 9999"
+                {...register("cardNumber", { 
+                  required: "Card number is required",
+                  validate: value => value.replace(/\s/g, '').length === 16 || "Invalid card number"
+                })}
+                onFocus={() => setFocused("number")}
+              >
+                {(inputProps) => <Input {...inputProps} placeholder="1234 5678 9012 3456" />}
+              </InputMask>
+              {errors.cardNumber && <Error>{errors.cardNumber.message}</Error>}
+            </FormGroup>
+
+            <FormRow>
+              <FormGroup>
+                <Label>Expiry Date</Label>
+                <InputMask
+                  mask="99/99"
+                  {...register("expiry", {
+                    required: "Expiry date is required",
+                    pattern: {
+                      value: /^(0[1-9]|1[0-2])\/\d{2}$/,
+                      message: "Invalid expiry date (MM/YY)"
+                    }
+                  })}
+                  onFocus={() => setFocused("expiry")}
+                >
+                  {(inputProps) => <Input {...inputProps} placeholder="MM/YY" />}
+                </InputMask>
+                {errors.expiry && <Error>{errors.expiry.message}</Error>}
+              </FormGroup>
+
+              <FormGroup>
+                <Label>CVV</Label>
                 <Input
                   type="text"
-                  placeholder="MM/YY"
-                  value={form.expiry}
-                  onChange={(e) => setForm({ ...form, expiry: e.target.value })}
+                  {...register("cvc", {
+                    required: "CVV is required",
+                    minLength: { value: 3, message: "CVV must be 3 digits" },
+                    maxLength: { value: 4, message: "CVV must be 3-4 digits" }
+                  })}
+                  onFocus={() => setFocused("cvc")}
+                  placeholder="123"
                 />
-                {errors.expiry && <Error>{errors.expiry}</Error>}
-                <Input
-                  type="text"
-                  placeholder="CVV"
-                  value={form.cvv}
-                  onChange={(e) => setForm({ ...form, cvv: e.target.value })}
-                />
-                {errors.cvv && <Error>{errors.cvv}</Error>}
-              </Row>
+                {errors.cvc && <Error>{errors.cvc.message}</Error>}
+              </FormGroup>
+            </FormRow>
 
-              <ButtonContainer>
-                <SaveButton onClick={handleSave}>Save</SaveButton>
-                <CancelButton onClick={() => setIsModalOpen(false)}>Cancel</CancelButton>
-              </ButtonContainer>
-            </Form>
-          </ModalContent>
-        </ModalOverlay>
-      )}
+            <ButtonGroup>
+              <CancelButton type="button" onClick={() => setIsModalOpen(false)}>
+                Cancel
+              </CancelButton>
+              <SaveButton type="submit">
+                Save Card
+              </SaveButton>
+            </ButtonGroup>
+          </Form>
+        </ModalContent>
+      </Modal>
+
+      <AddButton onClick={() => setIsModalOpen(true)}>
+        <PlusIcon>+</PlusIcon> Add Payment Method
+      </AddButton>
+
     </WalletContainer>
   );
 };
 
-// Styles (unchanged)
+// Styled Components
 const WalletContainer = styled.div`
-  max-width: 95%;
-  margin: auto;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-  background-color: #fff;
-  text-align: center;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 `;
 
 const Title = styled.h2`
-  font-size: 1.5rem;
-  margin-bottom: 10px;
+  font-size: 1.75rem;
   color: #333;
+  margin-bottom: 0.5rem;
 `;
 
 const Description = styled.p`
-  font-size: 1rem;
   color: #666;
-  margin-bottom: 20px;
+  margin-bottom: 2rem;
 `;
 
 const AddButton = styled.button`
-  background-color: #024a47;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #024a47;
   color: white;
-  padding: 10px 15px;
   border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
   font-size: 1rem;
   cursor: pointer;
-  transition: background 0.3s;
+  transition: all 0.2s;
+  margin-top: 10px;
 
   &:hover {
-    background-color: #013d3b;
+    background: #013d3b;
+    transform: translateY(-1px);
   }
 `;
 
-const SavedMethods = styled.div`
-  margin-top: 20px;
-  text-align: left;
-  padding: 10px;
+const PlusIcon = styled.span`
+  font-size: 1.25rem;
 `;
 
-const Divider = styled.hr`
-  border: none;
-  height: 1px;
-  background-color: #ddd;
-  margin: 10px 0;
+const CardsList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 `;
 
-const CardInfo = styled.div`
-  background: #f9f9f9;
-  padding: 10px;
-  border-radius: 5px;
+const CardItem = styled.div`
+  display: flex;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  background-color: ${(props) => (props.isDefault ? "#fff4e5" : "#f9f9f9")};
+  border-radius: 10px;
+  border: 1px solid ${(props) => (props.isDefault ? "#ffe0b2" : "#eee")};
+  transition: all 0.2s;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+  }
 `;
 
-const CardHolder = styled.p`
-  font-weight: bold;
-  margin-bottom: 5px;
+const CardPreview = styled.div`
+  width: 300px;
+  @media (max-width: 600px) {
+    width: 100%;
+  }
+`;
+
+const CardDetails = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+`;
+
+const CardHolder = styled.h3`
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 `;
 
 const CardNumber = styled.p`
-  font-size: 1rem;
   color: #555;
+  margin-bottom: 0.5rem;
 `;
 
 const Expiry = styled.p`
-  font-size: 0.9rem;
   color: #777;
+  font-size: 0.9rem;
 `;
 
-const ModalOverlay = styled.div`
+const CardActions = styled.div`
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+`;
+
+const SetDefaultButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  color: #024a47;
+  border: 1px solid #024a47;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #f0f9f8;
+  }
+`;
+
+const DeleteButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  color: #d32f2f;
+  border: 1px solid #d32f2f;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #fde8e8;
+  }
+`;
+
+const DefaultBadge = styled.span`
+  background: #fea500;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: bold;
+`;
+
+const EmptyState = styled.div`
+  text-align: center;
+  padding: 2rem;
+  color: #888;
+  background: #f9f9f9;
+  border-radius: 8px;
+`;
+
+const Modal = styled.div`
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  right: 0;
+  bottom: 0;
   background: rgba(0, 0, 0, 0.5);
-  display: flex;
+  display: ${props => props.isOpen ? 'flex' : 'none'};
   align-items: center;
   justify-content: center;
-  z-index: 3;
+  z-index: 1000;
+  padding: 1rem;
 `;
 
 const ModalContent = styled.div`
   background: white;
-  padding: 25px;
-  border-radius: 10px;
-  width: 90%;
-  max-width: 400px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  border-radius: 12px;
+  padding: 2rem;
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 `;
 
 const ModalTitle = styled.h3`
-  margin-bottom: 15px;
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
   color: #333;
 `;
 
-const Form = styled.div`
-  width: 100%;
+const Form = styled.form`
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+`;
+
+const CardPreviewContainer = styled.div`
+  margin: -1rem -1rem 1rem -1rem;
+`;
+
+const FormGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+`;
+
+const Label = styled.label`
+  font-size: 0.9rem;
+  color: #555;
+  font-weight: 500;
 `;
 
 const Input = styled.input`
-  width: 100%;
-  padding: 12px;
-  margin: 10px 0;
+  padding: 0.75rem 1rem;
   border: 1px solid #ddd;
-  border-radius: 5px;
+  border-radius: 8px;
   font-size: 1rem;
-`;
+  transition: all 0.2s;
 
-const Row = styled.div`
-  display: flex;
-  justify-content: space-between;
-`;
-
-const ButtonContainer = styled.div`
-  display: flex;
-  justify-content: space-between;
-  width: 100%;
-  margin-top: 15px;
-`;
-
-const SaveButton = styled.button`
-  background-color: #024a47;
-  color: white;
-  padding: 10px 15px;
-  border: none;
-  font-size: 1rem;
-  cursor: pointer;
-
-  &:hover {
-    background-color: #013d3b;
+  &:focus {
+    border-color: #024a47;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(2, 74, 71, 0.2);
   }
+`;
+
+const FormRow = styled.div`
+  display: flex;
+  gap: 1rem;
+
+  & > * {
+    flex: 1;
+  }
+`;
+
+const ButtonGroup = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1rem;
 `;
 
 const CancelButton = styled.button`
-  background-color: #ccc;
+  padding: 0.75rem 1.5rem;
+  background: #f5f5f5;
   color: #333;
-  padding: 10px 15px;
   border: none;
+  border-radius: 8px;
   font-size: 1rem;
   cursor: pointer;
+  transition: all 0.2s;
 
   &:hover {
-    background-color: #bbb;
+    background: #e0e0e0;
   }
 `;
 
-const DefaultTag = styled.span`
-  font-size: 0.8rem;
-  color: green;
-  font-weight: bold;
-  margin-left: 10px;
-`;
-
-const DeleteButton = styled.button`
-  background-color: red;
+const SaveButton = styled.button`
+  padding: 0.75rem 1.5rem;
+  background: #024a47;
   color: white;
-  padding: 5px 10px;
   border: none;
-  font-size: 0.8rem;
+  border-radius: 8px;
+  font-size: 1rem;
   cursor: pointer;
+  transition: all 0.2s;
 
   &:hover {
-    background-color: darkred;
+    background: #013d3b;
   }
 `;
 
-const SetDefaultButton = styled.button`
-  background-color: #024a47;
-  color: white;
-  padding: 5px 10px;
-  border: none;
+const Error = styled.span`
+  color: #d32f2f;
   font-size: 0.8rem;
-  cursor: pointer;
-  margin-right: 10px;
-
-  &:hover {
-    background-color: #013d3b;
-  }
-
-  &:disabled {
-    background-color: #ddd;
-    cursor: not-allowed;
-  }
+  margin-top: -0.5rem;
 `;
 
-const Error = styled.p`
-  color: red;
-  font-size: 0.9rem;
-  margin-top: -5px;
+const Loading = styled.div`
+  text-align: center;
+  padding: 2rem;
+  color: #666;
 `;
+
+const Message = styled.div`
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+  background: #f5f5f5;
+  border-radius: 8px;
+`;
+
+const StarIcon = styled.span`&::before { content: "★"; }`;
+const DeleteIcon = styled.span`&::before { content: "🗑"; }`;
 
 export default Wallet;
