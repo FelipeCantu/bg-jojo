@@ -91,6 +91,7 @@ const Button = styled.button`
   color: white;
   padding: 12px 20px;
   font-size: 1rem;
+  border-radius: 4px;
   border: none;
   cursor: pointer;
   transition: all 0.3s ease;

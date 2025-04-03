@@ -1,10 +1,26 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { ChevronRightIcon } from '@heroicons/react/24/solid';
 import Mission from './Mission';
 import { Link } from 'react-router-dom';
+import LoadingContainer from './LoadingContainer'; // Import the Loading component
 
 function Home() {
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Simulate loading for demonstration
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (isLoading) {
+    return <LoadingContainer />;
+  }
+
   return (
     <MainSection>
       <VideoWrapper>
@@ -28,7 +44,6 @@ function Home() {
   );
 }
 
-// Styled Components
 const MainSection = styled.div`
   display: flex;
   flex-direction: column;
