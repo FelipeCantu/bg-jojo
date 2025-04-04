@@ -8,6 +8,10 @@ export const blockContent = defineType({
   of: [
     defineArrayMember({
       type: 'block',
+      // Add text alignment support
+      options: {
+        textAlignment: true
+      },
       styles: [
         { title: 'Normal', value: 'normal' },
         { title: 'H1', value: 'h1' },
@@ -49,6 +53,21 @@ export const blockContent = defineType({
           type: 'string',
           title: 'Alternative text',
         },
+        // Add image alignment field
+        {
+          name: 'align',
+          type: 'string',
+          title: 'Alignment',
+          options: {
+            list: [
+              { title: 'Left', value: 'left' },
+              { title: 'Center', value: 'center' },
+              { title: 'Right', value: 'right' }
+            ],
+            layout: 'radio'
+          },
+          initialValue: 'center'
+        }
       ],
     }),
   ],

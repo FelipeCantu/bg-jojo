@@ -14,6 +14,21 @@
   /* Remove position: relative unless absolutely needed */
   text-decoration: none;
 }
+
+/* App.css additions */
+body.loading {
+  overflow: hidden;
+}
+
+.LoadingContainer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 9999;
+  background: white;
+}
 /* Navigation Component */
 .Nav {
   background-color: var(--background);

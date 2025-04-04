@@ -6,8 +6,7 @@ import ArticleCounters from "./ArticleCounters";
 import CommentSection from "./CommentSection";
 import { auth, onAuthStateChanged } from "../firestore";
 import { PortableText } from "@portabletext/react";
-import LoadingContainer from "./LoadingContainer";
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router-dom';
 
 const ArticleDetail = () => {
   const { id } = useParams();
@@ -41,15 +40,11 @@ const ArticleDetail = () => {
     getArticle();
 
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (currentUser) {
-        setUser({
-          name: currentUser.displayName,
-          photo: currentUser.photoURL || "https://via.placeholder.com/40",
-          uid: currentUser.uid,
-        });
-      } else {
-        setUser(null);
-      }
+      setUser(currentUser ? {
+        name: currentUser.displayName,
+        photo: currentUser.photoURL || "https://via.placeholder.com/40",
+        uid: currentUser.uid,
+      } : null);
     });
 
     return () => unsubscribe();
@@ -64,38 +59,25 @@ const ArticleDetail = () => {
     }
   };
 
-  if (loading) return <LoadingContainer message="Loading article..." size="large" spinnerColor="#fea500" textColor="#555" />;
+  if (loading) return <LoadingPlaceholder />;
   if (error) return <ErrorMessage>{error}</ErrorMessage>;
   if (!article) return <ErrorMessage>Article not found.</ErrorMessage>;
 
   const components = {
     types: {
-      image: ({ value }) => {
-        if (!value?.asset?._ref) return null;
-        
-        const imageUrl = value.hotspot 
-          ? urlFor(value)
-              .fit('clip')
-              .width(800)
-              .url()
-          : urlFor(value)
-              .width(800)
-              .url();
-
-        return (
-          <Figure className={`image-align-${value.align || 'center'}`}>
-            <ContentImage
-              src={imageUrl}
-              alt={value.alt || 'Article image'}
-              $hasHotspot={!!value.hotspot}
-              $hotspotX={value.hotspot?.x}
-              $hotspotY={value.hotspot?.y}
-              loading="lazy"
-            />
-            {value.caption && <Figcaption>{value.caption}</Figcaption>}
-          </Figure>
-        );
-      },
+      image: ({ value }) => (
+        <Figure $align={value.align || 'center'}>
+          <ContentImage
+            src={urlFor(value).width(800).url()}
+            alt={value.alt || 'Article image'}
+            $hasHotspot={!!value.hotspot}
+            $hotspotX={value.hotspot?.x}
+            $hotspotY={value.hotspot?.y}
+            loading="lazy"
+          />
+          {value.caption && <Figcaption>{value.caption}</Figcaption>}
+        </Figure>
+      ),
       code: ({ value }) => (
         <CodeBlock>
           <pre>
@@ -108,12 +90,23 @@ const ArticleDetail = () => {
       ),
     },
     block: {
-      normal: ({ children }) => <Paragraph>{children}</Paragraph>,
-      h1: ({ children }) => <H1>{children}</H1>,
-      h2: ({ children }) => <H2>{children}</H2>,
-      h3: ({ children }) => <H3>{children}</H3>,
-      h4: ({ children }) => <H4>{children}</H4>,
-      blockquote: ({ children }) => <Blockquote>{children}</Blockquote>,
+      normal: ({ children, value }) => (
+        <Paragraph $align={value?.textAlign}>
+          {children}
+        </Paragraph>
+      ),
+      p: ({ children, value }) => (  
+        <Paragraph $align={value?.textAlign}>
+          {children}
+        </Paragraph>
+      ),
+      h1: ({ children, value }) => <H1 $align={value?.textAlign}>{children}</H1>,
+      h2: ({ children, value }) => <H2 $align={value?.textAlign}>{children}</H2>, // Default to center for h2
+      h3: ({ children, value }) => <H3 $align={value?.textAlign}>{children}</H3>,
+      h4: ({ children, value }) => <H4 $align={value?.textAlign}>{children}</H4>,
+      blockquote: ({ children, value }) => (
+        <Blockquote $align={value?.textAlign}>{children}</Blockquote>
+      ),
     },
     list: {
       bullet: ({ children }) => <Ul>{children}</Ul>,
@@ -131,8 +124,7 @@ const ArticleDetail = () => {
         </ExternalLink>
       ),
       internalLink: ({ value, children }) => {
-        const { slug = {} } = value;
-        const href = `/${slug.current}`;
+        const href = `/${value.slug?.current || ''}`;
         return <InternalLink to={href}>{children}</InternalLink>;
       },
       strong: ({ children }) => <Strong>{children}</Strong>,
@@ -169,16 +161,11 @@ const ArticleDetail = () => {
       <Title>{article.title}</Title>
       {article.subtitle && <Subtitle>{article.subtitle}</Subtitle>}
 
-      {article.mainImage?.asset ? (
+      {article.mainImage?.asset && (
         <HeroImage
           src={urlFor(article.mainImage).width(1200).url()}
           alt={article.mainImage.alt || article.title}
           loading="eager"
-        />
-      ) : (
-        <HeroImage 
-          src="https://via.placeholder.com/1200x600" 
-          alt="No image available" 
         />
       )}
 
@@ -196,13 +183,108 @@ const ArticleDetail = () => {
   );
 };
 
-// Styled Components with hardcoded values instead of theme
+// Styled Components with alignment support
 const ArticleDetailContainer = styled.article`
   padding: 2rem 1rem;
   max-width: 900px;
   margin: 0 auto;
   line-height: 1.6;
 `;
+
+const LoadingPlaceholder = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  
+  &::after {
+    content: "";
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(254, 165, 0, 0.3);
+    border-top-color: #fea500;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+`;
+
+// Text components with alignment support
+const Paragraph = styled.p`
+  margin-bottom: 1.5rem;
+  font-size: 1.125rem;
+  color: #333;
+  text-align: ${props => props.$align || 'left'};
+`;
+
+const H1 = styled.h1`
+  font-size: 2rem;
+  margin: 2rem 0 1rem;
+  line-height: 1.3;
+  color: #333;
+  text-align: ${props => props.$align || 'left'};
+`;
+
+const H2 = styled.h2`
+  font-size: 1.75rem;
+  margin: 1.75rem 0 0.75rem;
+  line-height: 1.3;
+  color: #333;
+  text-align: ${props => props.$align || 'left'};
+`;
+
+const H3 = styled.h3`
+  font-size: 1.5rem;
+  margin: 1.5rem 0 0.5rem;
+  line-height: 1.3;
+  color: #333;
+  text-align: ${props => props.$align || 'left'};
+`;
+
+const H4 = styled.h4`
+  font-size: 1.25rem;
+  margin: 1.25rem 0 0.5rem;
+  line-height: 1.3;
+  color: #333;
+  text-align: ${props => props.$align || 'left'};
+`;
+
+const Blockquote = styled.blockquote`
+  border-left: 4px solid #054944;
+  padding: 1rem 1.5rem;
+  margin: 1.5rem 0;
+  background: #f5f5f5;
+  font-style: italic;
+  color: #666;
+  text-align: ${props => props.$align || 'left'};
+`;
+
+const Figure = styled.figure`
+  margin: 2rem 0;
+  text-align: ${props => props.$align};
+  float: ${props => props.$align === 'left' ? 'left' : props.$align === 'right' ? 'right' : 'none'};
+  max-width: ${props => (props.$align === 'left' || props.$align === 'right') ? '50%' : '100%'};
+  ${props => (props.$align === 'left' || props.$align === 'right') && `
+    margin-${props.$align === 'left' ? 'right' : 'left'}: 2rem;
+  `}
+
+  @media (max-width: 768px) {
+    float: none;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+  }
+`;
+
+// const ArticleDetailContainer = styled.article`
+//   padding: 2rem 1rem;
+//   max-width: 900px;
+//   margin: 0 auto;
+//   line-height: 1.6;
+// `;
 
 const MetaInfoContainer = styled.div`
   display: flex;
@@ -272,48 +354,48 @@ const ContentWrapper = styled.section`
   margin-top: 2rem;
 `;
 
-const Paragraph = styled.p`
-  margin-bottom: 1.5rem;
-  font-size: 1.125rem;
-  color: #333;
-`;
+// const Paragraph = styled.p`
+//   margin-bottom: 1.5rem;
+//   font-size: 1.125rem;
+//   color: #333;
+// `;
 
-const H1 = styled.h1`
-  font-size: 2rem;
-  margin: 2rem 0 1rem;
-  line-height: 1.3;
-  color: #333;
-`;
+// const H1 = styled.h1`
+//   font-size: 2rem;
+//   margin: 2rem 0 1rem;
+//   line-height: 1.3;
+//   color: #333;
+// `;
 
-const H2 = styled.h2`
-  font-size: 1.75rem;
-  margin: 1.75rem 0 0.75rem;
-  line-height: 1.3;
-  color: #333;
-`;
+// const H2 = styled.h2`
+//   font-size: 1.75rem;
+//   margin: 1.75rem 0 0.75rem;
+//   line-height: 1.3;
+//   color: #333;
+// `;
 
-const H3 = styled.h3`
-  font-size: 1.5rem;
-  margin: 1.5rem 0 0.5rem;
-  line-height: 1.3;
-  color: #333;
-`;
+// const H3 = styled.h3`
+//   font-size: 1.5rem;
+//   margin: 1.5rem 0 0.5rem;
+//   line-height: 1.3;
+//   color: #333;
+// `;
 
-const H4 = styled.h4`
-  font-size: 1.25rem;
-  margin: 1.25rem 0 0.5rem;
-  line-height: 1.3;
-  color: #333;
-`;
+// const H4 = styled.h4`
+//   font-size: 1.25rem;
+//   margin: 1.25rem 0 0.5rem;
+//   line-height: 1.3;
+//   color: #333;
+// `;
 
-const Blockquote = styled.blockquote`
-  border-left: 4px solid #054944;
-  padding: 1rem 1.5rem;
-  margin: 1.5rem 0;
-  background: #f5f5f5;
-  font-style: italic;
-  color: #666;
-`;
+// const Blockquote = styled.blockquote`
+//   border-left: 4px solid #054944;
+//   padding: 1rem 1.5rem;
+//   margin: 1.5rem 0;
+//   background: #f5f5f5;
+//   font-style: italic;
+//   color: #666;
+// `;
 
 const Ul = styled.ul`
   margin: 1.5rem 0;
@@ -365,26 +447,26 @@ const InlineCode = styled.code`
   font-size: 0.9em;
 `;
 
-const Figure = styled.figure`
-  margin: 2rem 0;
-  text-align: ${props => {
-    if (props.className?.includes('left')) return 'left';
-    if (props.className?.includes('right')) return 'right';
-    return 'center';
-  }};
+// const Figure = styled.figure`
+//   margin: 2rem 0;
+//   text-align: ${props => {
+//     if (props.className?.includes('left')) return 'left';
+//     if (props.className?.includes('right')) return 'right';
+//     return 'center';
+//   }};
   
-  &.image-align-left {
-    float: left;
-    margin-right: 2rem;
-    max-width: 50%;
-  }
+//   &.image-align-left {
+//     float: left;
+//     margin-right: 2rem;
+//     max-width: 50%;
+//   }
   
-  &.image-align-right {
-    float: right;
-    margin-left: 2rem;
-    max-width: 50%;
-  }
-`;
+//   &.image-align-right {
+//     float: right;
+//     margin-left: 2rem;
+//     max-width: 50%;
+//   }
+// `;
 
 const ContentImage = styled.img`
   max-width: 100%;

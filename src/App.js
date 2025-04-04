@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import './App.css';
 import { Route, Routes, Navigate, useLocation } from 'react-router-dom';
 import {
@@ -23,11 +23,11 @@ import {
   Footer,
   NotFound,
   ArticleForm,
-  EditArticle
+  EditArticle,
 } from './components';
+import LoadingContainer from './components/LoadingContainer'; // Ensure this is the correct path to your loading component
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Scroll to top component
 const ScrollToTop = () => {
   const { pathname } = useLocation();
 
@@ -38,7 +38,6 @@ const ScrollToTop = () => {
   return null;
 };
 
-// Enhanced animation wrapper with smooth slide-up effect
 const SlideUpRoute = ({ children }) => {
   return (
     <motion.div
@@ -64,7 +63,7 @@ const SlideUpRoute = ({ children }) => {
       style={{
         position: 'relative',
         width: '100%',
-        minHeight: 'calc(100vh - 120px)' // Adjust based on header/footer height
+        minHeight: 'calc(100vh - 120px)'
       }}
     >
       {children}
@@ -74,6 +73,27 @@ const SlideUpRoute = ({ children }) => {
 
 function App() {
   const location = useLocation();
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Simulate loading (replace with actual asset loading if needed)
+    const loadingTimer = setTimeout(() => {
+      setIsLoading(false);
+      document.body.classList.remove('loading');
+    }, 2000);
+
+    // Add loading class to body immediately
+    document.body.classList.add('loading');
+
+    return () => {
+      clearTimeout(loadingTimer);
+      document.body.classList.remove('loading');
+    };
+  }, []);
+
+  if (isLoading) {
+    return <LoadingContainer />;
+  }
 
   return (
     <div className="App">
@@ -82,10 +102,7 @@ function App() {
       
       <AnimatePresence mode="wait" initial={false}>
         <Routes location={location} key={location.pathname}>
-          {/* Redirect / to /home */}
           <Route path="/" element={<Navigate to="/home" replace />} />
-
-          {/* Main routes with enhanced slide-up animation */}
           <Route path="/home" element={<SlideUpRoute><Home /></SlideUpRoute>} />
           <Route path="/about" element={<SlideUpRoute><About /></SlideUpRoute>} />
           <Route path="/hotlines" element={<SlideUpRoute><Hotlines /></SlideUpRoute>} />
@@ -105,8 +122,6 @@ function App() {
           <Route path="/notifications" element={<SlideUpRoute><Notifications /></SlideUpRoute>} />
           <Route path="/subscriptions" element={<SlideUpRoute><Subscriptions /></SlideUpRoute>} />
           <Route path="/create-article" element={<SlideUpRoute><ArticleForm /></SlideUpRoute>} />
-
-          {/* 404 route */}
           <Route path="*" element={<SlideUpRoute><NotFound /></SlideUpRoute>} />
         </Routes>
       </AnimatePresence>
@@ -115,6 +130,5 @@ function App() {
     </div>
   );
 }
-
 
 export default App;
