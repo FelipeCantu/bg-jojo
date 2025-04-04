@@ -279,19 +279,12 @@ const Figure = styled.figure`
   }
 `;
 
-// const ArticleDetailContainer = styled.article`
-//   padding: 2rem 1rem;
-//   max-width: 900px;
-//   margin: 0 auto;
-//   line-height: 1.6;
-// `;
-
 const MetaInfoContainer = styled.div`
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 1.5rem;
-  margin: 2rem 0;
+  margin-bottom: 1rem;
 `;
 
 const AuthorInfo = styled.div`

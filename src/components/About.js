@@ -21,7 +21,13 @@ const AboutSection = () => {
               <AboutContainer>
                 <Paragraph>
                   Give Back JoJo is a non-profit organization providing free access to therapy for ages 12 and up. On the
-                  Complete Health Indicator Report of Suicide, the Utah Department of Health & Human Services states:
+                  <ReportLink 
+                    href="https://ibis.utah.gov/ibisph-view/indicator/complete_profile/SuicDth.html#:~:text=From%202021%20to%202023%2C%20the,696%20suicide%20deaths%20in%202023." 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                  >
+                    Complete Health Indicator Report of Suicide
+                  </ReportLink>, the Utah Department of Health & Human Services states:
                 </Paragraph>
                 <Paragraph>
                   “Utah high school students reported … 41.5% felt sad or hopeless, 22.5% seriously considered attempting
@@ -63,6 +69,30 @@ const SectionContainer = styled.div`
   justify-content: flex-start;
   padding: 4rem 2rem;
   overflow: hidden;
+`;
+
+const ReportLink = styled.a`
+  color:  #3b82f6;
+  text-decoration: none; 
+  transition: all 0.3s ease;
+  margin: 0 0.25rem;
+  position: relative; 
+  
+  &:hover {
+    color: #2563eb;
+    
+    &::after {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 2px;
+      bottom: -2px;
+      left: 0;
+      background-color: #2563eb; 
+      transform: none; 
+      opacity: 1; 
+    }
+  }
 `;
 
 const BackgroundVideo = styled.video`

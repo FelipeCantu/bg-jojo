@@ -116,7 +116,7 @@ const LoginContainer = styled.button`
   color: var(--text-color);
   
   &:hover {
-    background-color: rgba(0, 0, 0, 0.05);
+    background-color: rgb(243, 86, 134);
   }
   
   svg {
@@ -148,7 +148,7 @@ const ProfileContainer = styled.div`
   transition: all 0.2s ease;
   
   &:hover {
-    background-color: rgba(0, 0, 0, 0.05);
+    background-color: rgb(243, 86, 134);
   }
 `;
 
@@ -203,12 +203,12 @@ const DropdownItem = styled.div`
   color: ${props => props.$danger ? 'var(--error-color, #e53e3e)' : 'var(--text-color)'};
   
   &:hover {
-    background-color: rgba(0, 0, 0, 0.05);
-    color: ${props => props.$danger ? 'var(--error-color, #e53e3e)' : 'var(--primary-color)'};
+    // background-color: rgba(0, 0, 0, 0.05);
+    color: ${props => props.$danger ? 'var(--error-color, #e53e3e)' : 'var(--secondary-color)'};
   }
   
   &:active {
-    background-color: rgba(0, 0, 0, 0.1);
+    // background-color: rgba(0, 0, 0, 0.1);
   }
 `;
 

@@ -1,29 +1,12 @@
 import React from 'react';
-import Menu from './Menu';
-import styled from 'styled-components';
+import styled, { createGlobalStyle } from 'styled-components';
 import { Link } from 'react-router-dom';
+import Menu from './Menu';
 import LoginButton from './LoginButton';
 
-// First define base styled components that don't depend on others
-const StyledLink = styled(Link)`
-  color: var(--text-color);
-  text-decoration: none;
-  padding: 0.5rem 1rem;
-  font-size: 1rem;
-  font-weight: 500;
-  border-radius: var(--border-radius);
-  transition: all 0.3s ease;
-  
-  &:hover {
-    color: white;
-    background-color: rgba(0, 0, 0, 0.1);
-  }
-  
-  &.active {
-    font-weight: bold;
-    color: white;
-    background-color: rgba(0, 0, 0, 0.2);
-  }
+// 1. First define components that don't depend on others
+const NavbarFontStyle = createGlobalStyle`
+  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap');
 `;
 
 const DropdownMenu = styled.div`
@@ -39,14 +22,33 @@ const DropdownMenu = styled.div`
   visibility: hidden;
   transform: translateY(10px);
   transition: all 0.2s ease-out;
+`;
+
+const StyledLink = styled(Link)`
+  color: var(--text-color);
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 900;
+  font-family: 'Montserrat', sans-serif;
+  border-radius: var(--border-radius);
+  transition: all 0.3s ease;
   
-  ${StyledLink} {
+  &:hover {
+    background-color: rgb(243, 86, 134);
+  }
+  
+  &.active {
+    background-color: rgb(243, 86, 134);
+  }
+
+  ${DropdownMenu} & {
     display: block;
     padding: 0.75rem 1.25rem;
     border-radius: 0;
     
     &:hover {
-      background-color: rgba(0, 0, 0, 0.15);
+      background-color: rgb(243, 86, 134);
     }
     
     &:first-child {
@@ -61,19 +63,19 @@ const DropdownMenu = styled.div`
   }
 `;
 
-// Then define components that depend on the base ones
+// 2. Then define components that depend on previously defined components
 const MoreLink = styled.div`
   position: relative;
   cursor: pointer;
   padding: 0.5rem 1rem;
-  font-size: 1rem;
-  font-weight: 500;
+  font-size: 0.875rem;
+  font-weight: 900;
+  font-family: 'Montserrat', sans-serif;
   color: var(--text-color);
   border-radius: var(--border-radius);
   
   &:hover {
-    color: white;
-    background-color: rgba(0, 0, 0, 0.1);
+    background-color: rgb(243, 86, 134);
     
     > ${DropdownMenu} {
       opacity: 1;
@@ -83,6 +85,7 @@ const MoreLink = styled.div`
   }
 `;
 
+// 3. Then define the remaining components
 const NavLinks = styled.div`
   display: flex;
   gap: 1rem;
@@ -93,7 +96,6 @@ const NavLinks = styled.div`
   }
 `;
 
-// Then define the remaining components
 const Nav = styled.nav`
   position: sticky;
   top: 0;
@@ -176,41 +178,43 @@ const NavbarLoginContainer = styled.div`
   }
 `;
 
-// Main component
 const Navbar = () => {
   return (
-    <Nav>
-      <NavContent>
-        <LogoLink to="/Home">
-          <Logo src={require('../../assets/jojologo.png')} alt="Logo" />
-        </LogoLink>
+    <>
+      <NavbarFontStyle />
+      <Nav>
+        <NavContent>
+          <LogoLink to="/Home">
+            <Logo src={require('../../assets/jojologo.png')} alt="Logo" />
+          </LogoLink>
 
-        <NavLinks>
-          <StyledLink to="/Home">Home</StyledLink>
-          <StyledLink to="/Donate">Donate</StyledLink>
-          <StyledLink to="/About">About</StyledLink>
-          <StyledLink to="/Hotlines">Hotlines</StyledLink>
-          <StyledLink to="/events">Events</StyledLink>
+          <NavLinks>
+            <StyledLink to="/Home">Home</StyledLink>
+            <StyledLink to="/Donate">Donate</StyledLink>
+            <StyledLink to="/Hotlines">Hotlines</StyledLink>
+            <StyledLink to="/events">Events</StyledLink>
+            <StyledLink to="/About">About Us</StyledLink>
 
-          <MoreLink>
-            More
-            <DropdownMenu>
-              <StyledLink to="/Articles">Articles</StyledLink>
-              <StyledLink to="/Tributes">Remembering Loved Ones</StyledLink>
-              <StyledLink to="/GetInvolved">Get Involved</StyledLink>
-            </DropdownMenu>
-          </MoreLink>
-        </NavLinks>
+            <MoreLink>
+              More
+              <DropdownMenu>
+                <StyledLink to="/GetInvolved">Get Involved</StyledLink>
+                <StyledLink to="/Articles">Articles</StyledLink>
+                <StyledLink to="/Tributes">Remembering Loved Ones</StyledLink>
+              </DropdownMenu>
+            </MoreLink>
+          </NavLinks>
 
-        <MobileMenu>
-          <Menu />
-        </MobileMenu>
+          <MobileMenu>
+            <Menu />
+          </MobileMenu>
 
-        <NavbarLoginContainer>
-          <LoginButton hideInNavbar={false} />
-        </NavbarLoginContainer>
-      </NavContent>
-    </Nav>
+          <NavbarLoginContainer>
+            <LoginButton hideInNavbar={false} />
+          </NavbarLoginContainer>
+        </NavContent>
+      </Nav>
+    </>
   );
 };
 

@@ -69,6 +69,7 @@ const Divider = styled.hr`
   width: 10%;
   margin-left: 0;
   border: solid black 3px;
+  margin-bottom: 25px;
 `
 
 const Content = styled.div`
