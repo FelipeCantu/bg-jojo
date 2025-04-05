@@ -3,13 +3,12 @@ import styled from 'styled-components';
 import { ChevronRightIcon } from '@heroicons/react/24/solid';
 import Mission from './Mission';
 import { Link } from 'react-router-dom';
-import LoadingContainer from './LoadingContainer'; // Import the Loading component
+import LoadingContainer from './LoadingContainer';
 
 function Home() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate loading for demonstration
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 2000);
@@ -39,10 +38,82 @@ function Home() {
           </HotLink>
         </Content>
       </VideoWrapper>
+      
+      {/* Updated centered image section with external link and centered text */}
+      <ImageSection>
+        <ImageContainer>
+          <ExternalImageLink href="https://www.atrainceu.com/content/1-suicide-washington-state-and-nation-0" target="_blank" rel="noopener noreferrer">
+            <CenteredImage 
+              src={require('../assets/ratemap.jpg')} 
+              alt="Suicide rates in Washington State and the nation"
+            />
+          </ExternalImageLink>
+          <ImageCaption>The number of deaths by suicide per 100,000 total population in the year 2022.</ImageCaption>
+        </ImageContainer>
+      </ImageSection>
+      
       <Mission />
     </MainSection>
   );
 }
+
+// Updated styled components for the image section
+const ImageSection = styled.section`
+  width: 100%;
+  padding: 4rem 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #fff;
+`;
+
+const ImageContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 1200px;
+  width: 90%;
+`;
+
+const ExternalImageLink = styled.a`
+  display: block;
+  margin-bottom: 1rem;
+  text-decoration: none;
+  transition: transform 0.3s ease;
+
+  &:hover {
+    transform: scale(1.02);
+  }
+`;
+
+const CenteredImage = styled.img`
+  max-width: 100%;
+  height: auto;
+  max-height: 600px;
+  width: auto;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  
+  @media (max-width: 768px) {
+    max-height: 400px;
+    width: 100%;
+  }
+`;
+
+const ImageCaption = styled.p`
+  text-align: center;
+  font-size: 1.1rem;
+  color: #333;
+  margin-top: 1rem;
+  max-width: 800px;
+  line-height: 1.5;
+  
+  @media (max-width: 768px) {
+    font-size: 1rem;
+    padding: 0 1rem;
+  }
+`;
+
 
 const MainSection = styled.div`
   display: flex;

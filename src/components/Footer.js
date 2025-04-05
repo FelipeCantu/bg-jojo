@@ -6,6 +6,14 @@ import { faFacebookF, faInstagram, faYoutube } from "@fortawesome/free-brands-sv
 const Footer = () => {
   return (
     <FooterContainer>
+      <CrisisAlert>
+        <CrisisText>
+          If you or someone you know is in crisis, reach out to your local crisis line, 
+          text or call the 988 Suicide and Crisis Lifeline at 988, 
+          or visit <CrisisLink href="https://988lifeline.org" target="_blank" rel="noopener noreferrer">988lifeline.org</CrisisLink> for more details.
+        </CrisisText>
+      </CrisisAlert>
+      
       <FooterContent>
         <SocialMedia>
           <SocialLink 
@@ -53,8 +61,34 @@ const Footer = () => {
 const FooterContainer = styled.footer`
   background-color: var(--primary-color);
   color: var(--text-color);
-  padding: 3rem 1rem;
   position: relative;
+`;
+
+const CrisisAlert = styled.div`
+  background-color: #ff5252;
+  color: white;
+  padding: 1rem;
+  text-align: center;
+  font-weight: 500;
+  width: 100%;
+`;
+
+const CrisisText = styled.p`
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.5;
+  max-width: 1200px;
+  margin: 0 auto;
+`;
+
+const CrisisLink = styled.a`
+  color: white;
+  text-decoration: underline;
+  font-weight: 600;
+  
+  &:hover {
+    color: #ffebee;
+  }
 `;
 
 const FooterContent = styled.div`
@@ -64,6 +98,7 @@ const FooterContent = styled.div`
   flex-direction: column;
   align-items: center;
   gap: 2rem;
+  padding: 3rem 1rem;
 `;
 
 const SocialMedia = styled.div`
