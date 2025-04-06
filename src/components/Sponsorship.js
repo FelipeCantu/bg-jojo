@@ -1,7 +1,14 @@
 import React from 'react';
 import styled from 'styled-components';
+import { useNavigate } from 'react-router-dom';
 
 const Sponsorship = () => {
+
+  const navigate = useNavigate();
+  const handleStartToday = () => {
+    navigate('/getinvolved'); 
+  };
+
   const sponsorshipLevels = [
     {
       title: "Reaching Out",
@@ -87,8 +94,7 @@ const Sponsorship = () => {
         <Image src="https://static.wixstatic.com/media/1db9c9_fffbca1af6ec4bee8f085876fe68959f~mv2.png/v1/crop/x_2,y_232,w_1910,h_848/fill/w_691,h_307,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Untitled-2.png" alt="Mental Health Support" />
       </ImagesContainer>
 
-      <Button>Start Today</Button>
-
+      <Button onClick={handleStartToday}>Start Today</Button>
       {/* Sponsorship Levels Grid */}
       <SponsorshipGrid>
         {sponsorshipLevels.map((level, index) => (
