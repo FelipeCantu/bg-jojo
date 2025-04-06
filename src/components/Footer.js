@@ -9,7 +9,8 @@ const Footer = () => {
       <CrisisAlert>
         <CrisisText>
           If you or someone you know is in crisis, reach out to your local crisis line, 
-          text or call the 988 Suicide and Crisis Lifeline at 988, 
+          text or call the 988 Suicide and Crisis Lifeline at{' '}
+          <ClickableNumber href="tel:988">988</ClickableNumber>, 
           or visit <CrisisLink href="https://988lifeline.org" target="_blank" rel="noopener noreferrer">988lifeline.org</CrisisLink> for more details.
         </CrisisText>
       </CrisisAlert>
@@ -81,13 +82,26 @@ const CrisisText = styled.p`
   margin: 0 auto;
 `;
 
+const ClickableNumber = styled.a`
+  color: white;
+  text-decoration: underline;
+  font-weight: 600;
+  cursor: pointer;
+  
+  &:hover {
+    color: blue;
+    text-decoration: underline;
+  }
+`;
+
 const CrisisLink = styled.a`
   color: white;
   text-decoration: underline;
   font-weight: 600;
   
   &:hover {
-    color: #ffebee;
+    color: blue;
+    text-decoration: underline;
   }
 `;
 
@@ -157,6 +171,7 @@ const FooterLink = styled.a`
   
   &:hover {
     color: white;
+    text-decoration: underline;
     
     &::after {
       width: 100%;

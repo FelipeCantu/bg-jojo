@@ -16,27 +16,34 @@ const Hotlines = () => {
 
         <HotlineContainer>
           <HotlineTitle>Suicide and Crisis Lifeline</HotlineTitle>
-          <HotlineText>Call or text 988 to connect with mental health professionals. Veterans can press 1 after dialing 988 to reach the Veterans Crisis Lifeline.</HotlineText>
-        </HotlineContainer>
-
-        <HotlineContainer>
-          <HotlineTitle>National Domestic Violence Hotline</HotlineTitle>
-          <HotlineText>Call 1-800-799-7233</HotlineText>
-        </HotlineContainer>
-
-        <HotlineContainer>
-          <HotlineTitle>Utah Domestic Violence Hotline</HotlineTitle>
-          <HotlineText>Call 1-800-897-LINK (5465)</HotlineText>
+          <HotlineText>
+            Call or text <ClickableLink href="tel:988">988</ClickableLink> to connect with mental health professionals. 
+            Veterans can press 1 after dialing 988 to reach the Veterans Crisis Lifeline. Press 2 for Spanish.
+          </HotlineText>
         </HotlineContainer>
 
         <HotlineContainer>
           <HotlineTitle>Crisis Text Line</HotlineTitle>
-          <HotlineText>Text HOME to 741741</HotlineText>
+          <HotlineText>
+            Text HELLO to <ClickableLink href="sms:741741">741741</ClickableLink>
+          </HotlineText>
+        </HotlineContainer>
+
+        <HotlineContainer>
+          <HotlineTitle>National Domestic Violence Hotline</HotlineTitle>
+          <HotlineText>
+            Text "START" to <ClickableLink href="sms:88788">88788</ClickableLink> or call{' '}
+            <ClickableLink href="tel:18007997233">1-800-799-7233</ClickableLink> for support, resources, 
+            and hope for anyone affected by domestic violence / relationship abuse in the U.S.
+          </HotlineText>
         </HotlineContainer>
 
         <HotlineContainer>
           <HotlineTitle>Utah Crisis Line</HotlineTitle>
-          <HotlineText>Call (801) 587-3000 (local) or 1-800-273-8255</HotlineText>
+          <HotlineText>
+            Callers receive specialized support from certified crisis workers and are connected to mental health resources.{' '}
+            <ClickableLink href="tel:8015873000">(801) 587-3000</ClickableLink>
+          </HotlineText>
         </HotlineContainer>
       </Container>
     </PageContainer>
@@ -56,17 +63,17 @@ const PageContainer = styled.div`
   overflow: hidden;
 `;
 
-
 const Container = styled.div`
-  background-color: rgba(243, 244, 246, 0.9); /* Semi-transparent background */
-  padding: 0rem 1.5rem 1.5rem; /* Increased top padding to avoid navbar overlap */
+  background-color: rgba(243, 244, 246, 0.9);
+  padding: 0rem 1.5rem 1.5rem;
   border-radius: 0.5rem;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   max-width: 32rem;
-  margin: 6rem auto; /* Pushes content down */
-  position: relative; /* Keeps it above the video */
+  margin: 6rem auto;
+  position: relative;
   z-index: 1;
 `;
+
 const Title = styled.h2`
   font-size: 1.5rem;
   font-weight: bold;
@@ -96,18 +103,27 @@ const HotlineText = styled.p`
 `;
 
 const VideoBackground = styled.div`
-  position: fixed; /* Keeps it in the background */
+  position: fixed;
   top: 0;
   left: 0;
   width: 100%;
-  height: 100vh; /* Ensure it fills the screen */
-  z-index: -1; /* Push it behind everything */
+  height: 100vh;
+  z-index: -1;
   overflow: hidden;
-  pointer-events: none; /* Prevents clicking */
+  pointer-events: none;
 
   video {
     width: 100%;
     height: 100%;
-    object-fit: cover; /* Ensures it covers the whole area */
+    object-fit: cover;
+  }
+`;
+
+const ClickableLink = styled.a`
+  color: #2563eb;
+  text-decoration: underline;
+  cursor: pointer;
+  &:hover {
+    color: #1d4ed8;
   }
 `;

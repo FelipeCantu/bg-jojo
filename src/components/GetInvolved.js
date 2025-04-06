@@ -3,7 +3,9 @@ import styled from "styled-components";
 import emailjs from "emailjs-com";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
-import CustomSelect from "./CustomSelect"; 
+import CustomSelect from "./CustomSelect";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faFacebookF, faInstagram } from '@fortawesome/free-brands-svg-icons';
 
 const MySwal = withReactContent(Swal);
 
@@ -221,12 +223,28 @@ const VolunteerForm = () => {
       <ContentWrapper>
         {/* Form Container positioned over the header image */}
         <FormContainer>
-          <Title>Volunteer Application</Title>
+          <Title>Contact</Title>
           <Description>
-            Join our team of dedicated volunteers and help make a difference in mental health support.
-            Fill out the form below to get started.
+            Get in touch so we can start working together.
           </Description>
-
+          <SocialIconsContainer>
+            <SocialIcon
+              href="https://www.facebook.com/profile.php?id=61564086892164"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Facebook"
+            >
+              <FontAwesomeIcon icon={faFacebookF} />
+            </SocialIcon>
+            <SocialIcon
+              href="https://www.instagram.com/givebackjojo/"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Instagram"
+            >
+              <FontAwesomeIcon icon={faInstagram} />
+            </SocialIcon>
+          </SocialIconsContainer>
           <Form onSubmit={sendEmail}>
             {/* First Name */}
             <InputGroup>
@@ -329,11 +347,11 @@ const VolunteerForm = () => {
               )}
             </InputGroup>
 
-            <Button type="submit">Submit Application</Button>
+            <Button type="submit">Send</Button>
           </Form>
         </FormContainer>
 
-        <RolesTitle>Available Volunteer Opportunities</RolesTitle>
+        <RolesTitle>Volunteer Roles</RolesTitle>
 
         <BottomSection>
           <RolesSection>
@@ -500,10 +518,11 @@ const RolesSection = styled.div`
 `;
 
 const RolesTitle = styled.h2`
-  font-size: 1.75rem;
+  font-size: 2rem;
   color: #2c3e50;
   margin-top: 4rem;
   text-align: center;
+  font-family: 'Aptos',
 `;
 
 const RolesGrid = styled.div`
@@ -589,5 +608,23 @@ const Commitment = styled.p`
   font-style: italic;
   font-size: 0.9rem;
 `;
+
+const SocialIconsContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+`;
+
+const SocialIcon = styled.a`
+  color: #2c3e50;
+  font-size: 1.5rem;
+  transition: color 0.3s ease;
+  
+  &:hover {
+    color: #ffcc00;
+  }
+`;
+
 
 export default VolunteerForm;
