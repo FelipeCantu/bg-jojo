@@ -3,8 +3,8 @@ import styled, { createGlobalStyle } from 'styled-components';
 import { Link } from 'react-router-dom';
 import Menu from './Menu';
 import LoginButton from './LoginButton';
+import NotificationBell from './NotificationBell'
 
-// 1. First define components that don't depend on others
 const NavbarFontStyle = createGlobalStyle`
   @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap');
 `;
@@ -63,7 +63,6 @@ const StyledLink = styled(Link)`
   }
 `;
 
-// 2. Then define components that depend on previously defined components
 const MoreLink = styled.div`
   position: relative;
   cursor: pointer;
@@ -85,7 +84,6 @@ const MoreLink = styled.div`
   }
 `;
 
-// 3. Then define the remaining components
 const NavLinks = styled.div`
   display: flex;
   gap: 1rem;
@@ -174,7 +172,7 @@ const NavbarLoginContainer = styled.div`
   @media (min-width: 769px) {
     display: flex;
     align-items: center;
-    margin-left: 1rem;
+    gap: 1rem; // Add gap between NotificationBell and LoginButton
   }
 `;
 
@@ -210,6 +208,7 @@ const Navbar = () => {
           </MobileMenu>
 
           <NavbarLoginContainer>
+            <NotificationBell /> 
             <LoginButton hideInNavbar={false} />
           </NavbarLoginContainer>
         </NavContent>

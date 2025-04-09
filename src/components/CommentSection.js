@@ -1,17 +1,43 @@
-import React, { useState, useEffect } from "react";
-import { db, collection, addDoc, getDocs, deleteDoc, doc } from "../firestore";
+import React, { useEffect, useState } from "react";
 import styled from "styled-components";
+import client from "../sanityClient";
+import useCurrentUser from "../hook/useCurrentUser";
 
-const CommentSection = ({ articleId, user }) => {
+const CommentSection = ({ articleId }) => {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState("");
   const [isCommentBoxExpanded, setIsCommentBoxExpanded] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  
+  const { currentUser, loading: userLoading, error: userError } = useCurrentUser();
 
   useEffect(() => {
+    if (!articleId) return;
+
     const fetchComments = async () => {
-      const commentsRef = collection(db, "articles", articleId, "comments");
-      const commentsSnapshot = await getDocs(commentsRef);
-      setComments(commentsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+      try {
+        setIsLoading(true);
+        const result = await client.fetch(
+          `*[_type == "comment" && article._ref == $articleId] | order(_createdAt desc){
+            _id,
+            text,
+            _createdAt,
+            "user": user->{
+              _id,
+              name,
+              "image": image.asset->url
+            }
+          }`,
+          { articleId }
+        );
+        setComments(result || []);
+      } catch (err) {
+        setError("Failed to load comments");
+        console.error("Error fetching comments:", err);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     fetchComments();
@@ -19,37 +45,134 @@ const CommentSection = ({ articleId, user }) => {
 
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
-    if (!newComment.trim() || !user) return;
+    
+    if (!newComment.trim()) {
+      setError("Comment cannot be empty");
+      return;
+    }
+    
+    if (!currentUser?._id) {
+      setError("Please log in to comment");
+      return;
+    }
 
-    const commentsRef = collection(db, "articles", articleId, "comments");
-    await addDoc(commentsRef, {
-      userId: user.uid, // Store user UID for Firestore security rules
-      userName: user.name,
-      userPhoto: user.photo,
-      text: newComment,
-      timestamp: new Date().toISOString(),
-    });
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const newCommentData = {
+        _type: "comment",
+        text: newComment,
+        article: {
+          _type: "reference",
+          _ref: articleId,
+        },
+        user: {
+          _type: "reference",
+          _ref: currentUser._id,
+        },
+      };
 
-    setNewComment("");
-    setIsCommentBoxExpanded(false);
+      const createdComment = await client.create(newCommentData);
 
-    const commentsSnapshot = await getDocs(commentsRef);
-    setComments(commentsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+      // Update the article's comments array
+      await client
+        .patch(articleId)
+        .setIfMissing({ comments: [] })
+        .append('comments', [{ _type: "reference", _ref: createdComment._id }])
+        .commit();
+
+      // Create notification if commenter is not the article author
+      const article = await client.getDocument(articleId);
+      if (article?.author?._ref && article.author._ref !== currentUser._id) {
+        await client.create({
+          _type: "notification",
+          user: { _type: "reference", _ref: article.author._ref },
+          type: "comment",
+          message: `${currentUser.name} commented on your article "${article.title || ''}"`,
+          link: `/article/${articleId}`,
+          seen: false,
+          sender: { _type: "reference", _ref: currentUser._id },
+          relatedContent: { _type: "reference", _ref: articleId }
+        });
+      }
+
+      setNewComment("");
+      setIsCommentBoxExpanded(false);
+      setComments(prev => [{
+        ...createdComment,
+        user: {
+          _id: currentUser._id,
+          name: currentUser.name,
+          image: currentUser.image
+        }
+      }, ...prev]);
+
+    } catch (err) {
+      setError("Failed to post comment. Please try again.");
+      console.error("Error submitting comment:", err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleDeleteComment = async (commentId) => {
-    if (!user) return;
+    if (!currentUser?._id) {
+      setError("Please log in to delete comments");
+      return;
+    }
 
-    const commentRef = doc(db, "articles", articleId, "comments", commentId);
-    await deleteDoc(commentRef);
+    try {
+      setIsLoading(true);
+      const commentToDelete = comments.find(c => c._id === commentId);
+      
+      if (!commentToDelete || commentToDelete.user?._id !== currentUser._id) {
+        throw new Error("Unauthorized deletion attempt");
+      }
 
-    setComments(comments.filter((comment) => comment.id !== commentId));
+      await client
+        .patch(articleId)
+        .unset([`comments[_ref=="${commentId}"]`])
+        .commit();
+
+      await client.delete(commentId);
+      setComments(prev => prev.filter(c => c._id !== commentId));
+    } catch (err) {
+      setError("Failed to delete comment");
+      console.error("Error deleting comment:", err);
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      });
+    } catch {
+      return "";
+    }
+  };
+
+  if (userLoading) {
+    return <LoadingMessage>Loading user information...</LoadingMessage>;
+  }
+
+  if (userError) {
+    return <ErrorMessage>{userError}</ErrorMessage>;
+  }
 
   return (
     <CommentSectionContainer>
-      <h3>Comments</h3>
-      {user ? (
+      <SectionTitle>Comments ({comments.length})</SectionTitle>
+      
+      {error && <ErrorMessage>{error}</ErrorMessage>}
+
+      {currentUser?._id ? (
         <CommentForm onSubmit={handleCommentSubmit}>
           <CommentBox
             placeholder="Add a comment..."
@@ -57,115 +180,263 @@ const CommentSection = ({ articleId, user }) => {
             onChange={(e) => setNewComment(e.target.value)}
             onFocus={() => setIsCommentBoxExpanded(true)}
             $isExpanded={isCommentBoxExpanded}
+            disabled={isLoading}
           />
 
           {isCommentBoxExpanded && (
             <ButtonContainer>
-              <CancelButton type="button" onClick={() => setIsCommentBoxExpanded(false)}>
+              <CancelButton 
+                type="button" 
+                onClick={() => {
+                  setIsCommentBoxExpanded(false);
+                  setNewComment("");
+                  setError(null);
+                }}
+                disabled={isLoading}
+              >
                 Cancel
               </CancelButton>
-              <PublishButton type="submit">Publish</PublishButton>
+              <PublishButton 
+                type="submit" 
+                disabled={!newComment.trim() || isLoading}
+              >
+                {isLoading ? 'Posting...' : 'Publish'}
+              </PublishButton>
             </ButtonContainer>
           )}
         </CommentForm>
       ) : (
-        <p>Please log in to comment.</p>
+        <LoginPrompt>Please log in to comment.</LoginPrompt>
       )}
-      {comments.map((comment) => (
-        <Comment key={comment.id}>
-          <UserPhoto src={comment.userPhoto} alt={comment.userName} />
-          <CommentContent>
-            <strong>{comment.userName}</strong>
-            <p>{comment.text}</p>
-          </CommentContent>
-          {user && user.uid === comment.userId && (
-            <DeleteButton onClick={() => handleDeleteComment(comment.id)}>Delete</DeleteButton>
-          )}
-        </Comment>
-      ))}
+
+      {isLoading && !comments.length ? (
+        <LoadingMessage>Loading comments...</LoadingMessage>
+      ) : comments.length === 0 ? (
+        <EmptyState>No comments yet. Be the first to comment!</EmptyState>
+      ) : (
+        <CommentsList>
+          {comments.map((comment) => (
+            <Comment key={comment._id}>
+              <UserPhoto 
+                src={comment.user?.image} 
+                alt={comment.user?.name || 'User'}
+                onError={(e) => e.target.src = '/default-avatar.png'}
+              />
+              <CommentContent>
+                <CommentHeader>
+                  <UserName>{comment.user?.name || 'Anonymous'}</UserName>
+                  <CommentDate>{formatDate(comment._createdAt)}</CommentDate>
+                </CommentHeader>
+                <CommentText>{comment.text}</CommentText>
+              </CommentContent>
+              {currentUser?._id === comment.user?._id && (
+                <DeleteButton 
+                  onClick={() => handleDeleteComment(comment._id)}
+                  disabled={isLoading}
+                  aria-label="Delete comment"
+                >
+                  Delete
+                </DeleteButton>
+              )}
+            </Comment>
+          ))}
+        </CommentsList>
+      )}
     </CommentSectionContainer>
   );
 };
 
+// Styled Components
 const CommentSectionContainer = styled.div`
-  margin-top: 20px;
-  margin-bottom: 50px;
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+`;
+
+const SectionTitle = styled.h3`
+  font-size: 1.25rem;
+  margin-bottom: 1.5rem;
+  color: #333;
+`;
+
+const ErrorMessage = styled.div`
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  background-color: #ffebee;
+  color: #c62828;
+  border-radius: 4px;
+  font-size: 0.9rem;
 `;
 
 const CommentForm = styled.form`
-  display: flex;
-  flex-direction: column;
-  margin-top: 15px;
-  position: relative;
-  margin-bottom: 50px;
+  margin-bottom: 2rem;
 `;
 
 const CommentBox = styled.textarea`
   width: 100%;
-  max-width: 100%;
-  height: ${(props) => (props.$isExpanded ? "100px" : "40px")};
-  transition: height 0.3s ease;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
+  min-height: ${(props) => (props.$isExpanded ? "100px" : "60px")};
+  padding: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
   resize: vertical;
-  box-sizing: border-box;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  font-size: 0.95rem;
+
+  &:focus {
+    outline: none;
+    border-color: #024a47;
+    box-shadow: 0 0 0 2px rgba(2, 74, 71, 0.1);
+  }
+
+  &:disabled {
+    background-color: #f5f5f5;
+    cursor: not-allowed;
+  }
 `;
 
 const ButtonContainer = styled.div`
-  position: absolute;
-  bottom: -40px;
-  right: 0;
   display: flex;
-  gap: 10px;
+  gap: 1rem;
+  margin-top: 1rem;
+  justify-content: flex-end;
 `;
 
 const PublishButton = styled.button`
   background-color: #024a47;
   color: white;
   border: none;
-  padding: 10px 15px;
+  padding: 0.5rem 1.5rem;
+  border-radius: 4px;
   cursor: pointer;
-  transition: opacity 0.2s ease-in-out;
+  transition: background-color 0.2s;
+  font-size: 0.9rem;
 
-  &:hover {
-    opacity: 0.8;
+  &:hover:not(:disabled) {
+    background-color: #01332f;
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
   }
 `;
 
 const CancelButton = styled.button`
-  color: #024a47;
-  padding: 5px 10px;
+  background: none;
+  color: #666;
   border: none;
+  padding: 0.5rem 1rem;
   cursor: pointer;
+  transition: color 0.2s;
+  font-size: 0.9rem;
+
+  &:hover:not(:disabled) {
+    color: #333;
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+`;
+
+const LoginPrompt = styled.p`
+  color: #666;
+  margin: 1rem 0;
+  text-align: center;
+`;
+
+const LoadingMessage = styled.div`
+  padding: 1.5rem;
+  text-align: center;
+  color: #666;
+`;
+
+const EmptyState = styled.div`
+  padding: 1.5rem;
+  text-align: center;
+  color: #666;
+  font-style: italic;
+`;
+
+const CommentsList = styled.div`
+  margin-top: 1.5rem;
 `;
 
 const Comment = styled.div`
   display: flex;
-  align-items: flex-start;
-  margin-top: 20px;
+  gap: 1rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid #eee;
+  position: relative;
+
+  &:last-child {
+    border-bottom: none;
+  }
 `;
 
 const UserPhoto = styled.img`
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  margin-right: 10px;
+  object-fit: cover;
+  background-color: #f0f0f0;
 `;
 
 const CommentContent = styled.div`
-  margin-left: 10px;
+  flex: 1;
+  min-width: 0; /* Prevent overflow */
+`;
+
+const CommentHeader = styled.div`
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+`;
+
+const UserName = styled.strong`
+  font-size: 0.95rem;
+  color: #333;
+`;
+
+const CommentDate = styled.span`
+  font-size: 0.8rem;
+  color: #666;
+`;
+
+const CommentText = styled.p`
+  margin: 0;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.95rem;
 `;
 
 const DeleteButton = styled.button`
+  position: absolute;
+  top: 1rem;
+  right: 0;
   background: none;
   border: none;
-  color: red;
+  color: #c62828;
   cursor: pointer;
-  margin-left: 10px;
+  font-size: 0.8rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: background-color 0.2s;
 
-  &:hover {
-    text-decoration: underline;
+  &:hover:not(:disabled) {
+    background-color: #ffebee;
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
   }
 `;
 

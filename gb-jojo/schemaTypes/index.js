@@ -4,7 +4,9 @@ import { event } from './event';
 import { carousel } from './carousel';
 import { article } from './article';
 import { user } from './user';
-import { blockContent } from './blockContent'; // Import the blockContent schema
+import { blockContent } from './blockContent';
+import { notification } from './notification';
+import { comment } from './comment';
 
 export const schemaTypes = [
   tribute,
@@ -12,5 +14,7 @@ export const schemaTypes = [
   carousel,
   article,
   user,
-  blockContent, // Add the blockContent schema
+  blockContent, 
+  notification,
+  comment,
 ];

@@ -94,7 +94,7 @@ const ArticleList = () => {
                     ? `${article.title.substring(0, 50)}...` // Truncate after 50 characters
                     : article.title}
                 </ArticleTitle>
-                <ArticleCounters articleId={article._id} />
+                <ArticleCounters articleId={ article._id } />
               </ArticleCard>
             </LinkWrapper>
           ))}

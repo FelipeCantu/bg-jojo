@@ -82,7 +82,7 @@ const ContainerWrapper = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  background: url(https://i.pinimg.com/736x/ac/62/36/ac623639e4368a63a9442e558cdadc06.jpg) no-repeat bottom center/cover;
+  background: #f3f3f3;
   background-size: cover;
   padding: 0 15px;
   overflow: hidden;

@@ -245,5 +245,126 @@ export const updateUserProfileInSanity = async (uid, bannerUrl) => {
   }
 };
 
+// Fetch unread notifications for a user
+export const getNotificationsForUser = async (userId, options = {}) => {
+  if (!userId) throw new Error("User ID is required");
+
+  try {
+    const { limit = 20, offset = 0, unreadOnly = false } = options;
+    
+    const query = `*[_type == "notification" && user._ref == $userId${
+      unreadOnly ? " && seen == false" : ""
+    }] | order(createdAt desc) [${offset}...${offset + limit}] {
+      _id,
+      _createdAt,
+      type,
+      message,
+      link,
+      seen,
+      readAt,
+      "sender": sender->{_id, name, image},
+      "relatedContent": relatedContent->{_id, title}
+    }`;
+    
+    const params = { userId };
+    return await client.fetch(query, params);
+  } catch (error) {
+    console.error("Failed to fetch notifications:", error);
+    throw new Error("Failed to fetch notifications");
+  }
+};
+
+export const markNotificationsAsRead = async (notificationIds) => {
+  if (!notificationIds?.length) return;
+
+  try {
+    const transaction = client.transaction();
+    
+    notificationIds.forEach(id => {
+      transaction.patch(id, {
+        set: { 
+          seen: true,
+          readAt: new Date().toISOString() 
+        }
+      });
+    });
+    
+    await transaction.commit();
+    return true;
+  } catch (error) {
+    console.error("Failed to mark notifications as read:", error);
+    throw new Error("Failed to update notifications");
+  }
+};
+
+export const createNotification = async ({
+  userId,
+  type,
+  message,
+  link,
+  senderId,
+  relatedContentId
+}) => {
+  if (!userId || !type) {
+    throw new Error("Missing required fields: userId and type");
+  }
+
+  // Default messages based on notification type
+  const defaultMessages = {
+    like: "{sender} liked your {content}",
+    comment: "{sender} commented on your {content}",
+    reply: "{sender} replied to your comment",
+    follow: "{sender} started following you",
+    mention: "{sender} mentioned you in a {content}",
+    system: "System notification"
+  };
+
+  try {
+    const notificationData = {
+      _type: "notification",
+      user: { _type: "reference", _ref: userId },
+      type,
+      message: message || defaultMessages[type] || "You have a new notification",
+      link: link || "",
+      seen: false,
+      createdAt: new Date().toISOString(),
+      ...(senderId && { sender: { _type: "reference", _ref: senderId } }),
+      ...(relatedContentId && { 
+        relatedContent: { _type: "reference", _ref: relatedContentId } 
+      })
+    };
+
+    const notification = await client.create(notificationData);
+    
+    return notification;
+  } catch (error) {
+    console.error("Error creating notification:", error);
+    throw new Error("Failed to create notification");
+  }
+};
+
+// Optional: Add this if you need to delete notifications
+export const deleteNotification = async (notificationId) => {
+  try {
+    await client.delete(notificationId);
+    return true;
+  } catch (error) {
+    console.error("Failed to delete notification:", error);
+    throw new Error("Failed to delete notification");
+  }
+};
+
+// Optional: Add this if you need to count unread notifications
+export const countUnreadNotifications = async (userId) => {
+  try {
+    const query = `count(*[_type == "notification" && user._ref == $userId && seen == false])`;
+    const params = { userId };
+    return await client.fetch(query, params);
+  } catch (error) {
+    console.error("Failed to count unread notifications:", error);
+    return 0;
+  }
+};
+
 // Export the default client for other functions if needed
 export default client;

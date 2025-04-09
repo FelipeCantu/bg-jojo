@@ -1,169 +1,211 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { HeartIcon } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartIconSolid } from "@heroicons/react/24/solid";
 import styled from "styled-components";
-import { doc, getDoc, setDoc, increment, arrayUnion, arrayRemove, collection, getDocs, runTransaction } from "firebase/firestore";
-import { auth, firestore } from "../firebaseconfig";
+import { client } from "../sanityClient";
 import useCurrentUser from "../hook/useCurrentUser";
 
 const ArticleCounters = ({ articleId }) => {
-  const { currentUser, loading, error } = useCurrentUser();
+  const { currentUser } = useCurrentUser();
   const [viewCount, setViewCount] = useState(0);
   const [commentCount, setCommentCount] = useState(0);
   const [likeCount, setLikeCount] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Increment view count function
-  const incrementViewCount = useCallback(async () => {
-    if (!articleId) return;
-
-    const articleRef = doc(firestore, "articles", articleId);
-
-    try {
-      await runTransaction(firestore, async (transaction) => {
-        const articleDoc = await transaction.get(articleRef);
-
-        if (!articleDoc.exists()) {
-          transaction.set(articleRef, { views: 1, likes: 0, likedBy: [] });
-        } else {
-          transaction.update(articleRef, { views: increment(1) });
-        }
-      });
-    } catch (err) {
-      console.error("❌ Error incrementing view count:", err);
-    }
-  }, [articleId]);
-
-  // Fetch view, like, comment counts, and liked status
+  // Fetch initial data
   useEffect(() => {
-    const fetchCounts = async () => {
-      if (!articleId || loading) return;
-  
+    const fetchData = async () => {
+      if (!articleId) return;
+
       try {
-        const articleRef = doc(firestore, "articles", articleId);
-        const articleSnapshot = await getDoc(articleRef);
-  
-        if (!articleSnapshot.exists()) {
-          await setDoc(articleRef, { views: 0, likes: 0, likedBy: [] });
-        }
-  
-        const articleData = articleSnapshot.data();
-        setViewCount(articleData?.views || 0);
-        setLikeCount(articleData?.likes || 0);
-        setIsLiked(articleData?.likedBy?.includes(currentUser?.uid) || false);
-  
-        const commentsRef = collection(firestore, "articles", articleId, "comments");
-        const commentsSnapshot = await getDocs(commentsRef);
-        setCommentCount(commentsSnapshot.size);
+        const data = await client.fetch(
+          `*[_type == "article" && _id == $articleId][0]{
+            views,
+            likes,
+            "likedBy": likedBy[]->_id,
+            "commentCount": count(*[_type == "comment" && article._ref == ^._id])
+          }`,
+          { articleId }
+        );
+
+        setViewCount(data?.views || 0);
+        setLikeCount(data?.likes || 0);
+        setCommentCount(data?.commentCount || 0);
+        setIsLiked(data?.likedBy?.includes(currentUser?.sanityId) || false);
       } catch (err) {
-        console.error("❌ Error fetching article data:", err);
+        console.error("Error loading article data:", err);
+      } finally {
+        setIsLoading(false);
       }
     };
-  
-    if (articleId && !loading) {
-      fetchCounts();
-    }
-  }, [articleId, currentUser, loading]);
 
-  // Increment view count on first load
-  useEffect(() => {
-    if (articleId && !loading) {
-      incrementViewCount();
-    }
-  }, [articleId, loading, incrementViewCount]);
+    fetchData();
+  }, [articleId, currentUser?.sanityId]);
 
   // Handle like click
-  const handleLike = async (articleId) => {
-    const user = auth.currentUser;
-    if (!user) {
-      alert("You need to sign in to like this article!");
+  const handleLike = async () => {
+    if (!currentUser?.sanityId) {
+      alert("Please sign in to like articles");
       return;
     }
-
+  
+    setIsLoading(true);
     try {
-      const articleRef = doc(firestore, "articles", articleId);
-
-      await runTransaction(firestore, async (transaction) => {
-        const articleDoc = await transaction.get(articleRef);
-        if (!articleDoc.exists()) {
-          console.log("❌ Article not found.");
-          return;
-        }
-
-        const articleData = articleDoc.data();
-        const likedBy = articleData?.likedBy || [];
-        const alreadyLiked = likedBy.includes(user.uid);
-        const newLikeStatus = !alreadyLiked;
-
-        transaction.update(articleRef, {
-          likes: newLikeStatus ? increment(1) : increment(-1),
-          likedBy: newLikeStatus ? arrayUnion(user.uid) : arrayRemove(user.uid),
+      // 1. Fetch current article data
+      const article = await client.fetch(
+        `*[_type == "article" && _id == $articleId][0]{
+          _id,
+          likes,
+          "likedByRefs": likedBy[]->_id,
+          author->{ _id }
+        }`,
+        { articleId }
+      );
+  
+      if (!article) {
+        throw new Error("Article not found");
+      }
+  
+      // 2. Check if current user already liked
+      const alreadyLiked = article.likedByRefs?.includes(currentUser.sanityId) || false;
+      
+      // 3. Prepare the new likedBy array with proper reference format
+      const updatedLikedBy = alreadyLiked
+        ? (article.likedByRefs || []).filter(id => id && id !== currentUser.sanityId)
+        : [...(article.likedByRefs || []).filter(Boolean), currentUser.sanityId];
+  
+      // 4. Convert to Sanity references with null checks
+      const likedByReferences = updatedLikedBy
+        .filter(Boolean) // Remove any null/undefined values
+        .map(userId => ({
+          _type: "reference",
+          _ref: String(userId) // Ensure string conversion
+        }));
+  
+      // 5. Calculate new like count
+      const newLikeCount = alreadyLiked ? Math.max(0, likeCount - 1) : likeCount + 1;
+  
+      // 6. Update the article
+      await client
+        .patch(articleId)
+        .set({ 
+          likes: newLikeCount,
+          likedBy: likedByReferences.length > 0 ? likedByReferences : [] // Ensure array
+        })
+        .commit();
+  
+      // 7. Create notification if needed (with null checks)
+      if (!alreadyLiked && article.author?._id && article.author._id !== currentUser.sanityId) {
+        await client.create({
+          _type: "notification",
+          user: { 
+            _type: "reference", 
+            _ref: String(article.author._id)
+          },
+          sender: { 
+            _type: "reference", 
+            _ref: String(currentUser.sanityId)
+          },
+          type: "like",
+          relatedArticle: { 
+            _type: "reference", 
+            _ref: String(article._id)
+          },
+          seen: false,
+          createdAt: new Date().toISOString()
         });
-
-        setIsLiked(newLikeStatus);
-        setLikeCount((prevCount) => (newLikeStatus ? prevCount + 1 : prevCount - 1));
-      });
+      }
+  
+      // 8. Update local state
+      setLikeCount(newLikeCount);
+      setIsLiked(!alreadyLiked);
     } catch (err) {
-      console.error("❌ Error updating like count:", err.message);
+      console.error("Error updating like:", err);
+      alert("Failed to update like. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>{error}</div>;
+  if (isLoading) return <div>Loading...</div>;
 
   return (
     <CountersSection>
       <CounterItem>{viewCount} Views</CounterItem>
       <CounterItem>{commentCount} Comments</CounterItem>
-      <HeartIconWrapper onClick={() => handleLike(articleId)} $liked={isLiked ? 1 : 0}>
-        {isLiked ? <HeartIconSolidStyled /> : <HeartIconStyled />}
+      <HeartIconWrapper 
+        onClick={handleLike} 
+        $liked={isLiked ? 1 : 0}
+        disabled={isLoading}
+      >
+        {isLiked ? (
+          <HeartIconSolidStyled className="icon" />
+        ) : (
+          <HeartIconStyled className="icon" />
+        )}
         <span>{likeCount}</span>
       </HeartIconWrapper>
     </CountersSection>
   );
 };
 
+// Styled Components (updated with loading state)
 const CountersSection = styled.div`
-  font-size: 16px;
-  color: #666;
-  margin-top: 2px;
   display: flex;
   gap: 20px;
   align-items: center;
   width: 100%;
+  margin-top: 12px;
 `;
 
-const CounterItem = styled.h4`
-  margin: 0;
+const CounterItem = styled.div`
+  font-size: 14px;
+  color: #666;
 `;
 
-const HeartIconWrapper = styled.div`
-  cursor: pointer;
+const HeartIconWrapper = styled.button`
   display: flex;
   align-items: center;
-  gap: 5px;
-  font-size: 20px;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 0;
   margin-left: auto;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    transform: scale(1.05);
+    .icon {
+      color: ${({ $liked }) => ($liked ? "#dc2626" : "#9ca3af")};
+    }
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
 
   span {
-    color: ${({ $liked }) => ($liked ? "red" : "gray")};
+    font-size: 14px;
+    color: ${({ $liked }) => ($liked ? "#dc2626" : "#6b7280")};
+    font-weight: ${({ $liked }) => ($liked ? "600" : "400")};
   }
 `;
 
 const HeartIconStyled = styled(HeartIcon)`
   width: 24px;
   height: 24px;
-  color: red;
-  padding: 5px;
-  transition: all 0.3s ease;
+  color: #9ca3af;
+  transition: all 0.2s ease;
 `;
 
 const HeartIconSolidStyled = styled(HeartIconSolid)`
   width: 24px;
   height: 24px;
-  color: red;
-  padding: 5px;
-  transition: all 0.3s ease;
+  color: #dc2626;
+  transition: all 0.2s ease;
 `;
 
 export default ArticleCounters;

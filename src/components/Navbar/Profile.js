@@ -156,7 +156,7 @@ const ProfileContainer = styled.div`
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  background: url(https://i.pinimg.com/736x/ac/62/36/ac623639e4368a63a9442e558cdadc06.jpg) no-repeat bottom center/cover;
+  background: #f3f3f3;
   min-height: 100vh;
   padding-top: 0; // Ensure there's no extra space at the top
 `;

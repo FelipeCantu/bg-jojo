@@ -1,6 +1,6 @@
 // schemas/article.js
 import { defineField, defineType } from 'sanity';
-import { blockContent } from './blockContent'; // Import the blockContent schema
+import { blockContent } from './blockContent';
 
 export const article = defineType({
   name: 'article',
@@ -11,6 +11,14 @@ export const article = defineType({
       name: 'title',
       title: 'Title',
       type: 'string',
+      validation: (Rule) => Rule.required(),
+    }),
+    defineField({
+      name: 'slug',
+      title: 'Slug',
+      type: 'slug',
+      options: { source: 'title' },
+      validation: (Rule) => Rule.required(),
     }),
     defineField({
       name: 'mainImage',
@@ -21,30 +29,32 @@ export const article = defineType({
     defineField({
       name: 'content',
       title: 'Content',
-      type: blockContent.name, // Reference the blockContent schema
+      type: blockContent.name,
     }),
     defineField({
       name: 'author',
       title: 'Author',
       type: 'reference',
       to: [{ type: 'user' }],
-      validation: (Rule) => Rule.required(), // Ensure every article has an author
+      validation: (Rule) => Rule.required(),
     }),
     defineField({
       name: 'publishedDate',
       title: 'Published Date',
       type: 'datetime',
+      initialValue: () => new Date().toISOString(),
     }),
     defineField({
       name: 'readingTime',
       title: 'Reading Time (minutes)',
       type: 'number',
+      validation: (Rule) => Rule.min(1),
     }),
     defineField({
-      name: 'views',
-      title: 'Views',
-      type: 'number',
-      initialValue: 0,
+      name: 'comments',
+      title: 'Comments',
+      type: 'array',
+      of: [{ type: 'reference', to: [{ type: 'comment' }] }],
     }),
     defineField({
       name: 'likes',
@@ -57,6 +67,7 @@ export const article = defineType({
       title: 'Liked By',
       type: 'array',
       of: [{ type: 'reference', to: [{ type: 'user' }] }],
+      options: { disableNew: true }
     }),
   ],
 });
