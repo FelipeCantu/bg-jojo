@@ -1,48 +1,68 @@
 import React, { useState, useEffect } from "react";
 import { HeartIcon } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartIconSolid } from "@heroicons/react/24/solid";
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
 import { client } from "../sanityClient";
 import useCurrentUser from "../hook/useCurrentUser";
 
-const ArticleCounters = ({ articleId }) => {
-  const { currentUser } = useCurrentUser();
-  const [viewCount, setViewCount] = useState(0);
-  const [commentCount, setCommentCount] = useState(0);
-  const [likeCount, setLikeCount] = useState(0);
-  const [isLiked, setIsLiked] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Fetch initial data
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!articleId) return;
-
-      try {
-        const data = await client.fetch(
-          `*[_type == "article" && _id == $articleId][0]{
-            views,
-            likes,
-            "likedBy": likedBy[]->_id,
-            "commentCount": count(*[_type == "comment" && article._ref == ^._id])
-          }`,
-          { articleId }
-        );
-
-        setViewCount(data?.views || 0);
-        setLikeCount(data?.likes || 0);
-        setCommentCount(data?.commentCount || 0);
-        setIsLiked(data?.likedBy?.includes(currentUser?.sanityId) || false);
-      } catch (err) {
-        console.error("Error loading article data:", err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [articleId, currentUser?.sanityId]);
-
+  const ArticleCounters = ({ articleId }) => {
+    const { currentUser } = useCurrentUser();
+    const [viewCount, setViewCount] = useState(0);
+    const [commentCount, setCommentCount] = useState(0);
+    const [likeCount, setLikeCount] = useState(0);
+    const [isLiked, setIsLiked] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [viewCounted, setViewCounted] = useState(false);
+  
+    useEffect(() => {
+      const incrementViewCount = async () => {
+        if (!articleId || viewCounted) return;
+  
+        try {
+          await client
+            .patch(articleId)
+            .setIfMissing({ views: 0 })
+            .inc({ views: 1 })
+            .commit();
+  
+          setViewCounted(true);
+        } catch (err) {
+          console.error("Error incrementing view count:", err);
+        }
+      };
+  
+      incrementViewCount();
+    }, [articleId, viewCounted]);
+  
+    // Fetch initial data
+    useEffect(() => {
+      const fetchData = async () => {
+        if (!articleId) return;
+  
+        try {
+          const data = await client.fetch(
+            `*[_type == "article" && _id == $articleId][0]{
+              views,
+              likes,
+              "likedBy": likedBy[]->_id,
+              "commentCount": count(*[_type == "comment" && article._ref == ^._id])
+            }`,
+            { articleId }
+          );
+  
+          setViewCount(data?.views || 0);
+          setLikeCount(data?.likes || 0);
+          setCommentCount(data?.commentCount || 0);
+          setIsLiked(data?.likedBy?.includes(currentUser?.sanityId) || false);
+        } catch (err) {
+          console.error("Error loading article data:", err);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+  
+      fetchData();
+    }, [articleId, currentUser?.sanityId]);
   // Handle like click
   const handleLike = async () => {
     if (!currentUser?.sanityId) {
@@ -52,7 +72,6 @@ const ArticleCounters = ({ articleId }) => {
   
     setIsLoading(true);
     try {
-      // 1. Fetch current article data
       const article = await client.fetch(
         `*[_type == "article" && _id == $articleId][0]{
           _id,
@@ -67,35 +86,29 @@ const ArticleCounters = ({ articleId }) => {
         throw new Error("Article not found");
       }
   
-      // 2. Check if current user already liked
       const alreadyLiked = article.likedByRefs?.includes(currentUser.sanityId) || false;
       
-      // 3. Prepare the new likedBy array with proper reference format
       const updatedLikedBy = alreadyLiked
         ? (article.likedByRefs || []).filter(id => id && id !== currentUser.sanityId)
         : [...(article.likedByRefs || []).filter(Boolean), currentUser.sanityId];
   
-      // 4. Convert to Sanity references with null checks
       const likedByReferences = updatedLikedBy
-        .filter(Boolean) // Remove any null/undefined values
+        .filter(Boolean)
         .map(userId => ({
           _type: "reference",
-          _ref: String(userId) // Ensure string conversion
+          _ref: String(userId)
         }));
   
-      // 5. Calculate new like count
       const newLikeCount = alreadyLiked ? Math.max(0, likeCount - 1) : likeCount + 1;
   
-      // 6. Update the article
       await client
         .patch(articleId)
         .set({ 
           likes: newLikeCount,
-          likedBy: likedByReferences.length > 0 ? likedByReferences : [] // Ensure array
+          likedBy: likedByReferences.length > 0 ? likedByReferences : []
         })
         .commit();
   
-      // 7. Create notification if needed (with null checks)
       if (!alreadyLiked && article.author?._id && article.author._id !== currentUser.sanityId) {
         await client.create({
           _type: "notification",
@@ -117,7 +130,6 @@ const ArticleCounters = ({ articleId }) => {
         });
       }
   
-      // 8. Update local state
       setLikeCount(newLikeCount);
       setIsLiked(!alreadyLiked);
     } catch (err) {
@@ -128,12 +140,18 @@ const ArticleCounters = ({ articleId }) => {
     }
   };
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <LoadingSpinner />;
 
   return (
     <CountersSection>
-      <CounterItem>{viewCount} Views</CounterItem>
-      <CounterItem>{commentCount} Comments</CounterItem>
+      <CounterItem>
+        <EyeIcon />
+        {viewCount} Views
+      </CounterItem>
+      <CounterItem>
+        <CommentIcon />
+        {commentCount} Comments
+      </CounterItem>
       <HeartIconWrapper 
         onClick={handleLike} 
         $liked={isLiked ? 1 : 0}
@@ -150,7 +168,23 @@ const ArticleCounters = ({ articleId }) => {
   );
 };
 
-// Styled Components (updated with loading state)
+// Spinner animation
+const spin = keyframes`
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+`;
+
+const LoadingSpinner = styled.div`
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255, 215, 0, 0.3);
+  border-radius: 50%;
+  border-top: 3px solid #ffd700;
+  animation: ${spin} 1s linear infinite;
+  margin: 0 auto;
+`;
+
 const CountersSection = styled.div`
   display: flex;
   gap: 20px;
@@ -160,8 +194,29 @@ const CountersSection = styled.div`
 `;
 
 const CounterItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 14px;
   color: #666;
+`;
+
+const EyeIcon = styled.span`
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  background-color: #666;
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z'%3E%3C/path%3E%3Ccircle cx='12' cy='12' r='3'%3E%3C/circle%3E%3C/svg%3E");
+  mask-repeat: no-repeat;
+`;
+
+const CommentIcon = styled.span`
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  background-color: #666;
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'%3E%3C/path%3E%3C/svg%3E");
+  mask-repeat: no-repeat;
 `;
 
 const HeartIconWrapper = styled.button`
