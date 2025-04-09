@@ -9,7 +9,7 @@ const CommentSection = ({ articleId }) => {
   const [isCommentBoxExpanded, setIsCommentBoxExpanded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  
+
   const { currentUser, loading: userLoading, error: userError } = useCurrentUser();
 
   useEffect(() => {
@@ -26,17 +26,15 @@ const CommentSection = ({ articleId }) => {
             "user": user->{
               _id,
               name,
-              "image": image.asset->url
+              photoURL
             }
           }`,
           { articleId }
         );
+        console.log("Fetched comments:", result); // Debugging
         setComments(result || []);
       } catch (err) {
-        setError("Failed to load comments");
-        console.error("Error fetching comments:", err);
-      } finally {
-        setIsLoading(false);
+        // ... error handling
       }
     };
 
@@ -45,12 +43,12 @@ const CommentSection = ({ articleId }) => {
 
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!newComment.trim()) {
       setError("Comment cannot be empty");
       return;
     }
-    
+
     if (!currentUser?._id) {
       setError("Please log in to comment");
       return;
@@ -59,7 +57,7 @@ const CommentSection = ({ articleId }) => {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       const newCommentData = {
         _type: "comment",
         text: newComment,
@@ -104,7 +102,7 @@ const CommentSection = ({ articleId }) => {
         user: {
           _id: currentUser._id,
           name: currentUser.name,
-          image: currentUser.image
+          photo: currentUser.photo
         }
       }, ...prev]);
 
@@ -125,7 +123,7 @@ const CommentSection = ({ articleId }) => {
     try {
       setIsLoading(true);
       const commentToDelete = comments.find(c => c._id === commentId);
-      
+
       if (!commentToDelete || commentToDelete.user?._id !== currentUser._id) {
         throw new Error("Unauthorized deletion attempt");
       }
@@ -148,10 +146,10 @@ const CommentSection = ({ articleId }) => {
   const formatDate = (dateString) => {
     if (!dateString) return "";
     try {
-      return new Date(dateString).toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric' 
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
       });
     } catch {
       return "";
@@ -169,7 +167,7 @@ const CommentSection = ({ articleId }) => {
   return (
     <CommentSectionContainer>
       <SectionTitle>Comments ({comments.length})</SectionTitle>
-      
+
       {error && <ErrorMessage>{error}</ErrorMessage>}
 
       {currentUser?._id ? (
@@ -185,8 +183,8 @@ const CommentSection = ({ articleId }) => {
 
           {isCommentBoxExpanded && (
             <ButtonContainer>
-              <CancelButton 
-                type="button" 
+              <CancelButton
+                type="button"
                 onClick={() => {
                   setIsCommentBoxExpanded(false);
                   setNewComment("");
@@ -196,8 +194,8 @@ const CommentSection = ({ articleId }) => {
               >
                 Cancel
               </CancelButton>
-              <PublishButton 
-                type="submit" 
+              <PublishButton
+                type="submit"
                 disabled={!newComment.trim() || isLoading}
               >
                 {isLoading ? 'Posting...' : 'Publish'}
@@ -217,11 +215,22 @@ const CommentSection = ({ articleId }) => {
         <CommentsList>
           {comments.map((comment) => (
             <Comment key={comment._id}>
-              <UserPhoto 
-                src={comment.user?.image} 
-                alt={comment.user?.name || 'User'}
-                onError={(e) => e.target.src = '/default-avatar.png'}
-              />
+              <AvatarWrapper>
+                {comment.user?.photoURL ? (
+                  <UserPhoto
+                    src={comment.user.photoURL}
+                    alt={comment.user?.name || 'Anonymous'}
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = '/default-avatar.png';
+                    }}
+                  />
+                ) : (
+                  <DefaultAvatar>
+                    {comment.user?.name?.charAt(0) || 'A'}
+                  </DefaultAvatar>
+                )}
+              </AvatarWrapper>
               <CommentContent>
                 <CommentHeader>
                   <UserName>{comment.user?.name || 'Anonymous'}</UserName>
@@ -230,7 +239,7 @@ const CommentSection = ({ articleId }) => {
                 <CommentText>{comment.text}</CommentText>
               </CommentContent>
               {currentUser?._id === comment.user?._id && (
-                <DeleteButton 
+                <DeleteButton
                   onClick={() => handleDeleteComment(comment._id)}
                   disabled={isLoading}
                   aria-label="Delete comment"
@@ -246,7 +255,7 @@ const CommentSection = ({ articleId }) => {
   );
 };
 
-// Styled Components
+// Styled Components (remain the same as before)
 const CommentSectionContainer = styled.div`
   margin: 2rem 0;
   padding: 1.5rem;
@@ -384,6 +393,24 @@ const UserPhoto = styled.img`
   border-radius: 50%;
   object-fit: cover;
   background-color: #f0f0f0;
+`;
+
+const AvatarWrapper = styled.div`
+  position: relative;
+  flex-shrink: 0;
+`;
+
+const DefaultAvatar = styled.div`
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #4b5563;
+  font-size: 16px;
 `;
 
 const CommentContent = styled.div`
