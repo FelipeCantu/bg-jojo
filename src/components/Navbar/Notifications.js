@@ -2,11 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import {
-  HeartIcon,
   ChatBubbleOvalLeftIcon as ChatAltIcon,
   UserPlusIcon as UserAddIcon,
   TrashIcon
 } from '@heroicons/react/24/outline';
+import {HeartIcon} from '@heroicons/react/24/solid';
 import { auth } from '../../firebaseconfig';
 import { client } from '../../sanityClient';
 
@@ -16,13 +16,6 @@ const Notifications = () => {
   const [error, setError] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const navigate = useNavigate();
-
-  // Memoized sort function to ensure consistent sorting
-  const sortByCreatedAt = useCallback((a, b) => {
-    const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
-    const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
-    return dateB - dateA;
-  }, []);
 
   const formatTime = useCallback((date) => {
     if (!date) return 'Just now';
@@ -65,7 +58,7 @@ const Notifications = () => {
     return () => unsubscribeAuth();
   }, []);
 
-  // Fetch notifications
+  // Fetch notifications with proper sorting
   useEffect(() => {
     if (!currentUser?.sanityId) return;
 
@@ -103,9 +96,9 @@ const Notifications = () => {
           { userId: currentUser.sanityId }
         );
 
-        // Ensure proper sorting even if the query fails to sort
+        // Ensure proper sorting (newest first)
         const sortedNotifications = Array.isArray(fetched) 
-          ? [...fetched].sort(sortByCreatedAt)
+          ? [...fetched].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
           : [];
           
         setNotifications(sortedNotifications);
@@ -120,12 +113,12 @@ const Notifications = () => {
     fetchNotifications();
 
     const subscription = client.listen(
-      `*[_type == "notification" && user._ref == $userId]`,
+      `*[_type == "notification" && user._ref == $userId] | order(createdAt desc)`,
       { userId: currentUser.sanityId }
     ).subscribe((update) => {
       if (update.result) {
         setNotifications(prev => {
-          // Process new notifications with fallback createdAt
+          // Process new notifications
           const newNotifications = Array.isArray(update.result) 
             ? update.result.map(n => ({
                 ...n,
@@ -136,12 +129,12 @@ const Notifications = () => {
                 createdAt: update.result.createdAt || new Date().toISOString()
               }];
           
-          // Merge and deduplicate
+          // Merge and deduplicate with newest first
           const merged = [...newNotifications, ...prev]
             .filter((n, index, self) => 
               index === self.findIndex(t => t._id === n._id)
             )
-            .sort(sortByCreatedAt);
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
             
           return merged;
         });
@@ -149,8 +142,7 @@ const Notifications = () => {
     });
 
     return () => subscription.unsubscribe();
-  }, [currentUser, sortByCreatedAt]);
-
+  }, [currentUser]);
   const markNotificationAsRead = async (notificationId) => {
     try {
       await client.patch(notificationId)
@@ -213,13 +205,17 @@ const Notifications = () => {
 
   const getNotificationIcon = (type) => {
     switch (type) {
-      case 'like': return <HeartIcon className="h-5 w-5 text-red-500" />;
-      case 'comment': return <ChatAltIcon className="h-5 w-5 text-blue-500" />;
-      case 'follow': return <UserAddIcon className="h-5 w-5 text-green-500" />;
-      default: return <div className="h-5 w-5 rounded-full bg-gray-300" />;
+      case 'like':
+        return <StyledHeartIcon />;
+      case 'comment':
+        return <StyledChatIcon />;
+      case 'follow':
+        return <StyledFollowIcon />;
+      default:
+        return <DefaultIcon />;
     }
   };
-
+  
   const getNotificationMessage = (notification) => {
     const senderName = notification.sender?.name || 'Someone';
     const currentUserIsSender = notification.sender?._id === currentUser?.sanityId;
@@ -262,13 +258,13 @@ const Notifications = () => {
           {notifications.length > 0 && (
             <ActionButtons>
               {notifications.some(n => !n.seen) && (
-              <ActionButton onClick={markAllAsRead}>
-              Mark all as read
-            </ActionButton>
+                <ActionButton onClick={markAllAsRead}>
+                  Mark all as read
+                </ActionButton>
               )}
-          <ActionButton data-danger onClick={deleteAllNotifications}>
-  Delete all
-</ActionButton>
+              <ActionButton data-danger onClick={deleteAllNotifications}>
+                Delete all
+              </ActionButton>
             </ActionButtons>
           )}
         </HeaderActions>
@@ -281,51 +277,52 @@ const Notifications = () => {
         </EmptyState>
       ) : (
         <List>
-          {notifications.map(notification => (
-            <NotificationItem
+        {notifications.map(notification => (
+          <NotificationItem
             key={notification._id}
             data-unread={!notification.seen}
             onClick={() => handleNotificationClick(notification)}
             aria-label={getNotificationMessage(notification)}
           >
-              <AvatarWrapper>
-                {notification.sender?.photoURL ? (
-                  <NotificationAvatar
-                    src={notification.sender.photoURL}
-                    alt={notification.sender.name}
-                    onError={(e) => e.target.src = '/default-avatar.png'}
-                  />
-                ) : (
-                  <DefaultAvatar>
-                    {notification.sender?.name?.charAt(0) || 'U'}
-                  </DefaultAvatar>
+            <AvatarWrapper>
+              {notification.sender?.photoURL ? (
+                <NotificationAvatar
+                  src={notification.sender.photoURL}
+                  alt={notification.sender.name}
+                  onError={(e) => (e.target.src = '/default-avatar.png')}
+                />
+              ) : (
+                <DefaultAvatar>
+                  {notification.sender?.name?.charAt(0) || 'U'}
+                </DefaultAvatar>
+              )}
+              <NotificationBadge>
+                {getNotificationIcon(notification.type)}
+              </NotificationBadge>
+            </AvatarWrapper>
+      
+            <Content>
+              <Message>{getNotificationMessage(notification)}</Message>
+              <Time>
+                {formatTime(notification.createdAt)}
+                {notification.seen && notification.readAt && (
+                  <ReadTime> • Read {formatTime(notification.readAt)}</ReadTime>
                 )}
-                <NotificationBadge>
-                  {getNotificationIcon(notification.type)}
-                </NotificationBadge>
-              </AvatarWrapper>
-
-              <Content>
-                <Message>{getNotificationMessage(notification)}</Message>
-                <Time>
-                  {formatTime(notification.createdAt)}
-                  {notification.seen && notification.readAt && (
-                    <ReadTime> • Read {formatTime(notification.readAt)}</ReadTime>
-                  )}
-                </Time>
-              </Content>
-
-              <DeleteButton 
-                onClick={(e) => deleteNotification(notification._id, e)}
-                aria-label="Delete notification"
-              >
-                <TrashIcon className="h-4 w-4" />
-              </DeleteButton>
-
-              {!notification.seen && <UnreadIndicator data-unread={!notification.seen} />}
-            </NotificationItem>
-          ))}
-        </List>
+              </Time>
+            </Content>
+      
+            <DeleteButton
+              onClick={(e) => deleteNotification(notification._id, e)}
+              aria-label="Delete notification"
+            >
+              <TrashIcon className="h-4 w-4" />
+            </DeleteButton>
+      
+            {!notification.seen && <UnreadIndicator data-unread={!notification.seen} />}
+          </NotificationItem>
+        ))}
+      </List>
+      
       )}
     </Container>
   );
@@ -539,5 +536,31 @@ const DeleteButton = styled.button`
     background: #fee2e2;
   }
 `;
+
+const StyledHeartIcon = styled(HeartIcon)`
+  width: 20px;
+  height: 20px;
+  color: #ef4444;
+`;
+
+const StyledChatIcon = styled(ChatAltIcon)`
+  width: 20px;
+  height: 20px;
+  color: #3b82f6; /* blue-500 */
+`;
+
+const StyledFollowIcon = styled(UserAddIcon)`
+  width: 20px;
+  height: 20px;
+  color: #10b981; /* green-500 */
+`;
+
+const DefaultIcon = styled.div`
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  background-color: #d1d5db; /* gray-300 */
+`;
+
 
 export default Notifications;
