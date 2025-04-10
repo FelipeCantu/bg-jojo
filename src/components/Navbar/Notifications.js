@@ -17,6 +17,13 @@ const Notifications = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const navigate = useNavigate();
 
+  // Memoized sort function to ensure consistent sorting
+  const sortByCreatedAt = useCallback((a, b) => {
+    const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+    const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+    return dateB - dateA;
+  }, []);
+
   const formatTime = useCallback((date) => {
     if (!date) return 'Just now';
     const dateObj = new Date(date);
@@ -96,7 +103,12 @@ const Notifications = () => {
           { userId: currentUser.sanityId }
         );
 
-        setNotifications(Array.isArray(fetched) ? fetched : []);
+        // Ensure proper sorting even if the query fails to sort
+        const sortedNotifications = Array.isArray(fetched) 
+          ? [...fetched].sort(sortByCreatedAt)
+          : [];
+          
+        setNotifications(sortedNotifications);
       } catch (err) {
         console.error("Error fetching notifications:", err);
         setError("Failed to load notifications");
@@ -108,22 +120,36 @@ const Notifications = () => {
     fetchNotifications();
 
     const subscription = client.listen(
-      `*[_type == "notification" && user._ref == $userId] | order(createdAt desc)`,
+      `*[_type == "notification" && user._ref == $userId]`,
       { userId: currentUser.sanityId }
     ).subscribe((update) => {
       if (update.result) {
         setNotifications(prev => {
-          const newNotifications = Array.isArray(update.result) ? update.result : [update.result];
+          // Process new notifications with fallback createdAt
+          const newNotifications = Array.isArray(update.result) 
+            ? update.result.map(n => ({
+                ...n,
+                createdAt: n.createdAt || new Date().toISOString()
+              }))
+            : [{
+                ...update.result,
+                createdAt: update.result.createdAt || new Date().toISOString()
+              }];
+          
+          // Merge and deduplicate
           const merged = [...newNotifications, ...prev]
-            .filter((n, index, self) => index === self.findIndex(t => t._id === n._id))
-            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            .filter((n, index, self) => 
+              index === self.findIndex(t => t._id === n._id)
+            )
+            .sort(sortByCreatedAt);
+            
           return merged;
         });
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [currentUser]);
+  }, [currentUser, sortByCreatedAt]);
 
   const markNotificationAsRead = async (notificationId) => {
     try {
@@ -229,20 +255,20 @@ const Notifications = () => {
 
   return (
     <Container>
-      <Header>
+          <Header>
         <h2>Your Notifications</h2>
         <HeaderActions>
           <Badge>{notifications.filter(n => !n.seen).length}</Badge>
           {notifications.length > 0 && (
             <ActionButtons>
               {notifications.some(n => !n.seen) && (
-                <ActionButton onClick={markAllAsRead}>
-                  Mark all as read
-                </ActionButton>
+              <ActionButton onClick={markAllAsRead}>
+              Mark all as read
+            </ActionButton>
               )}
-              <ActionButton danger onClick={deleteAllNotifications}>
-                Delete all
-              </ActionButton>
+          <ActionButton data-danger onClick={deleteAllNotifications}>
+  Delete all
+</ActionButton>
             </ActionButtons>
           )}
         </HeaderActions>
@@ -257,11 +283,11 @@ const Notifications = () => {
         <List>
           {notifications.map(notification => (
             <NotificationItem
-              key={notification._id}
-              unread={!notification.seen}
-              onClick={() => handleNotificationClick(notification)}
-              aria-label={getNotificationMessage(notification)}
-            >
+            key={notification._id}
+            data-unread={!notification.seen}
+            onClick={() => handleNotificationClick(notification)}
+            aria-label={getNotificationMessage(notification)}
+          >
               <AvatarWrapper>
                 {notification.sender?.photoURL ? (
                   <NotificationAvatar
@@ -296,7 +322,7 @@ const Notifications = () => {
                 <TrashIcon className="h-4 w-4" />
               </DeleteButton>
 
-              {!notification.seen && <UnreadIndicator />}
+              {!notification.seen && <UnreadIndicator data-unread={!notification.seen} />}
             </NotificationItem>
           ))}
         </List>
@@ -351,8 +377,8 @@ const ActionButtons = styled.div`
 `;
 
 const ActionButton = styled.button`
-  background: ${({ danger }) => danger ? '#fee2e2' : '#ecfdf5'};
-  color: ${({ danger }) => danger ? '#b91c1c' : '#064e3b'};
+  background: ${({ 'data-danger': danger }) => danger ? '#fee2e2' : '#ecfdf5'};
+  color: ${({ 'data-danger': danger }) => danger ? '#b91c1c' : '#064e3b'};
   border: none;
   font-size: 12px;
   cursor: pointer;
@@ -364,7 +390,7 @@ const ActionButton = styled.button`
   gap: 4px;
 
   &:hover {
-    background: ${({ danger }) => danger ? '#fecaca' : '#d1fae5'};
+    background: ${({ 'data-danger': danger }) => danger ? '#fecaca' : '#d1fae5'};
   }
 `;
 
@@ -407,16 +433,16 @@ const NotificationItem = styled.div`
   align-items: flex-start;
   padding: 12px;
   border-radius: 8px;
-  background: ${({ unread }) => unread ? '#f8fafc' : 'white'};
+  background: ${({ 'data-unread': unread }) => unread ? '#f8fafc' : 'white'};
   cursor: pointer;
   transition: all 0.2s;
   gap: 12px;
-  border-left: 3px solid ${({ unread }) => unread ? '#044947' : 'transparent'};
-  box-shadow: ${({ unread }) => unread ? '0 1px 2px rgba(0,0,0,0.05)' : 'none'};
+  border-left: 3px solid ${({ 'data-unread': unread }) => unread ? '#044947' : 'transparent'};
+  box-shadow: ${({ 'data-unread': unread }) => unread ? '0 1px 2px rgba(0,0,0,0.05)' : 'none'};
   position: relative;
 
   &:hover {
-    background: ${({ unread }) => unread ? 'rgba(4, 73, 71, 0.05)' : '#f9fafb'};
+    background: ${({ 'data-unread': unread }) => unread ? 'rgba(4, 73, 71, 0.05)' : '#f9fafb'};
     transform: translateY(-2px);
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
   }
@@ -430,6 +456,7 @@ const UnreadIndicator = styled.div`
   height: 8px;
   border-radius: 50%;
   background: #044947;
+  display: ${({ 'data-unread': unread }) => unread ? 'block' : 'none'};
 `;
 
 const AvatarWrapper = styled.div`
