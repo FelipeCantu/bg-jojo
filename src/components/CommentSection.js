@@ -425,24 +425,6 @@ const UserPhoto = styled.img`
   background-color: #f0f0f0;
 `;
 
-const AvatarWrapper = styled.div`
-  position: relative;
-  flex-shrink: 0;
-`;
-
-const DefaultAvatar = styled.div`
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: #e5e7eb;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  color: #4b5563;
-  font-size: 16px;
-`;
-
 const CommentContent = styled.div`
   flex: 1;
   min-width: 0; /* Prevent overflow */
