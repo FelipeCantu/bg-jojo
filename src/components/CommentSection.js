@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
 import client from "../sanityClient";
 import useCurrentUser from "../hook/useCurrentUser";
 
@@ -7,7 +7,9 @@ const CommentSection = ({ articleId }) => {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState("");
   const [isCommentBoxExpanded, setIsCommentBoxExpanded] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingComments, setIsLoadingComments] = useState(false);
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [isDeletingComment, setIsDeletingComment] = useState(false);
   const [error, setError] = useState(null);
 
   const { currentUser, loading: userLoading, error: userError } = useCurrentUser();
@@ -17,7 +19,7 @@ const CommentSection = ({ articleId }) => {
 
     const fetchComments = async () => {
       try {
-        setIsLoading(true);
+        setIsLoadingComments(true);
         const result = await client.fetch(
           `*[_type == "comment" && article._ref == $articleId] | order(_createdAt desc){
             _id,
@@ -31,33 +33,48 @@ const CommentSection = ({ articleId }) => {
           }`,
           { articleId }
         );
-        console.log("Fetched comments:", result); // Debugging
         setComments(result || []);
       } catch (err) {
-        // ... error handling
+        setError("Failed to load comments");
+        console.error("Error fetching comments:", err);
+      } finally {
+        setIsLoadingComments(false);
       }
     };
 
     fetchComments();
   }, [articleId]);
 
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      });
+    } catch {
+      return "";
+    }
+  };
+
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
-
+    
     if (!newComment.trim()) {
       setError("Comment cannot be empty");
       return;
     }
-
+    
     if (!currentUser?._id) {
       setError("Please log in to comment");
       return;
     }
 
     try {
-      setIsLoading(true);
+      setIsSubmittingComment(true);
       setError(null);
-
+      
       const newCommentData = {
         _type: "comment",
         text: newComment,
@@ -80,7 +97,7 @@ const CommentSection = ({ articleId }) => {
         .append('comments', [{ _type: "reference", _ref: createdComment._id }])
         .commit();
 
-      // Create notification if commenter is not the article author
+      // Create notification if needed
       const article = await client.getDocument(articleId);
       if (article?.author?._ref && article.author._ref !== currentUser._id) {
         await client.create({
@@ -102,7 +119,7 @@ const CommentSection = ({ articleId }) => {
         user: {
           _id: currentUser._id,
           name: currentUser.name,
-          photo: currentUser.photo
+          photoURL: currentUser.photoURL
         }
       }, ...prev]);
 
@@ -110,7 +127,7 @@ const CommentSection = ({ articleId }) => {
       setError("Failed to post comment. Please try again.");
       console.error("Error submitting comment:", err);
     } finally {
-      setIsLoading(false);
+      setIsSubmittingComment(false);
     }
   };
 
@@ -121,9 +138,9 @@ const CommentSection = ({ articleId }) => {
     }
 
     try {
-      setIsLoading(true);
+      setIsDeletingComment(true);
       const commentToDelete = comments.find(c => c._id === commentId);
-
+      
       if (!commentToDelete || commentToDelete.user?._id !== currentUser._id) {
         throw new Error("Unauthorized deletion attempt");
       }
@@ -139,22 +156,11 @@ const CommentSection = ({ articleId }) => {
       setError("Failed to delete comment");
       console.error("Error deleting comment:", err);
     } finally {
-      setIsLoading(false);
+      setIsDeletingComment(false);
     }
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return "";
-    try {
-      return new Date(dateString).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      });
-    } catch {
-      return "";
-    }
-  };
+  // ... (keep formatDate and other helper functions the same)
 
   if (userLoading) {
     return <LoadingMessage>Loading user information...</LoadingMessage>;
@@ -167,7 +173,7 @@ const CommentSection = ({ articleId }) => {
   return (
     <CommentSectionContainer>
       <SectionTitle>Comments ({comments.length})</SectionTitle>
-
+      
       {error && <ErrorMessage>{error}</ErrorMessage>}
 
       {currentUser?._id ? (
@@ -178,27 +184,32 @@ const CommentSection = ({ articleId }) => {
             onChange={(e) => setNewComment(e.target.value)}
             onFocus={() => setIsCommentBoxExpanded(true)}
             $isExpanded={isCommentBoxExpanded}
-            disabled={isLoading}
+            disabled={isSubmittingComment}
           />
 
           {isCommentBoxExpanded && (
             <ButtonContainer>
-              <CancelButton
-                type="button"
+              <CancelButton 
+                type="button" 
                 onClick={() => {
                   setIsCommentBoxExpanded(false);
                   setNewComment("");
                   setError(null);
                 }}
-                disabled={isLoading}
+                disabled={isSubmittingComment}
               >
                 Cancel
               </CancelButton>
-              <PublishButton
-                type="submit"
-                disabled={!newComment.trim() || isLoading}
+              <PublishButton 
+                type="submit" 
+                disabled={!newComment.trim() || isSubmittingComment}
               >
-                {isLoading ? 'Posting...' : 'Publish'}
+                {isSubmittingComment ? (
+                  <>
+                    <LoadingSpinnerSmall />
+                    Posting...
+                  </>
+                ) : 'Publish'}
               </PublishButton>
             </ButtonContainer>
           )}
@@ -207,30 +218,22 @@ const CommentSection = ({ articleId }) => {
         <LoginPrompt>Please log in to comment.</LoginPrompt>
       )}
 
-      {isLoading && !comments.length ? (
-        <LoadingMessage>Loading comments...</LoadingMessage>
+      {isLoadingComments ? (
+        <LoadingMessage>
+          <LoadingSpinner />
+          Loading comments...
+        </LoadingMessage>
       ) : comments.length === 0 ? (
         <EmptyState>No comments yet. Be the first to comment!</EmptyState>
       ) : (
         <CommentsList>
           {comments.map((comment) => (
             <Comment key={comment._id}>
-              <AvatarWrapper>
-                {comment.user?.photoURL ? (
-                  <UserPhoto
-                    src={comment.user.photoURL}
-                    alt={comment.user?.name || 'Anonymous'}
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = '/default-avatar.png';
-                    }}
-                  />
-                ) : (
-                  <DefaultAvatar>
-                    {comment.user?.name?.charAt(0) || 'A'}
-                  </DefaultAvatar>
-                )}
-              </AvatarWrapper>
+              <UserPhoto 
+                src={comment.user?.photoURL || '/default-avatar.png'} 
+                alt={comment.user?.name || 'User'}
+                onError={(e) => e.target.src = '/default-avatar.png'}
+              />
               <CommentContent>
                 <CommentHeader>
                   <UserName>{comment.user?.name || 'Anonymous'}</UserName>
@@ -239,12 +242,12 @@ const CommentSection = ({ articleId }) => {
                 <CommentText>{comment.text}</CommentText>
               </CommentContent>
               {currentUser?._id === comment.user?._id && (
-                <DeleteButton
+                <DeleteButton 
                   onClick={() => handleDeleteComment(comment._id)}
-                  disabled={isLoading}
+                  disabled={isDeletingComment}
                   aria-label="Delete comment"
                 >
-                  Delete
+                  {isDeletingComment ? 'Deleting...' : 'Delete'}
                 </DeleteButton>
               )}
             </Comment>
@@ -255,7 +258,34 @@ const CommentSection = ({ articleId }) => {
   );
 };
 
-// Styled Components (remain the same as before)
+// Add these new styled components for loading spinners
+const spin = keyframes`
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+`;
+
+const LoadingSpinner = styled.div`
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  border-top: 3px solid #024a47;
+  animation: ${spin} 1s linear infinite;
+  margin-right: 10px;
+`;
+
+const LoadingSpinnerSmall = styled.div`
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top: 2px solid white;
+  animation: ${spin} 1s linear infinite;
+  margin-right: 8px;
+`;
+
 const CommentSectionContainer = styled.div`
   margin: 2rem 0;
   padding: 1.5rem;
