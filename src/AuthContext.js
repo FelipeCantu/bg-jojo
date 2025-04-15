@@ -3,7 +3,6 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { app } from "./firebaseconfig";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Create the AuthContext with a default value
 const AuthContext = createContext({
   currentUser: null,
   loading: true,
@@ -11,7 +10,6 @@ const AuthContext = createContext({
   isAuthenticated: false,
 });
 
-// Custom hook to access auth context
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
@@ -23,28 +21,49 @@ export function useAuth() {
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState({
+    message: null,
+    code: null,
+    timestamp: null
+  });
 
   useEffect(() => {
     const auth = getAuth(app);
-    
-    // Set up the auth state listener
+    let isMounted = true;
+
+    // Check for localStorage availability
+    if (typeof window !== 'undefined' && !window.localStorage) {
+      console.warn("LocalStorage not available - auth state won't persist");
+    }
+
     const unsubscribe = onAuthStateChanged(
       auth,
       (user) => {
-        setCurrentUser(user);
-        setLoading(false);
-        setError(null);
+        if (isMounted) {
+          setCurrentUser(user);
+          setLoading(false);
+          setError({
+            message: null,
+            code: null,
+            timestamp: null
+          });
+        }
       },
       (err) => {
-        console.error("Auth state error:", err);
-        setError(err.message || "Failed to check authentication");
-        setLoading(false);
+        if (isMounted) {
+          console.error("Auth state error:", err);
+          setError({
+            message: err.message || "Failed to check authentication",
+            code: err.code || "unknown",
+            timestamp: new Date().toISOString()
+          });
+          setLoading(false);
+        }
       }
     );
 
-    // Cleanup the listener on unmount
     return () => {
+      isMounted = false;
       try {
         unsubscribe();
       } catch (cleanupError) {
@@ -53,15 +72,16 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  // Memoize the context value to prevent unnecessary re-renders
   const value = useMemo(() => ({
     currentUser,
     loading,
     error,
     isAuthenticated: !!currentUser,
+    // Add helper methods
+    isEmailVerified: currentUser?.emailVerified || false,
+    authProvider: currentUser?.providerData?.[0]?.providerId || null
   }), [currentUser, loading, error]);
 
-  // Animation variants
   const pageVariants = {
     initial: { 
       y: 50, 
@@ -85,22 +105,31 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && error ? (
+      {!loading && error.message ? (
         <div className="auth-error">
-          Authentication error: {error}. Please refresh the page.
+          <h3>Authentication Error ({error.code})</h3>
+          <p>{error.message}</p>
+          <p>Occurred at: {new Date(error.timestamp).toLocaleString()}</p>
+          <button onClick={() => window.location.reload()}>
+            Try Again
+          </button>
         </div>
       ) : (
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={window.location.pathname}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            variants={pageVariants}
-          >
-            {children}
-          </motion.div>
-        </AnimatePresence>
+        typeof window !== 'undefined' ? (
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={window.location.pathname}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              variants={pageVariants}
+            >
+              {children}
+            </motion.div>
+          </AnimatePresence>
+        ) : (
+          <div>{children}</div>
+        )
       )}
     </AuthContext.Provider>
   );
