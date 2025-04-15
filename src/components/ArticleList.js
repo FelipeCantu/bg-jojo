@@ -177,10 +177,9 @@ const SearchBar = styled.input`
     }
   }
 `;
-
 const ArticleGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); // Was 350px
   gap: 30px;
   width: 100%;
   justify-content: center;
@@ -269,21 +268,25 @@ const ArticleCard = styled.div`
   text-align: center;
   position: relative;
   transition: transform 0.3s ease;
-  height: 550px; /* Fixed height */
-  width: 350px;
-  overflow: hidden; /* Keep this to contain all elements */
+  height: 550px;
+  width: 360px; // Was 350px
+  overflow: hidden;
   margin-bottom: 20px;
 
-  /* New: Create consistent sections */
   & > *:not(:last-child) {
-    margin-bottom: 15px; /* Consistent spacing between sections */
+    margin-bottom: 15px;
   }
 
   &:hover {
     transform: translateY(-5px);
     box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.2);
   }
+
+  @media (max-width: 400px) {
+    width: 95vw;
+  }
 `;
+
 
 const Divider = styled.div`
   width: 100%;

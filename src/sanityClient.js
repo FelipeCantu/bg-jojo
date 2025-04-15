@@ -171,17 +171,93 @@ export const createUserInSanity = async (user) => {
 };
 
 // Delete an article from Sanity
+// Delete an article from Sanity and handle references
+// Enhanced deleteArticle function with comprehensive reference handling
 export const deleteArticle = async (articleId) => {
   try {
-    const result = await client.delete(articleId);
-    console.log("✅ Article deleted successfully!", result);
-    return result;
+    // Step 1: Find all documents that reference this article
+    const referencesQuery = `*[references($articleId)]{
+      _id,
+      _type,
+      "references": *[references(^._id)]{_id, _type}  // Find documents that reference these references
+    }`;
+    
+    const referencingDocs = await client.fetch(referencesQuery, { articleId });
+
+    // Step 2: Categorize and process the references
+    const transactions = client.transaction();
+
+    // Process each referencing document
+    for (const doc of referencingDocs) {
+      try {
+        // Handle comments and their replies first
+        if (doc._type === 'comment') {
+          // Delete the comment and any replies to it
+          transactions.delete(doc._id);
+          
+          // Also delete any documents that reference this comment
+          if (doc.references && doc.references.length > 0) {
+            doc.references.forEach(ref => {
+              transactions.delete(ref._id);
+            });
+          }
+        } 
+        // Handle other reference types by patching
+        else {
+          // Get the full document to find all reference fields
+          const fullDoc = await client.getDocument(doc._id);
+          
+          // Find all fields that reference the article
+          Object.keys(fullDoc).forEach(key => {
+            const value = fullDoc[key];
+            
+            // Handle direct references
+            if (value?._ref === articleId) {
+              transactions.patch(doc._id, { set: { [key]: null } });
+            }
+            
+            // Handle references in arrays
+            if (Array.isArray(value)) {
+              value.forEach((item, index) => {
+                if (item?._ref === articleId) {
+                  transactions.patch(doc._id, {
+                    set: { [`${key}[${index}]`]: null }
+                  });
+                }
+              });
+            }
+          });
+        }
+      } catch (error) {
+        console.error(`Error processing document ${doc._id}:`, error);
+        // If patching fails, try deleting as last resort
+        transactions.delete(doc._id);
+      }
+    }
+
+    // Step 3: Delete the article itself
+    transactions.delete(articleId);
+
+    // Execute all operations in a single transaction
+    await transactions.commit();
+
+    console.log("✅ Article and all references deleted successfully!");
+    return true;
   } catch (error) {
     console.error("Error deleting article:", error);
-    throw new Error("Could not delete the article");
+    
+    // Fallback strategy if transaction fails
+    try {
+      // Try to delete just the article
+      await client.delete(articleId);
+      console.log("⚠️ Article deleted but some references might remain");
+      return true;
+    } catch (fallbackError) {
+      console.error("Fallback deletion failed:", fallbackError);
+      throw new Error("Could not delete the article. Please try again later.");
+    }
   }
 };
-
 // Ensure a user exists in Sanity
 export const ensureUserExistsInSanity = async (uid, displayName, photoURL) => {
   try {

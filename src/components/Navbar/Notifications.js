@@ -222,13 +222,13 @@ const Notifications = () => {
 
     switch (notification.type) {
       case 'like':
-        return `${currentUserIsSender ? 'You' : senderName} liked your ${notification.relatedArticle?.title ? `"${notification.relatedArticle.title}"` : 'post'}`;
+        return `${currentUserIsSender ? 'You' : senderName} liked your article ${notification.relatedArticle?.title ? `"${notification.relatedArticle.title}"` : 'article'}`;
       case 'comment':
-        return `${currentUserIsSender ? 'You' : senderName} commented on your ${notification.relatedArticle?.title ? `"${notification.relatedArticle.title}"` : 'post'}`;
+        return `${currentUserIsSender ? 'You' : senderName} commented on your ${notification.relatedArticle?.title ? `"${notification.relatedArticle.title}"` : 'article'}`;
       case 'follow':
         return `${currentUserIsSender ? 'You' : senderName} started following you`;
       case 'mention':
-        return `${currentUserIsSender ? 'You' : senderName} mentioned you in ${notification.relatedArticle?.title ? `"${notification.relatedArticle.title}"` : 'a post'}`;
+        return `${currentUserIsSender ? 'You' : senderName} mentioned you in ${notification.relatedArticle?.title ? `"${notification.relatedArticle.title}"` : 'a article'}`;
       default:
         return notification.message || 'New activity on your content';
     }

@@ -1,4 +1,3 @@
-// schemas/comment.js
 import { defineType, defineField } from 'sanity';
 
 export const comment = defineType({
@@ -20,36 +19,31 @@ export const comment = defineType({
       validation: (Rule) => Rule.required(),
     }),
     defineField({
-      name: 'author',
-      title: 'Author',
+      name: 'user',
+      title: 'User',
       type: 'reference',
       to: [{ type: 'user' }],
       validation: (Rule) => Rule.required(),
-    }),
-    defineField({
-      name: 'createdAt',
-      title: 'Created At',
-      type: 'datetime',
-      initialValue: () => new Date().toISOString(),
     }),
     defineField({
       name: 'replies',
       title: 'Replies',
       type: 'array',
       of: [{ type: 'reference', to: [{ type: 'comment' }] }],
+      description: 'Optional threaded replies to this comment.',
     }),
   ],
   preview: {
     select: {
       title: 'text',
-      author: 'author.name',
+      user: 'user.name',
       article: 'article.title'
     },
     prepare(selection) {
-      const { title, author, article } = selection;
+      const { title, user, article } = selection;
       return {
         title: title || 'No text',
-        subtitle: `by ${author || 'unknown'} on ${article || 'unknown article'}`
+        subtitle: `by ${user || 'unknown'} on ${article || 'unknown article'}`
       };
     }
   }

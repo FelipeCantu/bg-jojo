@@ -9,7 +9,7 @@ const CommentSection = ({ articleId }) => {
   const [isCommentBoxExpanded, setIsCommentBoxExpanded] = useState(false);
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
-  const [isDeletingComment, setIsDeletingComment] = useState(false);
+  const [deletingCommentId, setDeletingCommentId] = useState(null);
   const [error, setError] = useState(null);
 
   const { currentUser, loading: userLoading, error: userError } = useCurrentUser();
@@ -48,10 +48,10 @@ const CommentSection = ({ articleId }) => {
   const formatDate = (dateString) => {
     if (!dateString) return "";
     try {
-      return new Date(dateString).toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric' 
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
       });
     } catch {
       return "";
@@ -60,12 +60,12 @@ const CommentSection = ({ articleId }) => {
 
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!newComment.trim()) {
       setError("Comment cannot be empty");
       return;
     }
-    
+
     if (!currentUser?._id) {
       setError("Please log in to comment");
       return;
@@ -74,7 +74,7 @@ const CommentSection = ({ articleId }) => {
     try {
       setIsSubmittingComment(true);
       setError(null);
-      
+
       const newCommentData = {
         _type: "comment",
         text: newComment,
@@ -138,9 +138,9 @@ const CommentSection = ({ articleId }) => {
     }
 
     try {
-      setIsDeletingComment(true);
+      setDeletingCommentId(commentId);
       const commentToDelete = comments.find(c => c._id === commentId);
-      
+
       if (!commentToDelete || commentToDelete.user?._id !== currentUser._id) {
         throw new Error("Unauthorized deletion attempt");
       }
@@ -156,11 +156,9 @@ const CommentSection = ({ articleId }) => {
       setError("Failed to delete comment");
       console.error("Error deleting comment:", err);
     } finally {
-      setIsDeletingComment(false);
+      setDeletingCommentId(null);
     }
   };
-
-  // ... (keep formatDate and other helper functions the same)
 
   if (userLoading) {
     return <LoadingMessage>Loading user information...</LoadingMessage>;
@@ -173,7 +171,7 @@ const CommentSection = ({ articleId }) => {
   return (
     <CommentSectionContainer>
       <SectionTitle>Comments ({comments.length})</SectionTitle>
-      
+
       {error && <ErrorMessage>{error}</ErrorMessage>}
 
       {currentUser?._id ? (
@@ -189,8 +187,8 @@ const CommentSection = ({ articleId }) => {
 
           {isCommentBoxExpanded && (
             <ButtonContainer>
-              <CancelButton 
-                type="button" 
+              <CancelButton
+                type="button"
                 onClick={() => {
                   setIsCommentBoxExpanded(false);
                   setNewComment("");
@@ -200,8 +198,8 @@ const CommentSection = ({ articleId }) => {
               >
                 Cancel
               </CancelButton>
-              <PublishButton 
-                type="submit" 
+              <PublishButton
+                type="submit"
                 disabled={!newComment.trim() || isSubmittingComment}
               >
                 {isSubmittingComment ? (
@@ -229,8 +227,8 @@ const CommentSection = ({ articleId }) => {
         <CommentsList>
           {comments.map((comment) => (
             <Comment key={comment._id}>
-              <UserPhoto 
-                src={comment.user?.photoURL || '/default-avatar.png'} 
+              <UserPhoto
+                src={comment.user?.photoURL || '/default-avatar.png'}
                 alt={comment.user?.name || 'User'}
                 onError={(e) => e.target.src = '/default-avatar.png'}
               />
@@ -242,12 +240,12 @@ const CommentSection = ({ articleId }) => {
                 <CommentText>{comment.text}</CommentText>
               </CommentContent>
               {currentUser?._id === comment.user?._id && (
-                <DeleteButton 
+                <DeleteButton
                   onClick={() => handleDeleteComment(comment._id)}
-                  disabled={isDeletingComment}
+                  disabled={deletingCommentId === comment._id}
                   aria-label="Delete comment"
                 >
-                  {isDeletingComment ? 'Deleting...' : 'Delete'}
+                  {deletingCommentId === comment._id ? 'Deleting...' : 'Delete'}
                 </DeleteButton>
               )}
             </Comment>

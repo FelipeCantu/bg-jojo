@@ -1,4 +1,3 @@
-// schemas/notification.js
 import { defineField, defineType } from 'sanity';
 
 export const notification = defineType({
@@ -11,7 +10,7 @@ export const notification = defineType({
       title: 'User',
       type: 'reference',
       to: [{ type: 'user' }],
-      validation: (Rule) => Rule.required(), // Every notification must have a recipient
+      validation: (Rule) => Rule.required(),
     }),
     defineField({
       name: 'type',
@@ -37,6 +36,14 @@ export const notification = defineType({
       title: 'Link',
       type: 'string',
       description: 'URL to redirect the user when they click the notification',
+    }),
+    defineField({
+      name: 'article',
+      title: 'Article',
+      type: 'reference',
+      to: [{ type: 'article' }],
+      weak: true,
+      hidden: ({ parent }) => parent?.type !== 'like' && parent?.type !== 'comment',
     }),
     defineField({
       name: 'createdAt',
