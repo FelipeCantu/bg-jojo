@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router-dom';
 
 function MissionSection() {
   return (
@@ -28,9 +28,15 @@ function MissionSection() {
       </TextContainer>
 
       <VideoContainer>
-        <VideoBackground autoPlay loop muted playsInline disablePictureInPicture controlsList='nodownload nofullscreen noremoteplayback'>
+        <VideoBackground 
+          autoPlay 
+          loop 
+          muted 
+          playsInline 
+          disablePictureInPicture 
+          controlsList='nodownload nofullscreen noremoteplayback'
+        >
           <source src={require('../assets/flamingo.mp4')} type='video/mp4' alt='clouds' />
-          Your browser does not support the video tag.
         </VideoBackground>
       </VideoContainer>
     </SectionWrapper>
@@ -40,14 +46,12 @@ function MissionSection() {
 // Styled Components
 const SectionWrapper = styled.section`
   display: flex;
-  align-items: center;
   width: 100%;
-  height: 100vh;
-  overflow: hidden;
-  top: 0;
+  min-height: 100vh;
+
   @media (max-width: 1024px) {
     flex-direction: column;
-    height: auto;
+    min-height: auto;
   }
 `;
 
@@ -58,10 +62,17 @@ const TextContainer = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 100vh;
 
   @media (max-width: 1024px) {
     width: 100%;
-    padding: 40px 20px;
+    padding: 30px 20px;
+    min-height: auto;
+    order: 1;
+  }
+
+  @media (max-width: 768px) {
+    padding: 25px 15px;
   }
 `;
 
@@ -70,20 +81,51 @@ const Divider = styled.hr`
   margin-left: 0;
   border: solid black 3px;
   margin-bottom: 25px;
-`
+
+  @media (max-width: 768px) {
+    margin-bottom: 20px;
+    border-width: 2px;
+  }
+`;
 
 const Content = styled.div`
   max-width: 600px;
   text-align: left;
+  
   h2 {
     font-size: 2.5rem;
     font-weight: bold;
     margin-bottom: 20px;
   }
+  
   p {
     font-size: 1.1rem;
     color: #333;
     margin-bottom: 20px;
+    line-height: 1.6;
+  }
+
+  @media (max-width: 1024px) {
+    h2 {
+      font-size: 2.2rem;
+    }
+    
+    p {
+      font-size: 1rem;
+    }
+  }
+
+  @media (max-width: 768px) {
+    h2 {
+      font-size: 1.8rem;
+      margin-bottom: 15px;
+    }
+    
+    p {
+      font-size: 0.95rem;
+      margin-bottom: 15px;
+      line-height: 1.5;
+    }
   }
 `;
 
@@ -96,34 +138,41 @@ const Button = styled.button`
   border: none;
   cursor: pointer;
   transition: all 0.3s ease;
+  width: 150px;
 
   &:hover {
     background-color: white;
     color: black;
     border: black solid 2px;
   }
-`;
 
-const MoreLink = styled(Link)`
-  text-decoration: none; 
-  cursor: pointer;
-  
   @media (max-width: 1024px) {
-    display: flex;
-    justify-content: center; /* Centers the button horizontally */
-    width: 100%; /* Ensure full width to center content */
+    width: 100%;
+    margin-top: 10px;
   }
 `;
 
+const MoreLink = styled(Link)`
+  text-decoration: none;
+  display: inline-block;
+  margin-top: 20px;
+
+  @media (max-width: 1024px) {
+    display: block;
+    width: 100%;
+  }
+`;
 
 const VideoContainer = styled.div`
   flex: 1;
-  height: 100%;
   position: relative;
-  z-index: -3;
+  overflow: hidden;
+  height: 100vh;
+
   @media (max-width: 1024px) {
     width: 100%;
-    height: auto;
+    height: 40vh;
+    order: 2;
   }
 `;
 
@@ -131,10 +180,13 @@ const VideoBackground = styled.video`
   width: 100%;
   height: 100%;
   object-fit: cover;
-  margin-bottom: 0; /* Ensure no extra space */
-  pointer-events: none;
-  user-select: none;
-  display: block; /* Prevent inline whitespace issues */
+  position: absolute;
+  top: 0;
+  left: 0;
+
+  @media (max-width: 1024px) {
+    position: relative;
+  }
 `;
 
 export default MissionSection;

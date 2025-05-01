@@ -9,6 +9,49 @@ const NavbarFontStyle = createGlobalStyle`
   @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap');
 `;
 
+const Navbar = () => {
+  return (
+    <>
+      <NavbarFontStyle />
+      <Nav>
+        <NavContent>
+          <LogoLink to="/Home">
+            <Logo src={require('../../assets/jojologo.png')} alt="Logo" />
+          </LogoLink>
+
+          <NavLinks>
+            <StyledLink to="/Home">Home</StyledLink>
+            <StyledLink to="/Donate">Donate</StyledLink>
+            <StyledLink to="/Hotlines">Hotlines</StyledLink>
+            <StyledLink to="/events">Events</StyledLink>
+            <StyledLink to="/About">About Us</StyledLink>
+
+            <MoreLink>
+              More
+              <DropdownMenu>
+                <StyledLink to="/GetInvolved">Get Involved</StyledLink>
+                <StyledLink to="/Articles">Articles</StyledLink>
+                <StyledLink to="/Tributes">Remembering Loved Ones</StyledLink>
+                {/* <StyledLink to="/Products">Product</StyledLink> */}
+              </DropdownMenu>
+            </MoreLink>
+          </NavLinks>
+
+          <MobileMenu>
+            <Menu />
+          </MobileMenu>
+
+          <NavbarLoginContainer>
+            <NotificationBell /> 
+            <LoginButton hideInNavbar={false} />
+          </NavbarLoginContainer>
+        </NavContent>
+      </Nav>
+    </>
+  );
+};
+
+
 const DropdownMenu = styled.div`
   position: absolute;
   top: 100%;
@@ -175,46 +218,5 @@ const NavbarLoginContainer = styled.div`
     gap: 1rem; // Add gap between NotificationBell and LoginButton
   }
 `;
-
-const Navbar = () => {
-  return (
-    <>
-      <NavbarFontStyle />
-      <Nav>
-        <NavContent>
-          <LogoLink to="/Home">
-            <Logo src={require('../../assets/jojologo.png')} alt="Logo" />
-          </LogoLink>
-
-          <NavLinks>
-            <StyledLink to="/Home">Home</StyledLink>
-            <StyledLink to="/Donate">Donate</StyledLink>
-            <StyledLink to="/Hotlines">Hotlines</StyledLink>
-            <StyledLink to="/events">Events</StyledLink>
-            <StyledLink to="/About">About Us</StyledLink>
-
-            <MoreLink>
-              More
-              <DropdownMenu>
-                <StyledLink to="/GetInvolved">Get Involved</StyledLink>
-                <StyledLink to="/Articles">Articles</StyledLink>
-                <StyledLink to="/Tributes">Remembering Loved Ones</StyledLink>
-              </DropdownMenu>
-            </MoreLink>
-          </NavLinks>
-
-          <MobileMenu>
-            <Menu />
-          </MobileMenu>
-
-          <NavbarLoginContainer>
-            <NotificationBell /> 
-            <LoginButton hideInNavbar={false} />
-          </NavbarLoginContainer>
-        </NavContent>
-      </Nav>
-    </>
-  );
-};
 
 export default Navbar;

@@ -24,8 +24,12 @@ import {
   NotFound,
   ArticleForm,
   EditArticle,
+  // ProductPage,
+  // ProductsPage,
+  LoadingContainer,
+  // CartDrawer,
+  // CheckoutPage,
 } from './components';
-import LoadingContainer from './components/LoadingContainer'; // Ensure this is the correct path to your loading component
 import { motion, AnimatePresence } from 'framer-motion';
 
 const ScrollToTop = () => {
@@ -122,11 +126,17 @@ function App() {
           <Route path="/notifications" element={<SlideUpRoute><Notifications /></SlideUpRoute>} />
           <Route path="/subscriptions" element={<SlideUpRoute><Subscriptions /></SlideUpRoute>} />
           <Route path="/create-article" element={<SlideUpRoute><ArticleForm /></SlideUpRoute>} />
+          {/* <Route path="/products/:slug" element={<SlideUpRoute><ProductPage /></SlideUpRoute>} />
+          <Route path="/products" element={<SlideUpRoute><ProductsPage /></SlideUpRoute>} />
+          <Route path="/checkout" element={<SlideUpRoute><CheckoutPage /></SlideUpRoute>} /> */}
+          {/* <Route path="/success" element={<SlideUpRoute><SuccessPage /></SlideUpRoute>} /> */}
+
           <Route path="*" element={<SlideUpRoute><NotFound /></SlideUpRoute>} />
         </Routes>
       </AnimatePresence>
 
       <Footer />
+      {/* <CartDrawer /> */}
     </div>
   );
 }

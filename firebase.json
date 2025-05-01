@@ -2,5 +2,62 @@
   "firestore": {
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
+  },
+  "functions": {
+    "source": "functions",
+    "codebase": "default",
+    "runtime": "nodejs20",
+    "timeoutSeconds": 540,
+    "memory": "1GB",
+    "concurrency": 80,
+    "vpcConnector": "",
+    "vpcConnectorEgressSettings": "ALL_TRAFFIC",
+    "ignore": [
+      "node_modules",
+      ".git",
+      "firebase-debug.log",
+      "firebase-debug.*.log",
+      "*.local",
+      ".env*",
+      "*.test.js"
+    ],
+    "predeploy": [
+      "npm --prefix functions run lint",
+      "npm --prefix functions run build"
+    ]
+  },
+  "emulators": {
+    "functions": {
+      "port": 5001,
+      "host": "0.0.0.0"
+    },
+    "firestore": {
+      "port": 8080,
+      "host": "0.0.0.0"
+    },
+    "ui": {
+      "enabled": true,
+      "host": "0.0.0.0",
+      "port": 4000
+    },
+    "auth": {
+      "port": 9099,
+      "host": "0.0.0.0"
+    },
+    "pubsub": {
+      "port": 8085,
+      "host": "0.0.0.0"
+    }
+  },
+  "hosting": {
+    "public": "public",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
+  },
+  "storage": {
+    "rules": "storage.rules"
   }
 }

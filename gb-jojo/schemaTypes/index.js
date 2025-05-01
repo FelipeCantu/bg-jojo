@@ -7,6 +7,7 @@ import { user } from './user';
 import { blockContent } from './blockContent';
 import { notification } from './notification';
 import { comment } from './comment';
+import { product } from './product';
 
 export const schemaTypes = [
   tribute,
@@ -17,4 +18,5 @@ export const schemaTypes = [
   blockContent, 
   notification,
   comment,
+  product,
 ];

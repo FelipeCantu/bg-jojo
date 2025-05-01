@@ -21,6 +21,7 @@ const Sidebar = ({ open, setOpen }) => {
           <StyledLink to="/Events" onClick={handleLinkClick}>Events</StyledLink>
           <StyledLink to="/Articles" onClick={handleLinkClick}>Articles</StyledLink>
           <StyledLink to="/Tributes" onClick={handleLinkClick}>Remembering Loved Ones</StyledLink>
+          {/* <StyledLink to="/Products" onClick={handleLinkClick}>Product</StyledLink> */}
         </NavLinks>
       </SidebarContent>
     </SidebarContainer>

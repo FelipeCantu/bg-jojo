@@ -6,21 +6,23 @@ import reportWebVitals from './reportWebVitals';
 import { AuthProvider } from "./AuthContext";
 import { ThemeProvider, studioTheme } from '@sanity/ui';
 import { BrowserRouter } from 'react-router-dom';
+import { CartProvider } from './CartContext';
+
 
 // Enhanced Error Boundary with hydration error support
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { 
-      hasError: false, 
+    this.state = {
+      hasError: false,
       error: null,
       isHydrationError: false
     };
   }
 
   static getDerivedStateFromError(error) {
-    return { 
-      hasError: true, 
+    return {
+      hasError: true,
       error,
       isHydrationError: error.message.includes('hydration')
     };
@@ -46,8 +48,8 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ 
-          padding: '2rem', 
+        <div style={{
+          padding: '2rem',
           textAlign: 'center',
           maxWidth: '800px',
           margin: '0 auto'
@@ -61,7 +63,7 @@ class ErrorBoundary extends React.Component {
               This appears to be a rendering mismatch. A full refresh may help.
             </p>
           )}
-          <button 
+          <button
             onClick={this.handleFullReload}
             style={{
               padding: '0.75rem 1.5rem',
@@ -87,7 +89,7 @@ class ErrorBoundary extends React.Component {
 function initializeApp() {
   // Create a clean root container if needed
   const rootElement = document.getElementById('root');
-  
+
   if (!rootElement) {
     const newRoot = document.createElement('div');
     newRoot.id = 'root';
@@ -116,7 +118,9 @@ function renderApp() {
           <BrowserRouter>
             <AuthProvider>
               <ThemeProvider theme={studioTheme}>
-                <App />
+                <CartProvider>
+                  <App />
+                </CartProvider>
               </ThemeProvider>
             </AuthProvider>
           </BrowserRouter>
@@ -127,7 +131,7 @@ function renderApp() {
     return root;
   } catch (error) {
     console.error('Failed to render application:', error);
-    
+
     // Fallback error display if rendering fails completely
     const rootElement = document.getElementById('root') || document.body;
     rootElement.innerHTML = `
