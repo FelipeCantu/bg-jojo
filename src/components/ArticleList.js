@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchArticles } from '../sanityClient';
-import { urlFor } from '../sanityClient';
 import ArticleCounters from './ArticleCounters';
 import CreateArticleButton from './CreateArticleButton';
 import styled from 'styled-components';
@@ -35,7 +34,7 @@ const ArticleList = () => {
   useEffect(() => {
     const query = searchQuery.toLowerCase();
     setFilteredArticles(
-      articles.filter(article =>
+      articles.filter(article => 
         article.title?.toLowerCase().includes(query)
       )
     );
@@ -64,15 +63,8 @@ const ArticleList = () => {
       ) : (
         <ArticleGrid>
           {filteredArticles.map((article) => {
-            const authorImageSrc = article.author?.photoURL
-              ? article.author.photoURL.startsWith('http')
-                ? article.author.photoURL
-                : urlFor(article.author.photoURL).url()
-              : 'https://via.placeholder.com/40';
-
-            const mainImageSrc = article.mainImage?.asset
-              ? urlFor(article.mainImage.asset).url()
-              : 'https://via.placeholder.com/350x250';
+            const authorImageSrc = article.author?.photoURL || 'https://via.placeholder.com/40';
+            const mainImageSrc = article.mainImage || 'https://via.placeholder.com/350x250';
 
             return (
               <LinkWrapper to={`/article/${article._id}`} key={article._id}>
@@ -114,7 +106,7 @@ const ArticleList = () => {
   );
 };
 
-
+// Styled components remain exactly the same as in your original code
 const ErrorMessage = styled.p`
   font-size: 1.2rem;
   color: red;
@@ -153,10 +145,10 @@ const SearchIcon = styled(FaSearch)`
   font-size: 1.5rem;
   margin-right: 10px;
   transition: all 0.3s ease;
-  color: ${({ show }) => (show ? '#054944' : 'inherit')}; /* Teal when active */
+  color: ${({ show }) => (show ? '#054944' : 'inherit')};
   &:hover {
     transform: scale(1.2);
-    color: #054944; /* Teal on hover */
+    color: #054944;
   }
 `;
 
@@ -180,16 +172,17 @@ const SearchBar = styled.input`
   }
   
   &:focus {
-    border-bottom: 2px solid #054944; /* Your teal color */
+    border-bottom: 2px solid #054944;
     
     &::placeholder {
       color: transparent;
     }
   }
 `;
+
 const ArticleGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); // Was 350px
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
   gap: 30px;
   width: 100%;
   justify-content: center;
@@ -209,7 +202,6 @@ const LinkWrapper = styled(Link)`
   display: flex;
   justify-content: center;
 `;
-
 
 const TopLeftSection = styled.div`
   display: flex;
@@ -268,7 +260,6 @@ const ArticleImage = styled.img`
   margin-bottom: 15px;
 `;
 
-
 const ArticleCard = styled.div`
   background: #f8d8a5;
   padding: 30px 20px 20px;
@@ -279,7 +270,7 @@ const ArticleCard = styled.div`
   position: relative;
   transition: transform 0.3s ease;
   height: 550px;
-  width: 360px; // Was 350px
+  width: 360px;
   overflow: hidden;
   margin-bottom: 20px;
 
@@ -297,21 +288,18 @@ const ArticleCard = styled.div`
   }
 `;
 
-
 const Divider = styled.div`
   width: 100%;
-  height: 2px; /* Fixed height */
+  height: 2px;
   background: black;
-  /* Remove margin - now handled by parent */
-  flex-shrink: 0; /* Prevent collapsing */
+  flex-shrink: 0;
 `;
 
 const ArticleTitle = styled.h2`
   font-size: clamp(1.4rem, 2vw, 1.8rem);
   font-weight: 600;
   color: #222;
-  /* Remove margin - now handled by parent */
-  flex-grow: 1; /* Take available space */
+  flex-grow: 1;
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;

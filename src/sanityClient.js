@@ -108,7 +108,7 @@ export const uploadImageToSanity = async (file) => {
 };
 // Submit an article to Sanity
 export const submitArticle = async (articleData, user) => {
-  const { uid, displayName, photoURL } = user;
+  const { uid,  displayName = user.name, photoURL } = user;
 
   if (!displayName) {
     throw new Error("Display name is missing. Cannot submit article as anonymous.");
@@ -117,7 +117,7 @@ export const submitArticle = async (articleData, user) => {
   const updatedUser = {
     _type: "user",
     _id: uid,
-    name: displayName,
+    name: displayName || user.name,
     photoURL: photoURL || "https://via.placeholder.com/40",
     role: "user"
   };
