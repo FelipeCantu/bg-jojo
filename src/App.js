@@ -24,11 +24,11 @@ import {
   NotFound,
   ArticleForm,
   EditArticle,
-  ProductPage,
-  ProductsPage,
+  // ProductPage,
+  // ProductsPage,
   LoadingContainer,
   CartDrawer,
-  CheckoutPage,
+  // CheckoutPage,
 } from './components';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -126,9 +126,9 @@ function App() {
           <Route path="/notifications" element={<SlideUpRoute><Notifications /></SlideUpRoute>} />
           <Route path="/subscriptions" element={<SlideUpRoute><Subscriptions /></SlideUpRoute>} />
           <Route path="/create-article" element={<SlideUpRoute><ArticleForm /></SlideUpRoute>} />
-          <Route path="/products/:slug" element={<SlideUpRoute><ProductPage /></SlideUpRoute>} />
+          {/* <Route path="/products/:slug" element={<SlideUpRoute><ProductPage /></SlideUpRoute>} />
           <Route path="/products" element={<SlideUpRoute><ProductsPage /></SlideUpRoute>} />
-          <Route path="/checkout" element={<SlideUpRoute><CheckoutPage /></SlideUpRoute>} />
+          <Route path="/checkout" element={<SlideUpRoute><CheckoutPage /></SlideUpRoute>} /> */}
           {/* <Route path="/success" element={<SlideUpRoute><SuccessPage /></SlideUpRoute>} /> */}
 
           <Route path="*" element={<SlideUpRoute><NotFound /></SlideUpRoute>} />

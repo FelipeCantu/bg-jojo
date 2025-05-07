@@ -32,7 +32,7 @@ const Navbar = () => {
                 <StyledLink to="/GetInvolved">Get Involved</StyledLink>
                 <StyledLink to="/Articles">Articles</StyledLink>
                 <StyledLink to="/Tributes">Remembering Loved Ones</StyledLink>
-                <StyledLink to="/Products">Product</StyledLink>
+                {/* <StyledLink to="/Products">Product</StyledLink> */}
               </DropdownMenu>
             </MoreLink>
           </NavLinks>
