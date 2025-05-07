@@ -127,7 +127,7 @@ export const submitArticle = async (articleData, user) => {
   const article = {
     _type: 'article',
     title: articleData.title,
-    body: articleData.body,
+    content: articleData.content,
     mainImage: articleData.mainImage,
     author: {
       _type: 'reference',

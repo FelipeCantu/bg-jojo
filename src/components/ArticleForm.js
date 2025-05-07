@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { submitArticle, uploadImageToSanity, ensureUserExistsInSanity } from '../sanityClient';
 import { auth, onAuthStateChanged } from '../firestore';
 import { db } from '../firestore';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import TextEditor from './TextEditor';
 import { portableTextToHtml } from './utils/portableTextHtml';
@@ -11,7 +11,6 @@ import { convertHtmlToPortableText } from './utils/htmlToPortableText';
 import { FaArrowLeft } from 'react-icons/fa';
 
 const ArticleForm = ({ onArticleSubmitted }) => {
-  // State declarations (unchanged)
   const [formData, setFormData] = useState({
     title: '',
     mainImage: '',
@@ -27,35 +26,41 @@ const ArticleForm = ({ onArticleSubmitted }) => {
   const [isUserLoading, setIsUserLoading] = useState(true);
   const [imagePreview, setImagePreview] = useState(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showNameDialog, setShowNameDialog] = useState(false);
+  const [tempDisplayName, setTempDisplayName] = useState('');
   const navigate = useNavigate();
 
-  // Updated auth state listener to use photoURL
+  // Handle auth state changes and user data fetching
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (!currentUser) {
         setUser(null);
         setIsUserLoading(false);
+        navigate('/login');
         return;
       }
 
       try {
         const userDocRef = doc(db, 'users', currentUser.uid);
         const userDoc = await getDoc(userDocRef);
-        const fetchedUser = userDoc.exists()
-          ? {
-            name: userDoc.data().name || currentUser.displayName,
-            photoURL: userDoc.data().photoURL || currentUser.photoURL || 'https://via.placeholder.com/40', // Changed to photoURL
-            uid: currentUser.uid,
-            role: userDoc.data().role || 'user',
-          }
-          : {
-            name: currentUser.displayName,
-            photoURL: currentUser.photoURL || 'https://via.placeholder.com/40', // Changed to photoURL
-            uid: currentUser.uid,
-          };
+        
+        const userData = {
+          uid: currentUser.uid,
+          displayName: currentUser.displayName || '',
+          email: currentUser.email || '',
+          photoURL: currentUser.photoURL || 'https://via.placeholder.com/40',
+          role: 'user'
+        };
 
-        setUser(fetchedUser);
-        await ensureUserExistsInSanity(fetchedUser.uid, fetchedUser.name, fetchedUser.photoURL); // Updated to pass photoURL
+        if (userDoc.exists()) {
+          const firestoreData = userDoc.data();
+          userData.displayName = firestoreData.name || userData.displayName;
+          userData.photoURL = firestoreData.photoURL || userData.photoURL;
+          userData.role = firestoreData.role || userData.role;
+        }
+
+        setUser(userData);
+        await ensureUserExistsInSanity(userData.uid, userData.displayName, userData.photoURL);
       } catch (error) {
         console.error('Error fetching user data:', error);
       } finally {
@@ -64,9 +69,40 @@ const ArticleForm = ({ onArticleSubmitted }) => {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [navigate]);
 
-  // Rest of your event handlers remain unchanged
+  const updateUserDisplayName = async () => {
+    if (!tempDisplayName.trim()) return;
+    
+    try {
+      // Update in Firebase
+      const userDocRef = doc(db, 'users', user.uid);
+      await updateDoc(userDocRef, {
+        name: tempDisplayName
+      });
+
+      // Update in local state
+      const updatedUser = {
+        ...user,
+        displayName: tempDisplayName
+      };
+      setUser(updatedUser);
+
+      // Ensure Sanity has the updated info
+      await ensureUserExistsInSanity(
+        updatedUser.uid, 
+        updatedUser.displayName, 
+        updatedUser.photoURL
+      );
+
+      setShowNameDialog(false);
+      setTempDisplayName('');
+    } catch (error) {
+      console.error('Error updating display name:', error);
+      alert('Failed to update display name. Please try again.');
+    }
+  };
+
   const handleTitleChange = (e) => {
     setFormData({ ...formData, title: e.target.value });
     setErrors(prev => ({ ...prev, title: null }));
@@ -144,6 +180,12 @@ const ArticleForm = ({ onArticleSubmitted }) => {
   };
 
   const prepareSubmission = async () => {
+    // Check for display name first
+    if (!user?.displayName) {
+      setShowNameDialog(true);
+      return;
+    }
+
     const currentHtml = editorRef.current?.getHTML() || '';
     const currentPortableText = formData.portableContent.length > 0 && currentHtml === formData.htmlContent
       ? formData.portableContent
@@ -164,11 +206,6 @@ const ArticleForm = ({ onArticleSubmitted }) => {
   };
 
   const handleSubmit = async () => {
-    if (!user?.uid) {
-      alert('You must be signed in to submit an article.');
-      return;
-    }
-
     setIsSubmitting(true);
     setShowConfirmDialog(false);
 
@@ -225,9 +262,8 @@ const ArticleForm = ({ onArticleSubmitted }) => {
           <p>Loading user info...</p>
         ) : user ? (
           <AuthorSection>
-            {/* Updated to use photoURL */}
-            <AuthorPhoto src={user?.photoURL} alt="Author" />
-            <AuthorName>{user?.name}</AuthorName>
+            <AuthorPhoto src={user.photoURL} alt="Author" />
+            <AuthorName>{user.displayName}</AuthorName>
           </AuthorSection>
         ) : (
           <p>Please sign in to submit an article.</p>
@@ -293,6 +329,35 @@ const ArticleForm = ({ onArticleSubmitted }) => {
           </DialogOverlay>
         )}
 
+        {showNameDialog && (
+          <DialogOverlay>
+            <Dialog>
+              <DialogTitle>Display Name Required</DialogTitle>
+              <DialogContent>
+                <p>You need a display name to publish articles.</p>
+                <NameInput
+                  type="text"
+                  value={tempDisplayName}
+                  onChange={(e) => setTempDisplayName(e.target.value)}
+                  placeholder="Enter your display name"
+                />
+              </DialogContent>
+              <DialogActions>
+                <DialogButton onClick={() => setShowNameDialog(false)}>
+                  Cancel
+                </DialogButton>
+                <DialogButton 
+                  $primary 
+                  onClick={updateUserDisplayName}
+                  disabled={!tempDisplayName.trim()}
+                >
+                  Save
+                </DialogButton>
+              </DialogActions>
+            </Dialog>
+          </DialogOverlay>
+        )}
+
         <BackButton onClick={() => navigate(-1)}>
           <FaArrowLeft />
         </BackButton>
@@ -300,6 +365,15 @@ const ArticleForm = ({ onArticleSubmitted }) => {
     </PageContainer>
   );
 };
+
+// Styled components (same as before, with one addition)
+const NameInput = styled.input`
+  padding: 10px;
+  width: 100%;
+  margin-top: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+`;
 
 // All styled components remain exactly the same as in your original code
 const PageContainer = styled.div`
