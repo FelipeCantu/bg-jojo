@@ -33,28 +33,28 @@ export function urlFor(source) {
 // Fetch all articles
 export const fetchArticles = async () => {
   const query = `*[_type == "article"]{
+    _id,
+    title,
+    content,
+    "mainImage": mainImage.asset->url,
+    publishedDate,
+    readingTime,
+    "author": author->{
       _id,
-      title,
-      content,
-      mainImage,
-      publishedDate,
-      readingTime,
-      author->{
-          _id,
-          name,
-          photoURL
-      }
-  }`;
+      name,
+      photoURL
+    }
+  } | order(publishedDate desc)`;
 
   try {
     const articles = await client.fetch(query);
-    console.log("✅ Fetched articles:", articles);
     return articles;
   } catch (error) {
-    console.error("❌ Error fetching articles:", error);
-    throw new Error("Error fetching articles");
+    console.error("Error fetching articles:", error);
+    throw error;
   }
 };
+
 
 // Fetch a single article by ID
 export const fetchArticleById = async (id) => {
@@ -70,72 +70,76 @@ export const fetchArticleById = async (id) => {
 
 // Upload image to Sanity
 export const uploadImageToSanity = async (file) => {
-  const allowedTypes = ["image/jpeg", "image/png", "image/gif"];
+  if (!file) throw new Error("No file provided");
+  if (!client.config().token) throw new Error("Missing Sanity API token");
 
+  const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+  const maxSize = 10 * 1024 * 1024; // 10MB
+
+  // Validate file type
   if (!allowedTypes.includes(file.type)) {
-    throw new Error("Invalid file type. Only JPEG, PNG, and GIF are allowed.");
+    throw new Error("Invalid file type. Only JPEG, PNG, GIF, and WEBP are allowed.");
+  }
+
+  // Validate file size
+  if (file.size > maxSize) {
+    throw new Error(`File too large. Maximum size is ${maxSize/1024/1024}MB`);
   }
 
   try {
-    const imageAsset = await client.assets.upload("image", file);
-    if (!imageAsset?._id) {
-      throw new Error("Sanity did not return an asset ID.");
-    }
-    console.log("🔥 Uploaded Image Asset:", imageAsset);
-    return { asset: { _ref: imageAsset._id } };
-  } catch (error) {
-    console.error("❌ Image upload failed:", error.message || error);
-    throw new Error("Image upload failed. Please try again.");
-  }
-};
-
-// Submit an article to Sanity
-export const submitArticle = async (articleData, user) => {
-  if (!user?.uid) {
-    throw new Error("User UID is missing. Please sign in.");
-  }
-
-  if (!articleData?.title || !articleData?.content) {
-    throw new Error("Article title and content are required.");
-  }
-
-  try {
-    // Ensure the user exists in Sanity
-    let sanityUser = await client.fetch('*[_type == "user" && uid == $uid][0]', { uid: user.uid });
-
-    if (!sanityUser) {
-      sanityUser = await client.create({
-        _type: "user",
-        uid: user.uid,
-        name: user.displayName || "Anonymous",
-        photoURL: user.photoURL || "",
-      });
-    }
-
-    // Ensure content is an array (PortableText format)
-    const content = Array.isArray(articleData.content) ? articleData.content : [];
-
-    // Submit the article
-    const response = await client.create({
-      _type: "article",
-      title: articleData.title,
-      content, // Ensure this is an array of PortableText blocks
-      mainImage: articleData.mainImage,
-      publishedDate: new Date().toISOString(),
-      readingTime: articleData.readingTime,
-      author: {
-        _type: "reference",
-        _ref: sanityUser._id,
-      },
+    console.log("Starting image upload...");
+    const result = await client.assets.upload("image", file, {
+      filename: file.name,
+      contentType: file.type,
     });
 
-    console.log("✅ Article submitted successfully:", response);
-    return response;
+    if (!result?._id) {
+      throw new Error("Invalid response from Sanity");
+    }
+
+    console.log("Image uploaded successfully:", result);
+    return { _type: "image", asset: { _type: "reference", _ref: result._id } };
   } catch (error) {
-    console.error("❌ Error submitting article:", error);
-    throw new Error(error.message || "Error submitting article to Sanity");
+    console.error("Image upload failed:", error);
+    throw new Error(
+      error.message || "Image upload failed. Please check your connection and try again."
+    );
   }
 };
+// Submit an article to Sanity
+export const submitArticle = async (articleData, user) => {
+  const { uid, displayName, photoURL } = user;
+
+  if (!displayName) {
+    throw new Error("Display name is missing. Cannot submit article as anonymous.");
+  }
+
+  const updatedUser = {
+    _type: "user",
+    _id: uid,
+    name: displayName,
+    photoURL: photoURL || "https://via.placeholder.com/40",
+    role: "user"
+  };
+
+  await client.createIfNotExists(updatedUser);
+
+  const article = {
+    _type: 'article',
+    title: articleData.title,
+    body: articleData.body,
+    mainImage: articleData.mainImage,
+    author: {
+      _type: 'reference',
+      _ref: uid
+    },
+    publishedDate: new Date().toISOString(),
+    readingTime: articleData.readingTime || 5,
+  };
+
+  return await client.create(article);
+};
+
 
 // Get user from Sanity
 export const getUserFromSanity = async (uid) => {
@@ -154,21 +158,22 @@ export const getUserFromSanity = async (uid) => {
 
 // Create or update a user in Sanity
 export const createUserInSanity = async (user) => {
-  try {
-    const newUser = {
-      _type: "user",
-      _id: user.uid,
-      name: user.name || "Anonymous",
-      email: user.email || "",
-      photoURL: user.photoURL || "https://via.placeholder.com/40",
-      role: user.role || "user",
-    };
-    return await client.createOrReplace(newUser); // Use createOrReplace to update existing users
-  } catch (error) {
-    console.error("❌ Error creating user in Sanity:", error);
-    throw new Error("Could not create user in Sanity.");
+  if (!user.name) {
+    throw new Error("Display name is required to create a user in Sanity.");
   }
+
+  const newUser = {
+    _type: "user",
+    _id: user.uid, // Firebase UID is used as _id
+    name: user.name,
+    email: user.email || "",
+    photoURL: user.photoURL || "https://via.placeholder.com/40",
+    role: user.role || "user",
+  };
+
+  return await client.createIfNotExists(newUser); // Creates user if it doesn't exist
 };
+
 
 // Delete an article from Sanity
 // Delete an article from Sanity and handle references
@@ -261,44 +266,33 @@ export const deleteArticle = async (articleId) => {
 // Ensure a user exists in Sanity
 export const ensureUserExistsInSanity = async (uid, displayName, photoURL) => {
   try {
-    // Fetch user data from Sanity using _id (since uid is stored as _id)
     let userDoc = await client.fetch(`*[_type == "user" && _id == $uid][0]`, { uid });
 
     if (!userDoc) {
-      console.log("User does not exist, creating new user...");
-      const newUser = await client.create({
+      userDoc = await client.create({
         _type: "user",
-        _id: uid, // Store Firebase UID as the Sanity _id
-        name: displayName || "Anonymous",
-        photoURL: photoURL || "https://via.placeholder.com/150",
+        _id: uid, // Firebase UID is used as _id
+        name: displayName || "",
+        photoURL: photoURL || "", // Using photoURL as defined in schema
         role: "user",
       });
-
-      console.log("User created in Sanity:", newUser);
-      return newUser;
-    } else {
-      console.log("User already exists in Sanity:", userDoc);
-
-      // Optional: Update user info if displayName or photoURL changed
-      if (userDoc.name !== displayName || userDoc.photoURL !== photoURL) {
-        await client
-          .patch(userDoc._id)
-          .set({
-            name: displayName || userDoc.name,
-            photoURL: photoURL || userDoc.photoURL,
-          })
-          .commit();
-
-        console.log("User updated in Sanity");
-      }
-
-      return userDoc;
+    } else if (userDoc.name !== displayName || userDoc.photoURL !== photoURL) {
+      // Update if details changed
+      await client
+        .patch(userDoc._id)
+        .set({
+          name: displayName || userDoc.name,
+          photoURL: photoURL || userDoc.photoURL
+        })
+        .commit();
     }
+    return userDoc;
   } catch (error) {
-    console.error("Error ensuring user exists in Sanity:", error);
-    throw new Error("Error checking or creating user in Sanity");
+    console.error("Error ensuring user exists:", error);
+    throw error;
   }
 };
+
 
 // Update user profile in Sanity
 export const updateUserProfileInSanity = async (uid, bannerUrl) => {

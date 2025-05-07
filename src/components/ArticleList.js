@@ -33,9 +33,10 @@ const ArticleList = () => {
   }, []);
 
   useEffect(() => {
+    const query = searchQuery.toLowerCase();
     setFilteredArticles(
       articles.filter(article =>
-        article.title.toLowerCase().includes(searchQuery.toLowerCase())
+        article.title?.toLowerCase().includes(query)
       )
     );
   }, [searchQuery, articles]);
@@ -47,7 +48,8 @@ const ArticleList = () => {
     <ArticleContainer>
       <SearchContainer>
         <SearchIcon onClick={() => setShowSearch(!showSearch)} />
-        <SearchBar show={showSearch}
+        <SearchBar
+          show={showSearch}
           type="text"
           placeholder="Search article..."
           value={searchQuery}
@@ -56,48 +58,56 @@ const ArticleList = () => {
       </SearchContainer>
 
       <CreateArticleButton />
+
       {filteredArticles.length === 0 ? (
         <NoArticlesMessage>No articles found</NoArticlesMessage>
       ) : (
         <ArticleGrid>
-          {filteredArticles.map((article) => (
-            <LinkWrapper to={`/article/${article._id}`} key={article._id}>
-              <ArticleCard>
-                <TopLeftSection>
-                  <UserInfo>
-                    <UserImage
-                      src={article.author?.photoURL || "https://via.placeholder.com/40"}
-                      alt={article.author?.name || "Anonymous"}
-                    />
-                    <UserName>{article.author?.name || "Anonymous"}</UserName>
-                  </UserInfo>
-                  <DateAndTime>
-                    {article.publishedDate && (
-                      <PublishedDate>{new Date(article.publishedDate).toLocaleDateString()}</PublishedDate>
-                    )}
-                    {article.publishedDate && article.readingTime && <Dot>·</Dot>}
-                    <ReadingTime>
-                       Reading Time: {article.readingTime || 'N/A'} mins
-                    </ReadingTime>
-                  </DateAndTime>
-                </TopLeftSection>
+          {filteredArticles.map((article) => {
+            const authorImageSrc = article.author?.photoURL
+              ? article.author.photoURL.startsWith('http')
+                ? article.author.photoURL
+                : urlFor(article.author.photoURL).url()
+              : 'https://via.placeholder.com/40';
 
-                {article.mainImage?.asset ? (
-                  <ArticleImage src={urlFor(article.mainImage.asset).url()} alt={article.title} />
-                ) : (
-                  <ArticleImage src="https://via.placeholder.com/350x250" alt="Fallback content for this article" />
-                )}
+            const mainImageSrc = article.mainImage?.asset
+              ? urlFor(article.mainImage.asset).url()
+              : 'https://via.placeholder.com/350x250';
 
-                <Divider />
-                <ArticleTitle>
-                  {article.title.length > 50
-                    ? `${article.title.substring(0, 50)}...` // Truncate after 50 characters
-                    : article.title}
-                </ArticleTitle>
-                <ArticleCounters articleId={ article._id } />
-              </ArticleCard>
-            </LinkWrapper>
-          ))}
+            return (
+              <LinkWrapper to={`/article/${article._id}`} key={article._id}>
+                <ArticleCard>
+                  <TopLeftSection>
+                    <UserInfo>
+                      <UserImage src={authorImageSrc} alt={article.author?.name || 'Unknown author'} />
+                      <UserName>{article.author?.name}</UserName>
+                    </UserInfo>
+
+                    <DateAndTime>
+                      {article.publishedDate && (
+                        <PublishedDate>{new Date(article.publishedDate).toLocaleDateString()}</PublishedDate>
+                      )}
+                      {article.publishedDate && article.readingTime && <Dot>·</Dot>}
+                      <ReadingTime>
+                        Reading Time: {article.readingTime || 'N/A'} mins
+                      </ReadingTime>
+                    </DateAndTime>
+                  </TopLeftSection>
+
+                  <ArticleImage src={mainImageSrc} alt={article.title} />
+                  <Divider />
+
+                  <ArticleTitle>
+                    {article.title?.length > 50
+                      ? `${article.title.substring(0, 50)}...`
+                      : article.title}
+                  </ArticleTitle>
+
+                  <ArticleCounters articleId={article._id} />
+                </ArticleCard>
+              </LinkWrapper>
+            );
+          })}
         </ArticleGrid>
       )}
     </ArticleContainer>

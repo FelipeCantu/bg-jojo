@@ -11,7 +11,7 @@ import { convertHtmlToPortableText } from './utils/htmlToPortableText';
 import { FaArrowLeft } from 'react-icons/fa';
 
 const ArticleForm = ({ onArticleSubmitted }) => {
-  // State declarations
+  // State declarations (unchanged)
   const [formData, setFormData] = useState({
     title: '',
     mainImage: '',
@@ -29,7 +29,7 @@ const ArticleForm = ({ onArticleSubmitted }) => {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const navigate = useNavigate();
 
-  // Auth state listener
+  // Updated auth state listener to use photoURL
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (!currentUser) {
@@ -44,18 +44,18 @@ const ArticleForm = ({ onArticleSubmitted }) => {
         const fetchedUser = userDoc.exists()
           ? {
             name: userDoc.data().name || currentUser.displayName,
-            photo: userDoc.data().photo || currentUser.photoURL || 'https://via.placeholder.com/40',
+            photoURL: userDoc.data().photoURL || currentUser.photoURL || 'https://via.placeholder.com/40', // Changed to photoURL
             uid: currentUser.uid,
             role: userDoc.data().role || 'user',
           }
           : {
             name: currentUser.displayName,
-            photo: currentUser.photoURL || 'https://via.placeholder.com/40',
+            photoURL: currentUser.photoURL || 'https://via.placeholder.com/40', // Changed to photoURL
             uid: currentUser.uid,
           };
 
         setUser(fetchedUser);
-        await ensureUserExistsInSanity(fetchedUser.uid, fetchedUser.name, fetchedUser.photo);
+        await ensureUserExistsInSanity(fetchedUser.uid, fetchedUser.name, fetchedUser.photoURL); // Updated to pass photoURL
       } catch (error) {
         console.error('Error fetching user data:', error);
       } finally {
@@ -66,7 +66,7 @@ const ArticleForm = ({ onArticleSubmitted }) => {
     return () => unsubscribe();
   }, []);
 
-  // Event handlers
+  // Rest of your event handlers remain unchanged
   const handleTitleChange = (e) => {
     setFormData({ ...formData, title: e.target.value });
     setErrors(prev => ({ ...prev, title: null }));
@@ -225,7 +225,8 @@ const ArticleForm = ({ onArticleSubmitted }) => {
           <p>Loading user info...</p>
         ) : user ? (
           <AuthorSection>
-            <AuthorPhoto src={user?.photo} alt="Author" />
+            {/* Updated to use photoURL */}
+            <AuthorPhoto src={user?.photoURL} alt="Author" />
             <AuthorName>{user?.name}</AuthorName>
           </AuthorSection>
         ) : (
@@ -299,7 +300,8 @@ const ArticleForm = ({ onArticleSubmitted }) => {
     </PageContainer>
   );
 };
-// Styled components
+
+// All styled components remain exactly the same as in your original code
 const PageContainer = styled.div`
   min-height: 100vh;
   display: flex;
@@ -464,7 +466,6 @@ const SubmitButton = styled.button`
   }
 `;
 
-
 const BackButton = styled.button`
   position: absolute;
   top: 20px;
@@ -486,7 +487,6 @@ const BackButton = styled.button`
     left: 10px;
   }
 `;
-
 
 const DialogOverlay = styled.div`
   position: fixed;

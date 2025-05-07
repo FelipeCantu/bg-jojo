@@ -23,14 +23,14 @@ const useCurrentUser = () => {
             );
 
             if (!sanityUser) {
-              // Create new user document if it doesn't exist
+              // Create a new user document if it doesn't exist
               const newUser = {
                 _type: 'user',
                 uid: firebaseUser.uid,
-                name: firebaseUser.displayName || 'Anonymous',
+                name: firebaseUser.displayName || 'New User', // Default to 'New User'
                 email: firebaseUser.email,
-                photoURL: firebaseUser.photoURL || '',
-                role: 'user'
+                photoURL: firebaseUser.photoURL || 'https://via.placeholder.com/40', // Fallback image URL
+                role: 'user',
               };
 
               const createdUser = await client.create(newUser);
@@ -38,14 +38,14 @@ const useCurrentUser = () => {
               setCurrentUser({
                 ...firebaseUser,
                 ...createdUser,
-                sanityId: createdUser._id  // Add this critical field
+                sanityId: createdUser._id, // Add this critical field
               });
             } else {
               // Combine Firebase and Sanity user data
               setCurrentUser({
                 ...firebaseUser,
                 ...sanityUser,
-                sanityId: sanityUser._id  // Add this critical field
+                sanityId: sanityUser._id, // Add this critical field
               });
             }
           } else {

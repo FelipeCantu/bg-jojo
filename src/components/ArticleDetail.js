@@ -8,6 +8,7 @@ import { auth, onAuthStateChanged } from "../firestore";
 import { PortableText } from "@portabletext/react";
 import { Link } from 'react-router-dom';
 
+
 const ArticleDetail = () => {
   const { id } = useParams();
   const [article, setArticle] = useState(null);
