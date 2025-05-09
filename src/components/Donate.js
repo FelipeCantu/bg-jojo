@@ -21,6 +21,7 @@ const Donate = () => {
                 <Title>Donate</Title>
                 <Subtitle>Empowering Jojo to Prevent Suicide and Elevate Mental Health Awareness</Subtitle>
                 <StartButton to="/SupportingGiveBackJojo">Start Today</StartButton>
+                
                 <DonationList>
                     {donationOptions.map((option, index) => (
                         <DonationItem key={index}>
@@ -29,10 +30,9 @@ const Donate = () => {
                         </DonationItem>
                     ))}
                 </DonationList>
+                
                 <LearnMore to="/YourGift">Learn More</LearnMore>
-
                 <Divider />
-
                 <Sponsorship />
             </Container>
         </BackgroundWrapper>
@@ -42,7 +42,8 @@ const Donate = () => {
 // Styled Components
 const BackgroundWrapper = styled.div`
   background: #fb9e8a;
-  padding: 2rem 1rem;
+  padding: 1rem;
+  min-height: 100vh;
   
   @media (min-width: 768px) {
     padding: 3rem 2rem;
@@ -51,7 +52,7 @@ const BackgroundWrapper = styled.div`
 
 const Container = styled.div`
   text-align: center;
-  padding: 2rem;
+  padding: 1.5rem;
   background: #fcd3c1;
   border-radius: 10px;
   max-width: 1200px;
@@ -64,10 +65,11 @@ const Container = styled.div`
 `;
 
 const Title = styled.h2`
-  font-size: 2rem;
+  font-size: 1.8rem;
   font-weight: bold;
   color: #cc4200;
   margin-bottom: 0.5rem;
+  line-height: 1.2;
   
   @media (min-width: 768px) {
     font-size: 3rem;
@@ -100,6 +102,8 @@ const StartButton = styled(Link)`
   display: inline-block;
   text-decoration: none;
   margin-bottom: 2rem;
+  width: 100%;
+  max-width: 300px;
   
   &:hover {
     background: #054944;
@@ -110,6 +114,7 @@ const StartButton = styled(Link)`
   @media (min-width: 768px) {
     padding: 1rem 2rem;
     font-size: 1.1rem;
+    width: auto;
   }
 `;
 
@@ -120,6 +125,10 @@ const DonationList = styled.div`
   gap: 1rem;
   max-width: 800px;
   
+  @media (min-width: 480px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
   @media (min-width: 768px) {
     grid-template-columns: repeat(2, 1fr);
     gap: 1.5rem;
@@ -128,17 +137,25 @@ const DonationList = styled.div`
 
 const DonationItem = styled.div`
   background: #f8ddd2;
-  padding: 1.25rem;
+  padding: 1rem;
   border-radius: 8px;
   box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
   display: flex;
-  align-items: center;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.5rem;
   transition: transform 0.3s ease;
+  text-align: center;
   
   &:hover {
     transform: translateY(-3px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+  
+  @media (min-width: 768px) {
+    flex-direction: row;
+    align-items: center;
+    text-align: left;
+    padding: 1.25rem;
   }
 `;
 
@@ -146,7 +163,6 @@ const Amount = styled.span`
   font-size: 1.25rem;
   font-weight: bold;
   color: #a73602;
-  min-width: 80px;
   
   @media (min-width: 768px) {
     font-size: 1.5rem;
@@ -158,7 +174,6 @@ const Description = styled.p`
   font-size: 0.9rem;
   color: #cc4200;
   margin: 0;
-  text-align: left;
   line-height: 1.4;
   
   @media (min-width: 768px) {
@@ -168,7 +183,7 @@ const Description = styled.p`
 
 const LearnMore = styled(Link)`
   display: inline-block;
-  margin-top: 1.5rem;
+  margin: 1.5rem auto 0;
   font-size: 1rem;
   color: #cc4200;
   text-decoration: none;
@@ -176,6 +191,9 @@ const LearnMore = styled(Link)`
   padding: 0.5rem 1rem;
   border-radius: 4px;
   transition: all 0.3s ease;
+  width: 100%;
+  max-width: 300px;
+  text-align: center;
   
   &:hover {
     text-decoration: underline;
@@ -185,6 +203,7 @@ const LearnMore = styled(Link)`
   @media (min-width: 768px) {
     font-size: 1.1rem;
     margin-top: 2rem;
+    width: auto;
   }
 `;
 
@@ -192,7 +211,7 @@ const Divider = styled.div`
   width: 100%;
   height: 2px;
   background: rgba(0, 0, 0, 0.1);
-  margin: 3rem auto;
+  margin: 2rem auto;
   max-width: 800px;
   
   @media (min-width: 768px) {
