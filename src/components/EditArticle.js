@@ -97,7 +97,7 @@ const EditArticle = () => {
 
   const calculateReadingTime = useCallback((content) => {
     if (!content) return 0;
-  
+
     if (Array.isArray(content)) {
       let wordCount = 0;
       content.forEach((block) => {
@@ -111,12 +111,12 @@ const EditArticle = () => {
       });
       return Math.max(1, Math.ceil(wordCount / 200));
     }
-  
+
     if (typeof content === 'string') {
       const textContent = content.replace(/<[^>]*>/g, ' ');
       return Math.max(1, Math.ceil(textContent.split(/\s+/).length / 200));
     }
-  
+
     return 5;
   }, []);
 
@@ -215,7 +215,7 @@ const EditArticle = () => {
                     e.target.src = 'https://via.placeholder.com/400x225?text=Image+not+found';
                   }}
                 />
-                <button 
+                <button
                   className="remove-button"
                   onClick={() => {
                     setFormMainImage(null);
@@ -242,6 +242,28 @@ const EditArticle = () => {
           </ImageUploadContainer>
         </FormGroup>
 
+        {/* Moved Privacy Settings here - above the Text Editor */}
+        <FormGroup>
+          <Label>Privacy Settings</Label>
+          <ToggleContainer>
+            <ToggleLabel>
+              <ToggleInput
+                type="checkbox"
+                checked={isAnonymous}
+                onChange={() => {
+                  setIsAnonymous(!isAnonymous);
+                  setHasUnsavedChanges(true);
+                }}
+              />
+              <ToggleSlider />
+              <ToggleText>Publish anonymously</ToggleText>
+            </ToggleLabel>
+            <ToggleDescription>
+              When enabled, your name and profile picture won't be shown with this article.
+            </ToggleDescription>
+          </ToggleContainer>
+        </FormGroup>
+
         <FormGroup>
           <Label>Content *</Label>
           <div>
@@ -265,27 +287,6 @@ const EditArticle = () => {
             <strong>Last Updated:</strong> {new Date(article.updatedAt || article.publishedDate).toLocaleString()}
           </div>
         </div>
-
-        <FormGroup>
-          <Label>Privacy Settings</Label>
-          <ToggleContainer>
-            <ToggleLabel>
-              <ToggleInput
-                type="checkbox"
-                checked={isAnonymous}
-                onChange={() => {
-                  setIsAnonymous(!isAnonymous);
-                  setHasUnsavedChanges(true);
-                }}
-              />
-              <ToggleSlider />
-              <ToggleText>Publish anonymously</ToggleText>
-            </ToggleLabel>
-            <ToggleDescription>
-              When enabled, your name and profile picture won't be shown with this article.
-            </ToggleDescription>
-          </ToggleContainer>
-        </FormGroup>
       </FormContainer>
 
       <ButtonGroup>
