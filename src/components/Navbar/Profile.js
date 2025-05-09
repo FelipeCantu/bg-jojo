@@ -133,14 +133,27 @@ const Profile = () => {
             <BioLabel>About Yourself</BioLabel>
             {isEditing ? (
               <>
-                <BioTextarea value={bio} onChange={handleBioChange} placeholder="Tell us about yourself..." />
-                <SaveBioButton onClick={handleSaveBio} disabled={isSaving}>
-                  {isSaving ? 'Saving...' : 'Save'}
-                </SaveBioButton>
+                <BioTextarea
+                  value={bio}
+                  onChange={handleBioChange}
+                  placeholder="Tell us about yourself..."
+                  maxLength={500}
+                />
+                <CharacterCount exceeded={bio.length > 500}>
+                  {bio.length}/500 characters
+                </CharacterCount>
+                <ButtonGroup>
+                  <SaveBioButton onClick={handleSaveBio} disabled={isSaving || bio.length > 500}>
+                    {isSaving ? 'Saving...' : 'Save'}
+                  </SaveBioButton>
+                  <CancelButton onClick={() => setIsEditing(false)}>
+                    Cancel
+                  </CancelButton>
+                </ButtonGroup>
               </>
             ) : (
               <BioDisplay onClick={() => setIsEditing(true)}>
-                {bio || 'Click to add a bio...'}
+                {bio}
               </BioDisplay>
             )}
           </BioSection>
@@ -295,34 +308,126 @@ const ProfileContent = styled.div`
 `;
 
 const BioSection = styled.div`
-  margin-top: 20px;
+  width: 100%;
+  max-width: 800px;
+  margin: 30px auto;
+  padding: 20px;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 `;
 
 const BioLabel = styled.label`
-  font-size: 16px;
-  margin-bottom: 8px;
+  display: block;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 15px;
+  position: relative;
+  
+  &:after {
+    content: '';
+    display: block;
+    width: 50px;
+    height: 3px;
+    background: #024a47;
+    margin-top: 5px;
+  }
 `;
 
 const BioTextarea = styled.textarea`
   width: 100%;
-  height: 200px;
-  font-size: 14px;
-  resize: none;
+  min-height: 150px;
+  padding: 15px;
+  font-size: 16px;
+  line-height: 1.6;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  resize: vertical;
+  transition: all 0.3s ease;
+  
+  &:focus {
+    border-color: #024a47;
+    box-shadow: 0 0 0 2px rgba(2, 74, 71, 0.2);
+    outline: none;
+  }
+  
+  &::placeholder {
+    color: #aaa;
+  }
+`;
+
+const BioDisplay = styled.div`
+  width: 100%;
+  min-height: 150px;
+  padding: 15px;
+  font-size: 16px;
+  line-height: 1.6;
+  background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: pre-wrap;
+  word-break: break-word;
+  
+  &:hover {
+    background: #f0f0f0;
+    border-color: #ccc;
+  }
+  
+  &:empty:before {
+    content: 'Click to add a bio...';
+    color: #aaa;
+  }
+`;
+
+const ButtonGroup = styled.div`
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
 `;
 
 const SaveBioButton = styled.button`
-  margin-top: 10px;
   padding: 10px 20px;
   background-color: #024a47;
   color: white;
   border: none;
+  border-radius: 4px;
   cursor: pointer;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background-color: #01332f;
+  }
+  
+  &:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+  }
 `;
 
-const BioDisplay = styled.div`
-  background: #f3f3f3;
-  padding: 10px;
+const CancelButton = styled.button`
+  padding: 10px 20px;
+  background-color: #f0f0f0;
+  color: #333;
+  border: 1px solid #ddd;
+  border-radius: 4px;
   cursor: pointer;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background-color: #e0e0e0;
+  }
+`;
+
+const CharacterCount = styled.div`
+  font-size: 14px;
+  color: ${props => props.exceeded ? '#ff4d4d' : '#666'};
+  text-align: right;
+  margin-top: 5px;
 `;
 
 const Message = styled.p`
