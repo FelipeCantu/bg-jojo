@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { fetchArticleById, urlFor, client } from "../sanityClient";
+import { fetchArticleById, urlFor } from "../sanityClient";
 import styled from "styled-components";
 import ArticleCounters from "./ArticleCounters";
 import CommentSection from "./CommentSection";
@@ -8,14 +8,14 @@ import { auth, onAuthStateChanged } from "../firestore";
 import { PortableText } from "@portabletext/react";
 import { Link } from 'react-router-dom';
 
+const DEFAULT_ANONYMOUS_AVATAR = 'https://www.shutterstock.com/image-vector/vector-flat-illustration-grayscale-avatar-600nw-2281862025.jpg';
 
 const ArticleDetail = () => {
   const { id } = useParams();
   const [article, setArticle] = useState(null);
-  const [author, setAuthor] = useState(null);
-  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     const getArticle = async () => {
@@ -26,10 +26,7 @@ const ArticleDetail = () => {
         if (!fetchedArticle) {
           throw new Error("Article not found");
         }
-        
-        const authorData = await fetchAuthorData(fetchedArticle.author._ref);
         setArticle(fetchedArticle);
-        setAuthor(authorData);
       } catch (error) {
         console.error("Error fetching article:", error);
         setError(error.message);
@@ -43,7 +40,7 @@ const ArticleDetail = () => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser ? {
         name: currentUser.displayName,
-        photo: currentUser.photoURL || "https://via.placeholder.com/40",
+        photo: currentUser.photoURL || DEFAULT_ANONYMOUS_AVATAR,
         uid: currentUser.uid,
       } : null);
     });
@@ -51,18 +48,20 @@ const ArticleDetail = () => {
     return () => unsubscribe();
   }, [id]);
 
-  const fetchAuthorData = async (authorRef) => {
-    try {
-      return await client.fetch(`*[_type == "user" && _id == $id][0]`, { id: authorRef });
-    } catch (error) {
-      console.error("Error fetching author data:", error);
-      return null;
-    }
-  };
-
   if (loading) return <LoadingPlaceholder />;
   if (error) return <ErrorMessage>{error}</ErrorMessage>;
   if (!article) return <ErrorMessage>Article not found.</ErrorMessage>;
+
+  // Handle author display based on anonymous status
+  const authorName = article.isAnonymous ? 'Anonymous' : article.authorDisplay?.name || 'Unknown author';
+  const authorImageSrc = article.isAnonymous
+    ? DEFAULT_ANONYMOUS_AVATAR
+    : article.authorDisplay?.photoURL || DEFAULT_ANONYMOUS_AVATAR;
+  const authorBio = article.isAnonymous ? '' : article.authorDisplay?.bio;
+
+  // Get main image URL
+  const mainImageSrc = article.mainImage || 'https://via.placeholder.com/1200x600';
+
 
   const components = {
     types: {
@@ -96,13 +95,13 @@ const ArticleDetail = () => {
           {children}
         </Paragraph>
       ),
-      p: ({ children, value }) => (  
+      p: ({ children, value }) => (
         <Paragraph $align={value?.textAlign}>
           {children}
         </Paragraph>
       ),
       h1: ({ children, value }) => <H1 $align={value?.textAlign}>{children}</H1>,
-      h2: ({ children, value }) => <H2 $align={value?.textAlign}>{children}</H2>, // Default to center for h2
+      h2: ({ children, value }) => <H2 $align={value?.textAlign}>{children}</H2>,
       h3: ({ children, value }) => <H3 $align={value?.textAlign}>{children}</H3>,
       h4: ({ children, value }) => <H4 $align={value?.textAlign}>{children}</H4>,
       blockquote: ({ children, value }) => (
@@ -116,9 +115,9 @@ const ArticleDetail = () => {
     listItem: ({ children }) => <Li>{children}</Li>,
     marks: {
       link: ({ value, children }) => (
-        <ExternalLink 
-          href={value.href} 
-          target="_blank" 
+        <ExternalLink
+          href={value.href}
+          target="_blank"
           rel="noopener noreferrer"
         >
           {children}
@@ -134,22 +133,21 @@ const ArticleDetail = () => {
     },
   };
 
+
   return (
     <ArticleDetailContainer>
       <MetaInfoContainer>
-        {author && (
-          <AuthorInfo>
-            <AuthorImage 
-              src={author.photoURL || "https://via.placeholder.com/40"} 
-              alt={author.name} 
-              loading="lazy"
-            />
-            <AuthorDetails>
-              <AuthorName>{author.name}</AuthorName>
-              {author.bio && <AuthorBio>{author.bio}</AuthorBio>}
-            </AuthorDetails>
-          </AuthorInfo>
-        )}
+        <AuthorInfo>
+          <AuthorImage
+            src={authorImageSrc}
+            alt={authorName}
+            loading="lazy"
+          />
+          <AuthorDetails>
+            <AuthorName>{authorName}</AuthorName>
+            {authorBio && <AuthorBio>{authorBio}</AuthorBio>}
+          </AuthorDetails>
+        </AuthorInfo>
         <MetaText>
           {new Date(article.publishedDate).toLocaleDateString('en-US', {
             year: 'numeric',
@@ -161,14 +159,12 @@ const ArticleDetail = () => {
 
       <Title>{article.title}</Title>
       {article.subtitle && <Subtitle>{article.subtitle}</Subtitle>}
+      <HeroImage
+        src={mainImageSrc}
+        alt={article.title}
+        loading="eager"
+      />
 
-      {article.mainImage?.asset && (
-        <HeroImage
-          src={urlFor(article.mainImage).width(1200).url()}
-          alt={article.mainImage.alt || article.title}
-          loading="eager"
-        />
-      )}
 
       <ContentWrapper>
         <PortableText
@@ -184,7 +180,7 @@ const ArticleDetail = () => {
   );
 };
 
-// Styled Components with alignment support
+// Styled Components (all remain exactly the same as your original)
 const ArticleDetailContainer = styled.article`
   padding: 2rem 1rem;
   max-width: 900px;
@@ -213,7 +209,6 @@ const LoadingPlaceholder = styled.div`
   }
 `;
 
-// Text components with alignment support
 const Paragraph = styled.p`
   margin-bottom: 1.5rem;
   font-size: 1.125rem;
@@ -348,49 +343,6 @@ const ContentWrapper = styled.section`
   margin-top: 2rem;
 `;
 
-// const Paragraph = styled.p`
-//   margin-bottom: 1.5rem;
-//   font-size: 1.125rem;
-//   color: #333;
-// `;
-
-// const H1 = styled.h1`
-//   font-size: 2rem;
-//   margin: 2rem 0 1rem;
-//   line-height: 1.3;
-//   color: #333;
-// `;
-
-// const H2 = styled.h2`
-//   font-size: 1.75rem;
-//   margin: 1.75rem 0 0.75rem;
-//   line-height: 1.3;
-//   color: #333;
-// `;
-
-// const H3 = styled.h3`
-//   font-size: 1.5rem;
-//   margin: 1.5rem 0 0.5rem;
-//   line-height: 1.3;
-//   color: #333;
-// `;
-
-// const H4 = styled.h4`
-//   font-size: 1.25rem;
-//   margin: 1.25rem 0 0.5rem;
-//   line-height: 1.3;
-//   color: #333;
-// `;
-
-// const Blockquote = styled.blockquote`
-//   border-left: 4px solid #054944;
-//   padding: 1rem 1.5rem;
-//   margin: 1.5rem 0;
-//   background: #f5f5f5;
-//   font-style: italic;
-//   color: #666;
-// `;
-
 const Ul = styled.ul`
   margin: 1.5rem 0;
   padding-left: 2rem;
@@ -441,27 +393,6 @@ const InlineCode = styled.code`
   font-size: 0.9em;
 `;
 
-// const Figure = styled.figure`
-//   margin: 2rem 0;
-//   text-align: ${props => {
-//     if (props.className?.includes('left')) return 'left';
-//     if (props.className?.includes('right')) return 'right';
-//     return 'center';
-//   }};
-  
-//   &.image-align-left {
-//     float: left;
-//     margin-right: 2rem;
-//     max-width: 50%;
-//   }
-  
-//   &.image-align-right {
-//     float: right;
-//     margin-left: 2rem;
-//     max-width: 50%;
-//   }
-// `;
-
 const ContentImage = styled.img`
   max-width: 100%;
   height: auto;
@@ -469,9 +400,9 @@ const ContentImage = styled.img`
   margin: 0 auto;
   display: block;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  object-position: ${props => 
-    props.$hasHotspot 
-      ? `${props.$hotspotX * 100}% ${props.$hotspotY * 100}%` 
+  object-position: ${props =>
+    props.$hasHotspot
+      ? `${props.$hotspotX * 100}% ${props.$hotspotY * 100}%`
       : 'center'};
 `;
 

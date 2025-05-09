@@ -6,6 +6,8 @@ import useCurrentUser from "../../hook/useCurrentUser";
 import ArticleCounters from "../ArticleCounters";
 import { HiDotsVertical } from 'react-icons/hi';
 
+const DEFAULT_ANONYMOUS_AVATAR = 'https://www.shutterstock.com/image-vector/vector-flat-illustration-grayscale-avatar-600nw-2281862025.jpg';
+
 const UserArticles = () => {
   const { currentUser, loading, error } = useCurrentUser();
   const [articles, setArticles] = useState([]);
@@ -13,7 +15,7 @@ const UserArticles = () => {
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [articleToDelete, setArticleToDelete] = useState(null);
   const [openDropdownId, setOpenDropdownId] = useState(null);
-  const [referencingCount, setReferencingCount] = useState(0);
+  const [referencingCount, setReferencingCount] = useState({ comments: 0, others: 0 });
   const navigate = useNavigate();
   const dropdownRefs = useRef({});
 
@@ -25,29 +27,32 @@ const UserArticles = () => {
       }
 
       try {
-        const sanityUserQuery = `*[_type == "user" && uid == $uid][0]`;
-        const sanityUser = await client.fetch(sanityUserQuery, { uid: currentUser.uid });
-
-        if (!sanityUser) {
-          setFetchError("No Sanity user found for this Firebase UID.");
-          return;
-        }
-
-        const articlesQuery = `*[_type == "article" && author._ref == $sanityUserId]{
+        const articlesQuery = `*[_type == "article" && author._ref == $userId]{
           _id,
           title,
+          slug,
           mainImage,
           publishedDate,
           readingTime,
-          slug,
-          author->{
-            _id,
-            name,
-            photoURL
-          }
-        }`;
+          isAnonymous,
+          likes,
+          "authorDisplay": select(
+            isAnonymous == true => {
+              "name": "Anonymous",
+              "photoURL": "${DEFAULT_ANONYMOUS_AVATAR}",
+              "_id": "anonymous"
+            },
+            author->{
+              _id,
+              name,
+              photoURL
+            }
+          ),
+          "commentsCount": count(comments),
+          "likedBy": likedBy[]->._id
+        } | order(publishedDate desc)`;
 
-        const userArticles = await client.fetch(articlesQuery, { sanityUserId: sanityUser._id });
+        const userArticles = await client.fetch(articlesQuery, { userId: currentUser.uid });
         setArticles(userArticles.length === 0 ? [] : userArticles);
       } catch (error) {
         setFetchError("Error fetching articles. Please try again later.");
@@ -76,19 +81,19 @@ const UserArticles = () => {
     };
   }, [openDropdownId]);
 
- const handleDeleteArticle = async (articleId) => {
-  try {
-    await deleteArticle(articleId);
-    setArticles(prev => prev.filter(a => a._id !== articleId));
-    setConfirmDelete(false);
-    alert("Article deleted successfully!");
-  } catch (error) {
-    alert(`Delete failed: ${error.message}`);
-  }
-};
+  const handleDeleteArticle = async (articleId) => {
+    try {
+      await deleteArticle(articleId);
+      setArticles(prev => prev.filter(a => a._id !== articleId));
+      setConfirmDelete(false);
+      alert("Article deleted successfully!");
+    } catch (error) {
+      alert(`Delete failed: ${error.message}`);
+    }
+  };
+
   const openConfirmDelete = async (articleId) => {
     try {
-      // Get counts of different reference types
       const [commentsCount, otherRefsCount] = await Promise.all([
         client.fetch(`count(*[_type == "comment" && article._ref == $articleId])`, { articleId }),
         client.fetch(`count(*[references($articleId) && _type != "comment"])`, { articleId })
@@ -103,7 +108,6 @@ const UserArticles = () => {
       setOpenDropdownId(null);
     } catch (error) {
       console.error("Error checking references:", error);
-      // Proceed with deletion anyway
       setReferencingCount({ comments: 0, others: 0 });
       setArticleToDelete(articleId);
       setConfirmDelete(true);
@@ -145,14 +149,18 @@ const UserArticles = () => {
                       <TopLeftSection>
                         <UserInfo>
                           <UserImage
-                            src={article.author?.photoURL || "https://via.placeholder.com/40"}
-                            alt={article.author?.name || "Anonymous"}
+                            src={article.authorDisplay?.photoURL || DEFAULT_ANONYMOUS_AVATAR}
+                            alt={article.authorDisplay?.name || "Anonymous"}
                           />
-                          <UserDisplayName>{article.author?.name || "Anonymous"}</UserDisplayName>
+                          <UserDisplayName>
+                            {article.authorDisplay?.name || "Anonymous"}
+                          </UserDisplayName>
                         </UserInfo>
                         <DateAndTime>
                           {article.publishedDate && (
-                            <PublishedDate>{new Date(article.publishedDate).toLocaleDateString()}</PublishedDate>
+                            <PublishedDate>
+                              {new Date(article.publishedDate).toLocaleDateString()}
+                            </PublishedDate>
                           )}
                           {article.publishedDate && article.readingTime && <Dot>·</Dot>}
                           <ReadingTime>
@@ -162,7 +170,7 @@ const UserArticles = () => {
                       </TopLeftSection>
 
                       <ArticleImage
-                        src={article.mainImage?.asset ? urlFor(article.mainImage.asset).url() : "https://via.placeholder.com/350x250"}
+                        src={article.mainImage ? urlFor(article.mainImage).url() : "https://via.placeholder.com/350x250"}
                         alt={article.title}
                       />
 
@@ -170,7 +178,12 @@ const UserArticles = () => {
                       <ArticleTitle>{article.title || 'No Title'}</ArticleTitle>
 
                       <ArticleCountersWrapper>
-                        <ArticleCounters articleId={article._id} />
+                        <ArticleCounters 
+                          articleId={article._id} 
+                          initialLikes={article.likes || 0}
+                          initialComments={article.commentsCount || 0}
+                          isLiked={article.likedBy?.includes(currentUser.uid) || false}
+                        />
                       </ArticleCountersWrapper>
                     </ArticleCard>
                   </LinkWrapper>
@@ -212,7 +225,7 @@ const UserArticles = () => {
                   <div>- {referencingCount.comments} comment(s)</div>
                 )}
                 {referencingCount.others > 0 && (
-                  <div>- {referencingCount.others} other reference(s) will be removed</div>
+                  <div>- {referencingCount.others} other reference(s)</div>
                 )}
               </ReferenceWarning>
             )}
@@ -328,13 +341,19 @@ const UserInfo = styled.div`
 
 
 const UserImage = styled.img`
-  padding-top: 5px;
   width: 40px;
   height: 40px;
   border-radius: 50%;
   object-fit: cover;
-`;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
 
+  &:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+`;
 
 const UserDisplayName = styled.span`
   font-size: 1rem;
@@ -535,4 +554,3 @@ const CancelButton = styled.button`
 
 
 export default UserArticles;
-

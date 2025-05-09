@@ -7,6 +7,8 @@ import styled from 'styled-components';
 import { FaSearch } from 'react-icons/fa';
 import LoadingContainer from './LoadingContainer';
 
+const DEFAULT_ANONYMOUS_AVATAR = 'https://www.shutterstock.com/image-vector/vector-flat-illustration-grayscale-avatar-600nw-2281862025.jpg';
+
 const ArticleList = () => {
   const [articles, setArticles] = useState([]);
   const [filteredArticles, setFilteredArticles] = useState([]);
@@ -63,7 +65,11 @@ const ArticleList = () => {
       ) : (
         <ArticleGrid>
           {filteredArticles.map((article) => {
-            const authorImageSrc = article.author?.photoURL || 'https://via.placeholder.com/40';
+            // Handle anonymous vs. regular author display
+            const authorName = article.isAnonymous ? 'Anonymous' : article.authorDisplay?.name || 'Unknown author';
+            const authorImageSrc = article.isAnonymous 
+              ? DEFAULT_ANONYMOUS_AVATAR 
+              : article.authorDisplay?.photoURL || DEFAULT_ANONYMOUS_AVATAR;
             const mainImageSrc = article.mainImage || 'https://via.placeholder.com/350x250';
 
             return (
@@ -71,8 +77,8 @@ const ArticleList = () => {
                 <ArticleCard>
                   <TopLeftSection>
                     <UserInfo>
-                      <UserImage src={authorImageSrc} alt={article.author?.name || 'Unknown author'} />
-                      <UserName>{article.author?.name}</UserName>
+                      <UserImage src={authorImageSrc} alt={authorName} />
+                      <UserName>{authorName}</UserName>
                     </UserInfo>
 
                     <DateAndTime>
@@ -106,7 +112,7 @@ const ArticleList = () => {
   );
 };
 
-// Styled components remain exactly the same as in your original code
+// Styled components (remain exactly the same as your original)
 const ErrorMessage = styled.p`
   font-size: 1.2rem;
   color: red;

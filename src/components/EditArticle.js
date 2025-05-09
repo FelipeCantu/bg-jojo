@@ -19,12 +19,13 @@ const EditArticle = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [htmlContent, setHtmlContent] = useState('');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isAnonymous, setIsAnonymous] = useState(false);
 
   const fetchArticle = useCallback(async () => {
     try {
       setLoading(true);
       const query = `*[_type == "article" && _id == $articleId][0]{
-        _id, title, content, mainImage,
+        _id, title, content, mainImage, isAnonymous,
         publishedDate, updatedAt, author->{ _id, name, photoURL }
       }`;
       const result = await client.fetch(query, { articleId });
@@ -37,6 +38,7 @@ const EditArticle = () => {
       setFormTitle(result.title || '');
       setHtmlContent(portableTextToHtml(result.content || ''));
       setFormMainImage(result.mainImage || null);
+      setIsAnonymous(result.isAnonymous || false);
     } catch (err) {
       console.error('Fetch error:', err);
       setError(err.message || 'Failed to fetch article');
@@ -96,7 +98,6 @@ const EditArticle = () => {
   const calculateReadingTime = useCallback((content) => {
     if (!content) return 0;
   
-    // Handle Portable Text array
     if (Array.isArray(content)) {
       let wordCount = 0;
       content.forEach((block) => {
@@ -111,13 +112,12 @@ const EditArticle = () => {
       return Math.max(1, Math.ceil(wordCount / 200));
     }
   
-    // Handle HTML string
     if (typeof content === 'string') {
-      const textContent = content.replace(/<[^>]*>/g, ' '); // Remove HTML tags
+      const textContent = content.replace(/<[^>]*>/g, ' ');
       return Math.max(1, Math.ceil(textContent.split(/\s+/).length / 200));
     }
   
-    return 5; // Default average reading time
+    return 5;
   }, []);
 
   const handleSubmit = async () => {
@@ -147,6 +147,7 @@ const EditArticle = () => {
           content: portableContent,
           readingTime: updatedReadingTime,
           updatedAt: new Date().toISOString(),
+          isAnonymous: isAnonymous,
           ...(formMainImage && { mainImage: formMainImage }),
         });
 
@@ -264,6 +265,27 @@ const EditArticle = () => {
             <strong>Last Updated:</strong> {new Date(article.updatedAt || article.publishedDate).toLocaleString()}
           </div>
         </div>
+
+        <FormGroup>
+          <Label>Privacy Settings</Label>
+          <ToggleContainer>
+            <ToggleLabel>
+              <ToggleInput
+                type="checkbox"
+                checked={isAnonymous}
+                onChange={() => {
+                  setIsAnonymous(!isAnonymous);
+                  setHasUnsavedChanges(true);
+                }}
+              />
+              <ToggleSlider />
+              <ToggleText>Publish anonymously</ToggleText>
+            </ToggleLabel>
+            <ToggleDescription>
+              When enabled, your name and profile picture won't be shown with this article.
+            </ToggleDescription>
+          </ToggleContainer>
+        </FormGroup>
       </FormContainer>
 
       <ButtonGroup>
@@ -297,6 +319,72 @@ const EditArticle = () => {
   );
 };
 
+// Styled components (add these to your existing styles)
+const ToggleContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const ToggleLabel = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+`;
+
+const ToggleInput = styled.input`
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+`;
+
+const ToggleSlider = styled.span`
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 24px;
+  background-color: #ddd;
+  border-radius: 24px;
+  transition: all 0.3s;
+
+  &:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    border-radius: 50%;
+    transition: all 0.3s;
+  }
+
+  ${ToggleInput}:checked + & {
+    background-color: #014a47;
+  }
+
+  ${ToggleInput}:checked + &:before {
+    transform: translateX(26px);
+  }
+`;
+
+const ToggleText = styled.span`
+  font-size: 15px;
+  font-weight: 500;
+  color: #333;
+`;
+
+const ToggleDescription = styled.p`
+  font-size: 13px;
+  color: #666;
+  margin: 0;
+  padding-left: 60px;
+`;
+
+// Keep all your existing styled components below
 const EditContainer = styled.div`
   max-width: 1000px;
   margin: 0 auto;
@@ -367,43 +455,6 @@ const FormContainer = styled.div`
 
   @media (max-width: 768px) {
     padding: 20px;
-  }
-
-  .slug-container {
-    display: flex;
-    align-items: center;
-    background: #f9f9f9;
-    border-radius: 6px;
-    overflow: hidden;
-
-    @media (max-width: 768px) {
-      flex-direction: column;
-      align-items: stretch;
-    }
-  }
-
-  .slug-prefix {
-    padding: 12px 15px;
-    background: #eee;
-    color: #666;
-    font-size: 16px;
-
-    @media (max-width: 768px) {
-      padding: 10px;
-      font-size: 14px;
-    }
-  }
-
-  .slug-input {
-    flex: 1;
-    border: none;
-    background: #f9f9f9;
-    border-radius: 0;
-    padding-left: 10px;
-
-    @media (max-width: 768px) {
-      padding: 10px;
-    }
   }
 
   .meta-info {

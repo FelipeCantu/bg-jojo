@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import styled from 'styled-components';
-import { submitArticle, uploadImageToSanity, ensureUserExistsInSanity } from '../sanityClient';
+import { uploadImageToSanity, client } from '../sanityClient';
 import { auth, onAuthStateChanged } from '../firestore';
 import { db } from '../firestore';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
@@ -9,6 +9,8 @@ import TextEditor from './TextEditor';
 import { portableTextToHtml } from './utils/portableTextHtml';
 import { convertHtmlToPortableText } from './utils/htmlToPortableText';
 import { FaArrowLeft } from 'react-icons/fa';
+
+const DEFAULT_ANONYMOUS_AVATAR = 'https://www.shutterstock.com/image-vector/vector-flat-illustration-grayscale-avatar-600nw-2281862025.jpg';
 
 const ArticleForm = ({ onArticleSubmitted }) => {
   const [formData, setFormData] = useState({
@@ -28,9 +30,9 @@ const ArticleForm = ({ onArticleSubmitted }) => {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showNameDialog, setShowNameDialog] = useState(false);
   const [tempDisplayName, setTempDisplayName] = useState('');
+  const [isAnonymous, setIsAnonymous] = useState(false);
   const navigate = useNavigate();
 
-  // Handle auth state changes and user data fetching
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (!currentUser) {
@@ -48,7 +50,7 @@ const ArticleForm = ({ onArticleSubmitted }) => {
           uid: currentUser.uid,
           displayName: currentUser.displayName || '',
           email: currentUser.email || '',
-          photoURL: currentUser.photoURL || 'https://via.placeholder.com/40',
+          photoURL: currentUser.photoURL || DEFAULT_ANONYMOUS_AVATAR,
           role: 'user'
         };
 
@@ -60,7 +62,6 @@ const ArticleForm = ({ onArticleSubmitted }) => {
         }
 
         setUser(userData);
-        await ensureUserExistsInSanity(userData.uid, userData.displayName, userData.photoURL);
       } catch (error) {
         console.error('Error fetching user data:', error);
       } finally {
@@ -75,25 +76,13 @@ const ArticleForm = ({ onArticleSubmitted }) => {
     if (!tempDisplayName.trim()) return;
     
     try {
-      // Update in Firebase
       const userDocRef = doc(db, 'users', user.uid);
-      await updateDoc(userDocRef, {
-        name: tempDisplayName
-      });
+      await updateDoc(userDocRef, { name: tempDisplayName });
 
-      // Update in local state
-      const updatedUser = {
-        ...user,
+      setUser(prev => ({
+        ...prev,
         displayName: tempDisplayName
-      };
-      setUser(updatedUser);
-
-      // Ensure Sanity has the updated info
-      await ensureUserExistsInSanity(
-        updatedUser.uid, 
-        updatedUser.displayName, 
-        updatedUser.photoURL
-      );
+      }));
 
       setShowNameDialog(false);
       setTempDisplayName('');
@@ -121,22 +110,12 @@ const ArticleForm = ({ onArticleSubmitted }) => {
     const newErrors = {};
     const htmlContent = editorRef.current?.getHTML() || formData.htmlContent;
 
-    if (!formData.title?.trim()) {
-      newErrors.title = 'Title is required';
-    }
-
-    if (!formData.mainImage) {
-      newErrors.mainImage = 'Main image is required';
-    }
-
-    const isEmpty = !htmlContent ||
-      htmlContent === '<p></p>' ||
-      htmlContent === '<p><br></p>' ||
-      editorRef.current?.isEmpty?.();
-
-    if (isEmpty) {
-      newErrors.content = 'Content is required';
-    }
+    if (!formData.title?.trim()) newErrors.title = 'Title is required';
+    if (!formData.mainImage) newErrors.mainImage = 'Main image is required';
+    
+    const isEmpty = !htmlContent || htmlContent === '<p></p>' || 
+                   htmlContent === '<p><br></p>' || editorRef.current?.isEmpty?.();
+    if (isEmpty) newErrors.content = 'Content is required';
 
     return newErrors;
   }, [formData.title, formData.mainImage, formData.htmlContent]);
@@ -180,7 +159,6 @@ const ArticleForm = ({ onArticleSubmitted }) => {
   };
 
   const prepareSubmission = async () => {
-    // Check for display name first
     if (!user?.displayName) {
       setShowNameDialog(true);
       return;
@@ -210,27 +188,27 @@ const ArticleForm = ({ onArticleSubmitted }) => {
     setShowConfirmDialog(false);
 
     try {
-      const submittedArticle = await submitArticle(
-        {
-          title: formData.title,
-          content: formData.portableContent,
-          mainImage: {
-            _type: 'image',
-            asset: {
-              _type: 'reference',
-              _ref: formData.mainImage
-            }
-          },
-          publishedDate: new Date().toISOString(),
-          author: {
+      const articleData = {
+        _type: 'article',
+        title: formData.title,
+        content: formData.portableContent,
+        mainImage: {
+          _type: 'image',
+          asset: {
             _type: 'reference',
-            _ref: user.uid,
-          },
+            _ref: formData.mainImage
+          }
         },
-        user
-      );
+        publishedDate: new Date().toISOString(),
+        author: {
+          _type: 'reference',
+          _ref: user.uid // Always use the real user ID
+        },
+        isAnonymous: isAnonymous // This controls the display everywhere
+      };
 
-      // Reset form
+      const submittedArticle = await client.create(articleData);
+
       setFormData({
         title: '',
         mainImage: '',
@@ -239,6 +217,7 @@ const ArticleForm = ({ onArticleSubmitted }) => {
       });
       editorRef.current?.clearContent();
       setImagePreview(null);
+      setIsAnonymous(false);
 
       if (onArticleSubmitted) {
         onArticleSubmitted(submittedArticle);
@@ -258,16 +237,14 @@ const ArticleForm = ({ onArticleSubmitted }) => {
     <PageContainer>
       <Container>
         <h2>Write Your Article</h2>
-        {isUserLoading ? (
-          <p>Loading user info...</p>
-        ) : user ? (
-          <AuthorSection>
-            <AuthorPhoto src={user.photoURL} alt="Author" />
-            <AuthorName>{user.displayName}</AuthorName>
-          </AuthorSection>
-        ) : (
-          <p>Please sign in to submit an article.</p>
-        )}
+        
+        <AuthorSection>
+          <AuthorPhoto 
+            src={isAnonymous ? DEFAULT_ANONYMOUS_AVATAR : (user?.photoURL || DEFAULT_ANONYMOUS_AVATAR)} 
+            alt={isAnonymous ? 'Anonymous' : (user?.displayName || 'User')} 
+          />
+          <AuthorName>{isAnonymous ? 'Anonymous' : (user?.displayName || 'Loading...')}</AuthorName>
+        </AuthorSection>
 
         <Form onSubmit={(e) => e.preventDefault()}>
           <TitleInput
@@ -281,17 +258,36 @@ const ArticleForm = ({ onArticleSubmitted }) => {
           />
           {errors.title && <ErrorMessage>{errors.title}</ErrorMessage>}
 
-          <ImageInput
-            type="file"
-            accept="image/*"
-            onChange={handleImageUpload}
-            required
-            aria-invalid={!!errors.mainImage}
-          />
-          {uploading && <p>Uploading image...</p>}
-          {imagePreview && <PreviewImage src={imagePreview} alt="Uploaded Preview" />}
-          {imageError && <ErrorMessage>{imageError}</ErrorMessage>}
-          {errors.mainImage && <ErrorMessage>{errors.mainImage}</ErrorMessage>}
+          <ImageUploadContainer>
+            <ImageInput
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              required
+              aria-invalid={!!errors.mainImage}
+            />
+            {uploading && <UploadStatus>Uploading image...</UploadStatus>}
+            {imagePreview && <PreviewImage src={imagePreview} alt="Uploaded Preview" />}
+            {imageError && <ErrorMessage>{imageError}</ErrorMessage>}
+            {errors.mainImage && <ErrorMessage>{errors.mainImage}</ErrorMessage>}
+
+            <ToggleContainer>
+              <ToggleLabel>
+                <ToggleInput
+                  type="checkbox"
+                  checked={isAnonymous}
+                  onChange={() => setIsAnonymous(!isAnonymous)}
+                />
+                <ToggleSlider />
+                <ToggleText>Post Anonymously</ToggleText>
+              </ToggleLabel>
+              {isAnonymous && (
+                <AnonymousNote>
+                  Your name and profile picture will be hidden everywhere this article appears
+                </AnonymousNote>
+              )}
+            </ToggleContainer>
+          </ImageUploadContainer>
 
           <TextEditor
             ref={editorRef}
@@ -315,7 +311,10 @@ const ArticleForm = ({ onArticleSubmitted }) => {
             <Dialog>
               <DialogTitle>Confirm Submission</DialogTitle>
               <DialogContent>
-                Are you sure you want to publish this article?
+                <p>Are you sure you want to publish this article?</p>
+                {isAnonymous && (
+                  <p><strong>Note:</strong> This article will show as anonymous everywhere.</p>
+                )}
               </DialogContent>
               <DialogActions>
                 <DialogButton onClick={() => setShowConfirmDialog(false)}>
@@ -366,16 +365,7 @@ const ArticleForm = ({ onArticleSubmitted }) => {
   );
 };
 
-// Styled components (same as before, with one addition)
-const NameInput = styled.input`
-  padding: 10px;
-  width: 100%;
-  margin-top: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-`;
-
-// All styled components remain exactly the same as in your original code
+// All styled components remain exactly the same
 const PageContainer = styled.div`
   min-height: 100vh;
   display: flex;
@@ -482,30 +472,42 @@ const TitleInput = styled.input`
   }
 `;
 
+const ImageUploadContainer = styled.div`
+  width: 100%;
+  margin-bottom: 20px;
+`;
+
 const ImageInput = styled.input`
   padding: 10px;
   border: none;
   border-bottom: 2px solid #ddd;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
   background: transparent;
   width: 100%;
 `;
 
+const UploadStatus = styled.p`
+  font-size: 14px;
+  color: #666;
+  margin: 5px 0;
+`;
+
 const PreviewImage = styled.img`
-  width: 100px;
-  height: 100px;
-  object-fit: cover;
+  width: 100%;
+  max-width: 300px;
+  height: auto;
+  max-height: 200px;
+  object-fit: contain;
   border-radius: 5px;
   margin-top: 10px;
+  margin-bottom: 15px;
 
   @media (max-width: 768px) {
-    width: 80px;
-    height: 80px;
+    max-width: 250px;
   }
 
   @media (max-width: 480px) {
-    width: 60px;
-    height: 60px;
+    max-width: 200px;
   }
 `;
 
@@ -513,10 +515,74 @@ const ErrorMessage = styled.p`
   color: red;
   font-size: 12px;
   margin-top: -10px;
+  margin-bottom: 10px;
 
   @media (max-width: 480px) {
     font-size: 10px;
   }
+`;
+
+const ToggleContainer = styled.div`
+  width: 100%;
+  margin: 15px 0;
+  padding: 15px;
+  background: #f8f8f8;
+  border-radius: 8px;
+`;
+
+const ToggleLabel = styled.label`
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+`;
+
+const ToggleInput = styled.input`
+  opacity: 0;
+  width: 0;
+  height: 0;
+
+  &:checked + span {
+    background-color: #014a47;
+  }
+
+  &:checked + span:before {
+    transform: translateX(20px);
+  }
+`;
+
+const ToggleSlider = styled.span`
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 24px;
+  background-color: #ccc;
+  border-radius: 24px;
+  transition: .4s;
+  margin-right: 10px;
+
+  &:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    border-radius: 50%;
+    transition: .4s;
+  }
+`;
+
+const ToggleText = styled.span`
+  font-size: 14px;
+  font-weight: 500;
+`;
+
+const AnonymousNote = styled.p`
+  margin-top: 10px;
+  font-size: 13px;
+  color: #666;
 `;
 
 const SubmitButton = styled.button`
@@ -530,6 +596,7 @@ const SubmitButton = styled.button`
   width: 100%;
   max-width: 200px;
   transition: background-color 0.2s;
+  margin-top: 20px;
 
   &:hover {
     background-color: ${({ disabled }) => disabled ? '#ccc' : '#012f2d'};
@@ -609,6 +676,14 @@ const DialogButton = styled.button`
   &:hover {
     background-color: ${({ $primary }) => $primary ? '#0056b3' : '#e0e0e0'};
   }
+`;
+
+const NameInput = styled.input`
+  padding: 10px;
+  width: 100%;
+  margin-top: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
 `;
 
 export default ArticleForm;

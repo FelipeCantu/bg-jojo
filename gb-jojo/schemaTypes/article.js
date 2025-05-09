@@ -1,4 +1,3 @@
-// schemas/article.js
 import { defineField, defineType } from 'sanity';
 import { blockContent } from './blockContent';
 
@@ -39,6 +38,13 @@ export const article = defineType({
       validation: (Rule) => Rule.required(),
     }),
     defineField({
+      name: 'isAnonymous',
+      title: 'Hide Author Identity',
+      type: 'boolean',
+      initialValue: false,
+      description: 'When enabled, this article will show as "Anonymous" everywhere',
+    }),
+    defineField({
       name: 'publishedDate',
       title: 'Published Date',
       type: 'datetime',
@@ -70,4 +76,20 @@ export const article = defineType({
       options: { disableNew: true }
     }),
   ],
+  preview: {
+    select: {
+      title: 'title',
+      authorName: 'author.name',
+      isAnonymous: 'isAnonymous',
+      media: 'mainImage'
+    },
+    prepare(selection) {
+      const { title, authorName, isAnonymous, media } = selection
+      return {
+        title: title,
+        subtitle: isAnonymous ? 'Anonymous' : `By ${authorName || 'Unknown'}`,
+        media: media
+      }
+    }
+  }
 });
