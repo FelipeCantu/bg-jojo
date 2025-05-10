@@ -14,17 +14,20 @@ const NotificationBell = () => {
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {
-        // Find the Sanity user document that matches the Firebase UID
-        const sanityUser = await client.fetch(
-          `*[_type == "user" && uid == $firebaseUid][0]`,
-          { firebaseUid: user.uid }
-        );
-        
-        if (sanityUser) {
-          setCurrentUser({
-            ...user,
-            sanityId: sanityUser._id
-          });
+        try {
+          const sanityUser = await client.fetch(
+            `*[_type == "user" && _id == $firebaseUid][0]`,
+            { firebaseUid: user.uid }
+          );
+          
+          if (sanityUser) {
+            setCurrentUser({
+              ...user,
+              sanityId: sanityUser._id
+            });
+          }
+        } catch (error) {
+          console.error('Error fetching user:', error);
         }
       }
     });
@@ -50,7 +53,7 @@ const NotificationBell = () => {
 
     // Set up real-time listener
     const subscription = client.listen(
-      `*[_type == "notification" && user._ref == $userId]`,
+      `*[_type == "notification" && user._ref == $userId && seen == false]`,
       { userId: currentUser.sanityId }
     ).subscribe(() => {
       fetchUnreadCount();
@@ -65,11 +68,11 @@ const NotificationBell = () => {
 
   return (
     <NotificationContainer>
-      <BellButton onClick={handleClick}>
+      <BellButton onClick={handleClick} aria-label="Notifications">
         {unreadCount > 0 ? (
           <>
             <BellAlertIcon className="icon solid" />
-            <Badge>{unreadCount}</Badge>
+            <Badge>{unreadCount > 9 ? '9+' : unreadCount}</Badge>
           </>
         ) : (
           <BellIcon className="icon" />
