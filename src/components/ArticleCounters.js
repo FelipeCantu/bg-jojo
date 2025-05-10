@@ -5,71 +5,85 @@ import styled, { keyframes } from "styled-components";
 import { client } from "../sanityClient";
 import useCurrentUser from "../hook/useCurrentUser";
 
-  const ArticleCounters = ({ articleId }) => {
-    const { currentUser } = useCurrentUser();
-    const [viewCount, setViewCount] = useState(0);
-    const [commentCount, setCommentCount] = useState(0);
-    const [likeCount, setLikeCount] = useState(0);
-    const [isLiked, setIsLiked] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
-    const [viewCounted, setViewCounted] = useState(false);
-  
-    useEffect(() => {
-      const incrementViewCount = async () => {
-        if (!articleId || viewCounted) return;
-  
-        try {
-          await client
-            .patch(articleId)
-            .setIfMissing({ views: 0 })
-            .inc({ views: 1 })
-            .commit();
-  
-          setViewCounted(true);
-        } catch (err) {
-          console.error("Error incrementing view count:", err);
-        }
-      };
-  
-      incrementViewCount();
-    }, [articleId, viewCounted]);
-  
-    // Fetch initial data
-    useEffect(() => {
-      const fetchData = async () => {
-        if (!articleId) return;
-  
-        try {
-          const data = await client.fetch(
-            `*[_type == "article" && _id == $articleId][0]{
-              views,
-              likes,
-              "likedBy": likedBy[]->_id,
-              "commentCount": count(*[_type == "comment" && article._ref == ^._id])
-            }`,
-            { articleId }
-          );
-  
-          setViewCount(data?.views || 0);
-          setLikeCount(data?.likes || 0);
-          setCommentCount(data?.commentCount || 0);
-          setIsLiked(data?.likedBy?.includes(currentUser?.sanityId) || false);
-        } catch (err) {
-          console.error("Error loading article data:", err);
-        } finally {
-          setIsLoading(false);
-        }
-      };
-  
-      fetchData();
-    }, [articleId, currentUser?.sanityId]);
-  // Handle like click
+const ArticleCounters = ({ articleId, isDetailView = false }) => {
+  const { currentUser } = useCurrentUser();
+  const [viewCount, setViewCount] = useState(0);
+  const [commentCount, setCommentCount] = useState(0);
+  const [likeCount, setLikeCount] = useState(0);
+  const [isLiked, setIsLiked] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasCountedView, setHasCountedView] = useState(false);
+
+  // Track view count only in detail view
+  useEffect(() => {
+    const countView = async () => {
+      if (!articleId || !isDetailView || hasCountedView) return;
+
+      try {
+        // Increment view count in Sanity
+        await client
+          .patch(articleId)
+          .setIfMissing({ views: 0 })
+          .inc({ views: 1 })
+          .commit();
+
+        // Update local state
+        setViewCount(prev => prev + 1);
+        setHasCountedView(true);
+        
+        // Store in sessionStorage to prevent duplicate counts
+        sessionStorage.setItem(`viewCounted-${articleId}`, 'true');
+      } catch (err) {
+        console.error("Error counting view:", err);
+      }
+    };
+
+    // Check if we've already counted this view in this session
+    const alreadyCounted = sessionStorage.getItem(`viewCounted-${articleId}`) === 'true';
+    if (alreadyCounted) {
+      setHasCountedView(true);
+    } else {
+      countView();
+    }
+  }, [articleId, isDetailView, hasCountedView]);
+
+  // Fetch initial data
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!articleId) return;
+
+      try {
+        const data = await client.fetch(
+          `*[_type == "article" && _id == $articleId][0]{
+            views,
+            likes,
+            "likedBy": likedBy[]->_id,
+            "commentCount": count(*[_type == "comment" && article._ref == ^._id])
+          }`,
+          { articleId }
+        );
+
+        setViewCount(data?.views || 0);
+        setLikeCount(data?.likes || 0);
+        setCommentCount(data?.commentCount || 0);
+        setIsLiked(data?.likedBy?.includes(currentUser?.sanityId) || false);
+      } catch (err) {
+        console.error("Error loading article data:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [articleId, currentUser?.sanityId]);
+
+  // Handle like click (unchanged from your original)
   const handleLike = async () => {
     if (!currentUser?.sanityId) {
       alert("Please sign in to like articles");
       return;
     }
-  
+
     setIsLoading(true);
     try {
       const article = await client.fetch(
@@ -81,26 +95,26 @@ import useCurrentUser from "../hook/useCurrentUser";
         }`,
         { articleId }
       );
-  
+
       if (!article) {
         throw new Error("Article not found");
       }
-  
+
       const alreadyLiked = article.likedByRefs?.includes(currentUser.sanityId) || false;
       
       const updatedLikedBy = alreadyLiked
         ? (article.likedByRefs || []).filter(id => id && id !== currentUser.sanityId)
         : [...(article.likedByRefs || []).filter(Boolean), currentUser.sanityId];
-  
+
       const likedByReferences = updatedLikedBy
         .filter(Boolean)
         .map(userId => ({
           _type: "reference",
           _ref: String(userId)
         }));
-  
+
       const newLikeCount = alreadyLiked ? Math.max(0, likeCount - 1) : likeCount + 1;
-  
+
       await client
         .patch(articleId)
         .set({ 
@@ -108,7 +122,7 @@ import useCurrentUser from "../hook/useCurrentUser";
           likedBy: likedByReferences.length > 0 ? likedByReferences : []
         })
         .commit();
-  
+
       if (!alreadyLiked && article.author?._id && article.author._id !== currentUser.sanityId) {
         await client.create({
           _type: "notification",
@@ -129,7 +143,7 @@ import useCurrentUser from "../hook/useCurrentUser";
           createdAt: new Date().toISOString()
         });
       }
-  
+
       setLikeCount(newLikeCount);
       setIsLiked(!alreadyLiked);
     } catch (err) {
@@ -168,7 +182,7 @@ import useCurrentUser from "../hook/useCurrentUser";
   );
 };
 
-// Spinner animation
+// Styled components (unchanged from your original)
 const spin = keyframes`
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
