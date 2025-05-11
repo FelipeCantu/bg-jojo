@@ -98,6 +98,7 @@ const Container = styled.div`
   padding: 2rem;
   width: 90%;
   max-width: 1200px;
+  min-height: 100vh;
   margin: 0 auto;
   background: #f9f9f9;
   border-radius: 10px;
@@ -109,7 +110,8 @@ const Container = styled.div`
   
   @media (max-width: 768px) {
     padding: 1rem;
-    width: 90%;
+    max-width: 100%;
+    max-height: 100vh;
   }
 `;
 

@@ -4,7 +4,7 @@ import MyAccount from '../settings/MyAccount';
 import MyWallet from '../settings/MyWallet';
 import MyAddress from '../settings/MyAddress';
 import MySettings from '../settings/MySettings';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 
 const AccountSettings = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -26,18 +26,15 @@ const AccountSettings = () => {
       const { offsetLeft, offsetWidth } = activeElement;
 
       if (immediate) {
-        // No animation for immediate updates
         indicatorRef.current.style.transition = 'none';
         indicatorRef.current.style.left = `${offsetLeft}px`;
         indicatorRef.current.style.width = `${offsetWidth}px`;
       } else {
-        // Enable smooth animation
         setIsAnimating(true);
         indicatorRef.current.style.transition = 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
         indicatorRef.current.style.left = `${offsetLeft}px`;
         indicatorRef.current.style.width = `${offsetWidth}px`;
         
-        // Reset animation state after transition completes
         const onTransitionEnd = () => {
           setIsAnimating(false);
           indicatorRef.current.removeEventListener('transitionend', onTransitionEnd);
@@ -45,7 +42,6 @@ const AccountSettings = () => {
         indicatorRef.current.addEventListener('transitionend', onTransitionEnd);
       }
 
-      // Center the active item on mobile
       if (isMobile && navRef.current) {
         const containerWidth = navRef.current.offsetWidth;
         const itemCenter = offsetLeft + (offsetWidth / 2);
@@ -62,7 +58,7 @@ const AccountSettings = () => {
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
-      updateIndicatorPosition(true); // Immediate update on resize
+      updateIndicatorPosition(true);
     };
 
     window.addEventListener('resize', handleResize);
@@ -100,12 +96,13 @@ const AccountSettings = () => {
   return (
     <ContainerWrapper>
       <Container>
-        <h1>Account Settings</h1>
+        <Title>Account Settings</Title>
         <NavbarWrapper>
           {isMobile && (
             <ScrollButton 
               onClick={() => handleScroll('left')}
               disabled={isAnimating}
+              aria-label="Scroll left"
             >
               ‹
             </ScrollButton>
@@ -150,19 +147,22 @@ const AccountSettings = () => {
             <ScrollButton 
               onClick={() => handleScroll('right')}
               disabled={isAnimating}
+              aria-label="Scroll right"
             >
               ›
             </ScrollButton>
           )}
         </NavbarWrapper>
 
-        <Routes>
-          <Route index element={<Navigate to="account" replace />} />
-          <Route path="account" element={<MyAccount />} />
-          <Route path="wallet" element={<MyWallet />} />
-          <Route path="address" element={<MyAddress />} />
-          <Route path="settings" element={<MySettings />} />
-        </Routes>
+        <ContentArea>
+          <Routes>
+            <Route index element={<Navigate to="account" replace />} />
+            <Route path="account" element={<MyAccount />} />
+            <Route path="wallet" element={<MyWallet />} />
+            <Route path="address" element={<MyAddress />} />
+            <Route path="settings" element={<MySettings />} />
+          </Routes>
+        </ContentArea>
       </Container>
     </ContainerWrapper>
   );
@@ -172,13 +172,18 @@ const ContainerWrapper = styled.div`
   position: relative;
   min-height: 100vh;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   background: #f3f3f3;
-  background-size: cover;
-  padding: 0 2rem 2rem;
+  padding: 0;
   overflow: hidden;
+  width: 100%;
   
+  @media (min-width: 768px) {
+    padding: 2rem 0;
+    align-items: center;
+  }
+
   &:before {
     content: '';
     position: absolute;
@@ -191,14 +196,38 @@ const ContainerWrapper = styled.div`
 `;
 
 const Container = styled.div`
-  padding: 2rem;
+  padding: 1rem;
   width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
+  height: 100vh;
+  margin: 0;
   background: rgba(255, 255, 255, 0.95);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   position: relative;
   z-index: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  
+  @media (min-width: 768px) {
+    padding: 2rem;
+    max-width: 1200px;
+    height: auto;
+    min-height: auto;
+    border-radius: 8px;
+  }
+`;
+
+const Title = styled.h1`
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: #2d1f0f;
+  padding: 0 0.5rem;
+  
+  @media (min-width: 768px) {
+    font-size: 2rem;
+    padding: 0;
+    margin-bottom: 1.5rem;
+  }
 `;
 
 const NavbarWrapper = styled.div`
@@ -207,13 +236,14 @@ const NavbarWrapper = styled.div`
   justify-content: center;
   position: relative;
   width: 100%;
+  margin-bottom: 0;
 `;
 
 const Navbar = styled.nav`
   display: flex;
   justify-content: space-around;
   align-items: center;
-  padding: 15px 0;
+  padding: 0;
   width: 100%;
   overflow-x: auto;
   white-space: nowrap;
@@ -222,14 +252,17 @@ const Navbar = styled.nav`
   scroll-behavior: smooth;
   margin: 0 2rem;
   position: relative;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  
+  &::-webkit-scrollbar {
+    display: none;
+  }
 
   @media (max-width: 768px) {
     gap: 5rem;
     margin: 0 1rem;
-  }
-
-  &::-webkit-scrollbar {
-    display: none;
+    padding: 0;
   }
 `;
 
@@ -242,6 +275,7 @@ const NavItem = styled(NavLink)`
   padding-bottom: 12px;
   flex-shrink: 0;
   transition: color 0.3s ease;
+  margin: 0;
 
   &.active {
     color: #0d3b2e;
@@ -261,8 +295,9 @@ const ActiveIndicator = styled.div`
   transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   left: 0;
   width: 0;
-  border-radius: 2px;
+  border-radius: 2px 2px 0 0;
   will-change: left, width;
+  margin: 0;
 `;
 
 const ScrollButton = styled.button`
@@ -290,10 +325,27 @@ const ScrollButton = styled.button`
     font-size: 1.2rem;
   }
 
-  ${props => props.disabled && `
+  ${props => props.disabled && css`
     opacity: 0.5;
     cursor: not-allowed;
   `}
+`;
+
+const ContentArea = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 0.5rem;
+  scrollbar-width: none;
+  
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  
+  @media (min-width: 768px) {
+    padding: 0;
+    overflow-y: visible;
+  }
 `;
 
 export default AccountSettings;
