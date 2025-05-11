@@ -111,7 +111,7 @@ const Container = styled.div`
   @media (max-width: 768px) {
     padding: 1rem;
     max-width: 100%;
-    max-height: 100vh;
+    max-height: 100%;
   }
 `;
 

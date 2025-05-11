@@ -207,13 +207,14 @@ const Container = styled.div`
   flex-direction: column;
   overflow: hidden;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 0 0 8px 8px; 
   
   @media (min-width: 768px) {
     padding: 2rem;
     max-width: 1200px;
     height: auto;
     min-height: auto;
-    border-radius: 8px;
+    border-radius: 8px; 
   }
 `;
 
@@ -237,20 +238,20 @@ const NavbarWrapper = styled.div`
   position: relative;
   width: 100%;
   margin-bottom: 0;
+  overflow: hidden; // Contain the indicator
 `;
 
 const Navbar = styled.nav`
   display: flex;
-  justify-content: space-around;
+  justify-content: space-around; // Keep original desktop style
   align-items: center;
   padding: 0;
   width: 100%;
   overflow-x: auto;
   white-space: nowrap;
-  gap: 3rem;
+  gap: 3rem; // Keep original gap
   flex-wrap: nowrap;
   scroll-behavior: smooth;
-  margin: 0 2rem;
   position: relative;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
@@ -260,30 +261,9 @@ const Navbar = styled.nav`
   }
 
   @media (max-width: 768px) {
-    gap: 5rem;
-    margin: 0 1rem;
-    padding: 0;
-  }
-`;
-
-const NavItem = styled(NavLink)`
-  text-decoration: none;
-  color: #2d1f0f;
-  font-size: 1.2rem;
-  font-weight: normal;
-  position: relative;
-  padding-bottom: 12px;
-  flex-shrink: 0;
-  transition: color 0.3s ease;
-  margin: 0;
-
-  &.active {
-    color: #0d3b2e;
-    font-weight: bold;
-  }
-
-  @media (max-width: 768px) {
-    font-size: 1rem;
+    justify-content: flex-start; // Only change for mobile
+    padding: 0 1rem; // Add padding for mobile
+    gap: 2rem; // Slightly reduce gap for mobile
   }
 `;
 
@@ -298,6 +278,29 @@ const ActiveIndicator = styled.div`
   border-radius: 2px 2px 0 0;
   will-change: left, width;
   margin: 0;
+`;
+
+const NavItem = styled(NavLink)`
+  text-decoration: none;
+  color: #2d1f0f;
+  font-size: 1.2rem;
+  font-weight: normal;
+  position: relative;
+  padding-bottom: 12px;
+  flex-shrink: 0;
+  transition: color 0.3s ease;
+  margin: 0;
+  
+  &.active {
+    color: #0d3b2e;
+    font-weight: bold;
+  }
+
+  @media (max-width: 768px) {
+    font-size: 1rem;
+    padding: 0 0.5rem 12px; // Add horizontal padding only for mobile
+    min-width: max-content; // Prevent text wrapping
+  }
 `;
 
 const ScrollButton = styled.button`
