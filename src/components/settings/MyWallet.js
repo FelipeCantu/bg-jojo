@@ -102,6 +102,7 @@ const Wallet = () => {
     <WalletContainer>
       <Title>Wallet</Title>
       <Description>Manage your saved payment methods</Description>
+      
       {paymentMethods.length > 0 ? (
         <CardsList>
           {paymentMethods.map((method) => (
@@ -131,7 +132,7 @@ const Wallet = () => {
                     </SetDefaultButton>
                   )}
                   <DeleteButton onClick={() => handleDelete(method.id)}>
-                    <DeleteIcon /> Delete
+                      <DeleteIcon /> Delete
                   </DeleteButton>
                 </CardActions>
               </CardDetails>
@@ -230,18 +231,18 @@ const Wallet = () => {
       </Modal>
 
       <AddButton onClick={() => setIsModalOpen(true)}>
-        <PlusIcon>+</PlusIcon> Add Payment Method
+        <PlusIcon /> Add Payment Method
       </AddButton>
-
     </WalletContainer>
   );
 };
 
 // Styled Components
 const WalletContainer = styled.div`
-  max-width: 800px;
+  max-width: 95%;
   margin: 0 auto;
   padding: 2rem;
+  min-height: 100vh;
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
@@ -250,42 +251,22 @@ const WalletContainer = styled.div`
 const Title = styled.h2`
   font-size: 1.75rem;
   color: #333;
-  margin-bottom: 0.5rem;
+  margin: 0 0 0.5rem 0;
+  padding: 0;
 `;
 
 const Description = styled.p`
   color: #666;
-  margin-bottom: 2rem;
-`;
-
-const AddButton = styled.button`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: #024a47;
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  margin-top: 10px;
-
-  &:hover {
-    background: #013d3b;
-    transform: translateY(-1px);
-  }
-`;
-
-const PlusIcon = styled.span`
-  font-size: 1.25rem;
+  margin: 0 0 2rem 0;
+  padding: 0;
 `;
 
 const CardsList = styled.div`
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  margin: 0;
+  padding: 0;
 `;
 
 const CardItem = styled.div`
@@ -296,6 +277,7 @@ const CardItem = styled.div`
   border-radius: 10px;
   border: 1px solid ${(props) => (props.isDefault ? "#ffe0b2" : "#eee")};
   transition: all 0.2s;
+  margin: 0;
 
   &:hover {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -303,11 +285,14 @@ const CardItem = styled.div`
 
   @media (max-width: 600px) {
     flex-direction: column;
+    gap: 1rem;
   }
 `;
 
 const CardPreview = styled.div`
   width: 300px;
+  margin: 0;
+  
   @media (max-width: 600px) {
     width: 100%;
   }
@@ -317,12 +302,13 @@ const CardDetails = styled.div`
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  margin: 0;
+  padding: 0;
 `;
 
 const CardHolder = styled.h3`
   font-size: 1.2rem;
-  margin-bottom: 0.5rem;
+  margin: 0 0 0.5rem 0;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -330,12 +316,13 @@ const CardHolder = styled.h3`
 
 const CardNumber = styled.p`
   color: #555;
-  margin-bottom: 0.5rem;
+  margin: 0 0 0.5rem 0;
 `;
 
 const Expiry = styled.p`
   color: #777;
   font-size: 0.9rem;
+  margin: 0;
 `;
 
 const CardActions = styled.div`
@@ -348,15 +335,16 @@ const CardActions = styled.div`
 const SetDefaultButton = styled.button`
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.25rem;
   background: transparent;
   color: #024a47;
   border: 1px solid #024a47;
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 0.75rem;
   border-radius: 6px;
   font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.2s;
+  margin: 0;
 
   &:hover {
     background: #f0f9f8;
@@ -366,15 +354,16 @@ const SetDefaultButton = styled.button`
 const DeleteButton = styled.button`
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.25rem;
   background: transparent;
   color: #d32f2f;
   border: 1px solid #d32f2f;
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 0.75rem;
   border-radius: 6px;
   font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.2s;
+  margin: 0;
 
   &:hover {
     background: #fde8e8;
@@ -390,12 +379,32 @@ const DefaultBadge = styled.span`
   font-weight: bold;
 `;
 
+const AddButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #024a47;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 1rem;
+
+  &:hover {
+    background: #013d3b;
+  }
+`;
+
 const EmptyState = styled.div`
   text-align: center;
   padding: 2rem;
   color: #888;
   background: #f9f9f9;
   border-radius: 8px;
+  margin: 0;
 `;
 
 const Modal = styled.div`
@@ -425,7 +434,7 @@ const ModalContent = styled.div`
 
 const ModalTitle = styled.h3`
   font-size: 1.5rem;
-  margin-bottom: 1.5rem;
+  margin: 0 0 1.5rem 0;
   color: #333;
 `;
 
@@ -433,6 +442,7 @@ const Form = styled.form`
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  margin: 0;
 `;
 
 const CardPreviewContainer = styled.div`
@@ -533,5 +543,6 @@ const Message = styled.div`
 
 const StarIcon = styled.span`&::before { content: "★"; }`;
 const DeleteIcon = styled.span`&::before { content: "🗑"; }`;
+const PlusIcon = styled.span`&::before { content: "+"; }`;
 
 export default Wallet;

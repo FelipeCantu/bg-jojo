@@ -182,9 +182,10 @@ const MyAddresses = () => {
 // Styled Components with orange color scheme
 const Container = styled.div`
   max-width: 100%;
-  margin: 20px auto;
+  margin: 0 auto 20px;
   padding: 15px;
   border-radius: 8px;
+  min-height: 100vh;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   background-color: #fff;
   font-family: 'Roboto', sans-serif;
@@ -192,7 +193,7 @@ const Container = styled.div`
   @media (min-width: 768px) {
     max-width: 90%;
     padding: 20px;
-    margin: 30px auto;
+    margin: 0 auto 30px; 
   }
 `;
 

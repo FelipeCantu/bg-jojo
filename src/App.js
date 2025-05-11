@@ -24,11 +24,8 @@ import {
   NotFound,
   ArticleForm,
   EditArticle,
-  // ProductPage,
-  // ProductsPage,
   LoadingContainer,
   CartDrawer,
-  // CheckoutPage,
 } from './components';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -42,9 +39,14 @@ const ScrollToTop = () => {
   return null;
 };
 
-const SlideUpRoute = ({ children }) => {
+const SlideUpRoute = ({ children, disableAnimation = false }) => {
+  if (disableAnimation) {
+    return <div className="route-container">{children}</div>;
+  }
+
   return (
     <motion.div
+      className="route-container"
       initial={{ opacity: 0, y: 100 }}
       animate={{ 
         opacity: 1, 
@@ -64,11 +66,6 @@ const SlideUpRoute = ({ children }) => {
           ease: 'easeInOut'
         }
       }}
-      style={{
-        position: 'relative',
-        width: '100%',
-        minHeight: 'calc(100vh - 120px)'
-      }}
     >
       {children}
     </motion.div>
@@ -80,13 +77,11 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate loading (replace with actual asset loading if needed)
     const loadingTimer = setTimeout(() => {
       setIsLoading(false);
       document.body.classList.remove('loading');
     }, 2000);
 
-    // Add loading class to body immediately
     document.body.classList.add('loading');
 
     return () => {
@@ -121,16 +116,42 @@ function App() {
           <Route path="/yourgift" element={<SlideUpRoute><YourGift /></SlideUpRoute>} />
           <Route path="/donate" element={<SlideUpRoute><Donate /></SlideUpRoute>} />
           <Route path="/SupportingGiveBackJojo" element={<SlideUpRoute><SupportingGiveBackJojo /></SlideUpRoute>} />
-          <Route path="/account-settings/*" element={<SlideUpRoute><AccountSettings /></SlideUpRoute>} />
-          <Route path="/profile" element={<SlideUpRoute><Profile /></SlideUpRoute>} />
-          <Route path="/notifications" element={<SlideUpRoute><Notifications /></SlideUpRoute>} />
-          <Route path="/subscriptions" element={<SlideUpRoute><Subscriptions /></SlideUpRoute>} />
+          
+          {/* Account Settings routes without animation */}
+          <Route 
+            path="/account-settings/*" 
+            element={
+              <SlideUpRoute disableAnimation>
+                <AccountSettings />
+              </SlideUpRoute>
+            } 
+          />
+          <Route 
+            path="/profile" 
+            element={
+              <SlideUpRoute disableAnimation>
+                <Profile />
+              </SlideUpRoute>
+            } 
+          />
+          <Route 
+            path="/notifications" 
+            element={
+              <SlideUpRoute disableAnimation>
+                <Notifications />
+              </SlideUpRoute>
+            } 
+          />
+          <Route 
+            path="/subscriptions" 
+            element={
+              <SlideUpRoute disableAnimation>
+                <Subscriptions />
+              </SlideUpRoute>
+            } 
+          />
+          
           <Route path="/create-article" element={<SlideUpRoute><ArticleForm /></SlideUpRoute>} />
-          {/* <Route path="/products/:slug" element={<SlideUpRoute><ProductPage /></SlideUpRoute>} />
-          <Route path="/products" element={<SlideUpRoute><ProductsPage /></SlideUpRoute>} />
-          <Route path="/checkout" element={<SlideUpRoute><CheckoutPage /></SlideUpRoute>} /> */}
-          {/* <Route path="/success" element={<SlideUpRoute><SuccessPage /></SlideUpRoute>} /> */}
-
           <Route path="*" element={<SlideUpRoute><NotFound /></SlideUpRoute>} />
         </Routes>
       </AnimatePresence>
