@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import styled from 'styled-components';
 import { uploadImageToSanity, client } from '../sanityClient';
-import { auth, onAuthStateChanged } from '../firestore';
 import { db } from '../firestore';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
@@ -9,10 +8,12 @@ import TextEditor from './TextEditor';
 import { portableTextToHtml } from './utils/portableTextHtml';
 import { convertHtmlToPortableText } from './utils/htmlToPortableText';
 import { FaArrowLeft } from 'react-icons/fa';
+import { auth, onAuthStateChanged } from '../firestore';
 
 const DEFAULT_ANONYMOUS_AVATAR = 'https://www.shutterstock.com/image-vector/vector-flat-illustration-grayscale-avatar-600nw-2281862025.jpg';
 
 const ArticleForm = ({ onArticleSubmitted }) => {
+  // All hooks properly ordered at the top
   const [formData, setFormData] = useState({
     title: '',
     mainImage: '',
@@ -32,13 +33,36 @@ const ArticleForm = ({ onArticleSubmitted }) => {
   const [tempDisplayName, setTempDisplayName] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
   const navigate = useNavigate();
+  const { signInWithGoogle } = require('../firebaseconfig');
+
+  const handleContentChange = useCallback((htmlContent) => {
+    setFormData(prev => ({
+      ...prev,
+      htmlContent,
+      portableContent: htmlContent === prev.htmlContent ? prev.portableContent : []
+    }));
+    setErrors(prev => ({ ...prev, content: null }));
+  }, []);
+
+  const validateForm = useCallback(() => {
+    const newErrors = {};
+    const htmlContent = editorRef.current?.getHTML() || formData.htmlContent;
+
+    if (!formData.title?.trim()) newErrors.title = 'Title is required';
+    if (!formData.mainImage) newErrors.mainImage = 'Main image is required';
+    
+    const isEmpty = !htmlContent || htmlContent === '<p></p>' || 
+                   htmlContent === '<p><br></p>' || editorRef.current?.isEmpty?.();
+    if (isEmpty) newErrors.content = 'Content is required';
+
+    return newErrors;
+  }, [formData.title, formData.mainImage, formData.htmlContent]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (!currentUser) {
         setUser(null);
         setIsUserLoading(false);
-        navigate('/login');
         return;
       }
 
@@ -70,8 +94,9 @@ const ArticleForm = ({ onArticleSubmitted }) => {
     });
 
     return () => unsubscribe();
-  }, [navigate]);
+  }, []);
 
+  // Regular functions after hooks
   const updateUserDisplayName = async () => {
     if (!tempDisplayName.trim()) return;
     
@@ -96,29 +121,6 @@ const ArticleForm = ({ onArticleSubmitted }) => {
     setFormData({ ...formData, title: e.target.value });
     setErrors(prev => ({ ...prev, title: null }));
   };
-
-  const handleContentChange = useCallback((htmlContent) => {
-    setFormData(prev => ({
-      ...prev,
-      htmlContent,
-      portableContent: htmlContent === prev.htmlContent ? prev.portableContent : []
-    }));
-    setErrors(prev => ({ ...prev, content: null }));
-  }, []);
-
-  const validateForm = useCallback(() => {
-    const newErrors = {};
-    const htmlContent = editorRef.current?.getHTML() || formData.htmlContent;
-
-    if (!formData.title?.trim()) newErrors.title = 'Title is required';
-    if (!formData.mainImage) newErrors.mainImage = 'Main image is required';
-    
-    const isEmpty = !htmlContent || htmlContent === '<p></p>' || 
-                   htmlContent === '<p><br></p>' || editorRef.current?.isEmpty?.();
-    if (isEmpty) newErrors.content = 'Content is required';
-
-    return newErrors;
-  }, [formData.title, formData.mainImage, formData.htmlContent]);
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
@@ -184,52 +186,83 @@ const ArticleForm = ({ onArticleSubmitted }) => {
   };
 
   const handleSubmit = async () => {
-    setIsSubmitting(true);
-    setShowConfirmDialog(false);
+  setIsSubmitting(true);
+  setShowConfirmDialog(false);
 
-    try {
-      const articleData = {
-        _type: 'article',
-        title: formData.title,
-        content: formData.portableContent,
-        mainImage: {
-          _type: 'image',
-          asset: {
-            _type: 'reference',
-            _ref: formData.mainImage
-          }
-        },
-        publishedDate: new Date().toISOString(),
-        author: {
+  try {
+    const articleData = {
+      _type: 'article',
+      title: formData.title,
+      content: formData.portableContent,
+      mainImage: {
+        _type: 'image',
+        asset: {
           _type: 'reference',
-          _ref: user.uid // Always use the real user ID
-        },
-        isAnonymous: isAnonymous // This controls the display everywhere
-      };
+          _ref: formData.mainImage
+        }
+      },
+      publishedDate: new Date().toISOString(),
+      author: {
+        _type: 'reference',
+        _ref: user.uid
+      },
+      isAnonymous: isAnonymous
+    };
 
-      const submittedArticle = await client.create(articleData);
+    const submittedArticle = await client.create(articleData);
 
-      setFormData({
-        title: '',
-        mainImage: '',
-        htmlContent: '',
-        portableContent: []
-      });
-      editorRef.current?.clearContent();
-      setImagePreview(null);
-      setIsAnonymous(false);
+    setFormData({
+      title: '',
+      mainImage: '',
+      htmlContent: '',
+      portableContent: []
+    });
+    editorRef.current?.clearContent();
+    setImagePreview(null);
+    setIsAnonymous(false);
 
-      if (onArticleSubmitted) {
-        onArticleSubmitted(submittedArticle);
-      }
-      navigate(`/article/${submittedArticle._id}`);
-    } catch (error) {
-      console.error('Submission error:', error);
-      alert(error.message || 'Failed to submit article. Please try again later.');
-    } finally {
-      setIsSubmitting(false);
+    if (onArticleSubmitted) {
+      onArticleSubmitted(submittedArticle);
     }
-  };
+    
+    // Navigate to the new article page after successful submission
+    navigate(`/article/${submittedArticle._id}`);
+    
+  } catch (error) {
+    console.error('Submission error:', error);
+    alert(error.message || 'Failed to submit article. Please try again later.');
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+  // Conditional rendering after all hooks
+  if (isUserLoading) {
+    return (
+      <PageContainer>
+        <Container>
+          <LoadingMessage>Checking authentication...</LoadingMessage>
+        </Container>
+      </PageContainer>
+    );
+  }
+
+  if (!user) {
+    return (
+      <PageContainer>
+        <Container>
+          <LoginPrompt>
+            <p>You need to be logged in to create an article.</p>
+            <LoginButton onClick={signInWithGoogle}>
+              Login with Google
+            </LoginButton>
+            <BackToListingButton onClick={() => window.history.back()}>
+              Back to Articles
+            </BackToListingButton>
+          </LoginPrompt>
+        </Container>
+      </PageContainer>
+    );
+  }
 
   const isSubmitDisabled = uploading || isSubmitting || isUserLoading || !user;
 
@@ -357,7 +390,7 @@ const ArticleForm = ({ onArticleSubmitted }) => {
           </DialogOverlay>
         )}
 
-        <BackButton onClick={() => navigate(-1)}>
+        <BackButton onClick={() => window.history.back()}>
           <FaArrowLeft />
         </BackButton>
       </Container>
@@ -365,7 +398,7 @@ const ArticleForm = ({ onArticleSubmitted }) => {
   );
 };
 
-// All styled components remain exactly the same
+// Styled components remain exactly the same as before
 const PageContainer = styled.div`
   min-height: 100vh;
   display: flex;
@@ -397,6 +430,57 @@ const Container = styled.div`
     padding: 15px;
     width: 100%;
     margin: 0 10px;
+  }
+`;
+
+const LoadingMessage = styled.div`
+  padding: 40px;
+  text-align: center;
+  font-size: 18px;
+`;
+
+const LoginPrompt = styled.div`
+  padding: 40px;
+  text-align: center;
+  max-width: 400px;
+  margin: 0 auto;
+`;
+
+const LoginButton = styled.button`
+  padding: 12px 20px;
+  background-color: #014a47;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  margin-top: 20px;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #012f2d;
+  }
+`;
+
+const BackToListingButton = styled.button`
+  padding: 12px 20px;
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  margin-top: 10px;
+  margin-left: 10px;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #5a6268;
+  }
+
+  @media (max-width: 480px) {
+    margin-top: 10px;
+    margin-left: 0;
   }
 `;
 
@@ -601,10 +685,6 @@ const SubmitButton = styled.button`
   &:hover {
     background-color: ${({ disabled }) => disabled ? '#ccc' : '#012f2d'};
   }
-
-  @media (max-width: 480px) {
-    font-size: 14px;
-  }
 `;
 
 const BackButton = styled.button`
@@ -620,12 +700,6 @@ const BackButton = styled.button`
 
   &:hover {
     color: #012f2d;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 16px;
-    top: 10px;
-    left: 10px;
   }
 `;
 

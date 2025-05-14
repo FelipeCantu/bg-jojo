@@ -43,12 +43,13 @@ module.exports = {
     "require-jsdoc": ["error", {
       "require": {
         "FunctionDeclaration": true,
-        "MethodDefinition": true,
+        "MethodDefinition": false,
         "ClassDeclaration": true,
-        "ArrowFunctionExpression": true,
-        "FunctionExpression": true,
+        "ArrowFunctionExpression": false,
+        "FunctionExpression": false,
       },
     }],
+
     "valid-jsdoc": "off",
     "jsdoc/require-param-type": "off",
     "jsdoc/require-returns-type": "off",

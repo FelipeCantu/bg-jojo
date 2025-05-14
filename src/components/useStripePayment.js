@@ -44,10 +44,12 @@ const useStripePayment = () => {
       const stripe = await stripePromise;
       if (!stripe) throw new Error('Stripe failed to initialize');
       
-      // Create payment intent
-      const createPaymentIntent = httpsCallable(getCloudFunctions(), 'api-createPaymentIntent');
+      // Create payment intent - FIXED: Use proper function name and endpoint
+      // OLD: const createPaymentIntent = httpsCallable(getCloudFunctions(), 'api-createPaymentIntent');
+      const api = httpsCallable(getCloudFunctions(), 'api');
       
-      const { data: { clientSecret } } = await createPaymentIntent({
+      const { data: { clientSecret } } = await api({
+        endpoint: 'createPaymentIntent', // Specify which endpoint to call
         amount: Math.round(total * 100),
         currency: 'usd',
         receipt_email: formData.email,
@@ -136,10 +138,12 @@ const useStripePayment = () => {
 
       if (!lineItems.length) throw new Error('No items in cart');
 
-      // Create checkout session
-      const createCheckoutSession = httpsCallable(getCloudFunctions(), 'api-createCheckoutSession');
+      // Create checkout session - FIXED: Use proper function name and endpoint
+      // OLD: const createCheckoutSession = httpsCallable(getCloudFunctions(), 'api-createCheckoutSession');
+      const api = httpsCallable(getCloudFunctions(), 'api');
 
-      const { data } = await createCheckoutSession({
+      const { data } = await api({
+        endpoint: 'createCheckoutSession', // Specify which endpoint to call
         lineItems,
         customerEmail: formData.email,
         successUrl: `${window.location.origin}/success?session_id={CHECKOUT_SESSION_ID}&order_id=${orderId}`,
