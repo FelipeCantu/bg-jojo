@@ -123,8 +123,8 @@ function App() {
           {/* <Route path="/products/:slug" element={<SlideUpRoute><ProductPage /></SlideUpRoute>} />
           <Route path="/products" element={<SlideUpRoute><ProductsPage /></SlideUpRoute>} />
           <Route path="/checkout" element={<SlideUpRoute><CheckoutPage /></SlideUpRoute>} /> 
-          <Route path="/success" element={<SlideUpRoute><SuccessPage /></SlideUpRoute>} />  */}
-          
+          <Route path="/success" element={<SlideUpRoute><SuccessPage /></SlideUpRoute>} /> 
+           */}
           <Route
             path="/account-settings/*"
             element={

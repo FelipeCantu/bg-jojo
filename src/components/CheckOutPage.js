@@ -3,16 +3,12 @@ import styled from 'styled-components';
 import { useCart } from '../CartContext';
 import { ArrowLeftIcon, CheckCircleIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
-import { loadStripe } from '@stripe/stripe-js'; // Added
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { getFirestore, collection, addDoc, serverTimestamp, updateDoc, doc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import useStripePayment from './useStripePayment';
 
-// Initialize Stripe
-const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
-
-// ... rest of your component code ...
+// DO NOT initialize Stripe here - we'll use the instance from useStripePayment
 
 const StripeCardForm = ({ onSubmit, isSubmitting, total, error, setError }) => {
   const stripe = useStripe();
@@ -79,7 +75,7 @@ const CheckoutPage = () => {
   const navigate = useNavigate();
   const auth = getAuth();
   const db = getFirestore();
-  const { handleCardPayment, handleCheckout, paymentLoading, paymentError, setPaymentError } = useStripePayment();
+  const { handleCardPayment, handleCheckout, paymentLoading, paymentError, setPaymentError, stripePromise } = useStripePayment();
   
   const [formData, setFormData] = useState({
     firstName: '',

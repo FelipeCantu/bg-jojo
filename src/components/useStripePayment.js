@@ -1,13 +1,13 @@
 import { useState } from 'react';
-import { loadStripe } from '@stripe/stripe-js/pure';
-import { CardElement } from '@stripe/react-stripe-js';
+import { getStripePromise } from './stripeConfig'; // Import the shared instance
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getApp } from 'firebase/app';
+import { CardElement } from '@stripe/react-stripe-js';
 
 const useStripePayment = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
+  const stripePromise = getStripePromise();
 
   // Initialize Firebase Functions with caching
   const getCloudFunctions = (() => {
