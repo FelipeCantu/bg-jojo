@@ -81,28 +81,101 @@ const UserArticles = () => {
     };
   }, [openDropdownId]);
 
-  const forceDeleteArticle = async (articleId) => {
-    setIsDeleting(true);
-    try {
-      // First delete all comments
-      await client.delete({
-        query: `*[_type == "comment" && references($articleId)]`,
-        params: { articleId }
-      });
+ const forceDeleteArticle = async (articleId) => {
+  setIsDeleting(true);
+  try {
+    // Step 1: First find ALL documents that reference this article
+    const referencingDocuments = await client.fetch(
+      `*[references($articleId)]{_id, _type}`,
+      { articleId }
+    );
 
-      // Then delete the article itself
-      await client.delete(articleId);
+    console.log(`Found ${referencingDocuments.length} referencing documents`);
 
-      // Update local state
-      setArticles(prev => prev.filter(a => a._id !== articleId));
-      setConfirmDelete(false);
-    } catch (error) {
-      console.error("Force delete error:", error);
-      alert("Error deleting article. Please try again.");
-    } finally {
-      setIsDeleting(false);
+    if (referencingDocuments.length > 0) {
+      // Inform the user about referenced documents
+      const confirmProceed = window.confirm(
+        `This article is referenced by ${referencingDocuments.length} document(s).\n` +
+        `All references will be deleted first to allow article deletion.\n\n` +
+        `Continue with deletion?`
+      );
+
+      if (!confirmProceed) {
+        setIsDeleting(false);
+        return;
+      }
+
+      // Step 2: Delete all referencing documents FIRST
+      for (const doc of referencingDocuments) {
+        try {
+          console.log(`Deleting reference document: ${doc._id} (${doc._type})`);
+          await client.delete(doc._id);
+        } catch (refDeleteError) {
+          console.error(`Failed to delete reference ${doc._id}:`, refDeleteError);
+          // We continue trying to delete other references
+        }
+      }
     }
-  };
+
+    // Step 3: Now try to delete the article itself
+    console.log(`Deleting main article: ${articleId}`);
+    await client.delete(articleId);
+    
+    // Update UI
+    setArticles((prev) => prev.filter((a) => a._id !== articleId));
+    setConfirmDelete(false);
+    setArticleToDelete(null);
+    
+    // Show success message
+    alert('Article deleted successfully');
+  } catch (error) {
+    console.error("Force delete error:", error);
+    
+    // If we still get a reference error, try a transaction approach
+    if (error.message && error.message.includes("references to it")) {
+      const confirmTransaction = window.confirm(
+        `Standard deletion failed. Would you like to try an advanced deletion method?`
+      );
+      
+      if (confirmTransaction) {
+        try {
+          // Get ALL references again (some might have been added in meantime)
+          const allRefs = await client.fetch(
+            `*[references($articleId)]{_id}`,
+            { articleId }
+          );
+          
+          // Create a transaction that deletes all references and then the article
+          const transaction = client.transaction();
+          
+          // Add all reference deletions to transaction
+          allRefs.forEach(ref => {
+            transaction.delete(ref._id);
+          });
+          
+          // Add article deletion to transaction
+          transaction.delete(articleId);
+          
+          // Commit the transaction
+          await transaction.commit();
+          
+          // Update UI on success
+          setArticles((prev) => prev.filter((a) => a._id !== articleId));
+          setConfirmDelete(false);
+          setArticleToDelete(null);
+          alert('Article deleted successfully using transaction method');
+        } catch (transactionError) {
+          console.error("Transaction delete failed:", transactionError);
+          alert(`Could not delete article: ${transactionError.message}`);
+        }
+      }
+    } else {
+      alert(`Error deleting article: ${error.message}`);
+    }
+  } finally {
+    setIsDeleting(false);
+  }
+};
 
   const openConfirmDelete = (articleId) => {
     setArticleToDelete(articleId);
