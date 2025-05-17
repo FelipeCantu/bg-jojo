@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import { client, urlFor, deleteArticle } from "../../sanityClient";
+import { client, urlFor } from "../../sanityClient";
 import useCurrentUser from "../../hook/useCurrentUser";
 import ArticleCounters from "../ArticleCounters";
 import { HiDotsVertical } from 'react-icons/hi';
@@ -15,7 +15,7 @@ const UserArticles = () => {
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [articleToDelete, setArticleToDelete] = useState(null);
   const [openDropdownId, setOpenDropdownId] = useState(null);
-  const [referencingCount, setReferencingCount] = useState({ comments: 0, others: 0 });
+  const [isDeleting, setIsDeleting] = useState(false);
   const navigate = useNavigate();
   const dropdownRefs = useRef({});
 
@@ -48,8 +48,8 @@ const UserArticles = () => {
               photoURL
             }
           ),
-          "commentsCount": count(comments),
-          "likedBy": likedBy[]->._id
+          "commentsCount": count(*[_type == "comment" && references(^._id)]),
+          "likedBy": likedBy[]->_id
         } | order(publishedDate desc)`;
 
         const userArticles = await client.fetch(articlesQuery, { userId: currentUser.uid });
@@ -81,38 +81,33 @@ const UserArticles = () => {
     };
   }, [openDropdownId]);
 
-  const handleDeleteArticle = async (articleId) => {
+  const forceDeleteArticle = async (articleId) => {
+    setIsDeleting(true);
     try {
-      await deleteArticle(articleId);
+      // First delete all comments
+      await client.delete({
+        query: `*[_type == "comment" && references($articleId)]`,
+        params: { articleId }
+      });
+
+      // Then delete the article itself
+      await client.delete(articleId);
+
+      // Update local state
       setArticles(prev => prev.filter(a => a._id !== articleId));
       setConfirmDelete(false);
-      alert("Article deleted successfully!");
     } catch (error) {
-      alert(`Delete failed: ${error.message}`);
+      console.error("Force delete error:", error);
+      alert("Error deleting article. Please try again.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
-  const openConfirmDelete = async (articleId) => {
-    try {
-      const [commentsCount, otherRefsCount] = await Promise.all([
-        client.fetch(`count(*[_type == "comment" && article._ref == $articleId])`, { articleId }),
-        client.fetch(`count(*[references($articleId) && _type != "comment"])`, { articleId })
-      ]);
-
-      setReferencingCount({
-        comments: commentsCount,
-        others: otherRefsCount
-      });
-      setArticleToDelete(articleId);
-      setConfirmDelete(true);
-      setOpenDropdownId(null);
-    } catch (error) {
-      console.error("Error checking references:", error);
-      setReferencingCount({ comments: 0, others: 0 });
-      setArticleToDelete(articleId);
-      setConfirmDelete(true);
-      setOpenDropdownId(null);
-    }
+  const openConfirmDelete = (articleId) => {
+    setArticleToDelete(articleId);
+    setConfirmDelete(true);
+    setOpenDropdownId(null);
   };
 
   const cancelDelete = () => {
@@ -215,24 +210,19 @@ const UserArticles = () => {
         <ConfirmationModal>
           <ModalContainer>
             <ConfirmationText>
-              Are you sure you want to delete this article?
+              Are you sure you want to delete this article? This action cannot be undone.
             </ConfirmationText>
 
-            {(referencingCount.comments > 0 || referencingCount.others > 0) && (
-              <ReferenceWarning>
-                ⚠️ This will also delete:
-                {referencingCount.comments > 0 && (
-                  <div>- {referencingCount.comments} comment(s)</div>
-                )}
-                {referencingCount.others > 0 && (
-                  <div>- {referencingCount.others} other reference(s)</div>
-                )}
-              </ReferenceWarning>
-            )}
+            <WarningMessage>
+              ⚠️ This will permanently delete the article and all its comments.
+            </WarningMessage>
 
             <ButtonContainer>
-              <ConfirmButton onClick={() => handleDeleteArticle(articleToDelete)}>
-                Delete Permanently
+              <ConfirmButton 
+                onClick={() => forceDeleteArticle(articleToDelete)}
+                disabled={isDeleting}
+              >
+                {isDeleting ? 'Deleting...' : 'Delete Permanently'}
               </ConfirmButton>
               <CancelButton onClick={cancelDelete}>Cancel</CancelButton>
             </ButtonContainer>
@@ -243,7 +233,8 @@ const UserArticles = () => {
   );
 };
 
-const ReferenceWarning = styled.div`
+
+const WarningMessage = styled.div`
   color: #e74c3c;
   font-weight: bold;
   margin: 15px 0;
@@ -251,12 +242,7 @@ const ReferenceWarning = styled.div`
   background-color: #fde8e8;
   border-radius: 4px;
   font-size: 0.9rem;
-  text-align: left;
-  
-  div {
-    margin: 5px 0;
-    padding-left: 10px;
-  }
+  text-align: center;
 `;
 
 const Container = styled.div`

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import client from '../sanityClient';
+import * as authService from '../services/authService';
 
 const useCurrentUser = () => {
   const [currentUser, setCurrentUser] = useState(null);
@@ -15,7 +16,11 @@ const useCurrentUser = () => {
       auth,
       async (firebaseUser) => {
         try {
+          setLoading(true);
           if (firebaseUser) {
+            // Refresh user data to ensure email verification status is current
+            await firebaseUser.reload();
+            
             // Fetch or create the corresponding Sanity user document
             const sanityUser = await client.fetch(
               `*[_type == "user" && uid == $firebaseUid][0]`,
@@ -27,25 +32,40 @@ const useCurrentUser = () => {
               const newUser = {
                 _type: 'user',
                 uid: firebaseUser.uid,
-                name: firebaseUser.displayName || 'New User', // Default to 'New User'
+                name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'New User',
                 email: firebaseUser.email,
-                photoURL: firebaseUser.photoURL || 'https://via.placeholder.com/40', // Fallback image URL
+                photoURL: firebaseUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                  firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User'
+                )}&background=random`,
                 role: 'user',
+                authProvider: firebaseUser.providerData[0]?.providerId || 'password',
+                emailVerified: firebaseUser.emailVerified || false
               };
 
               const createdUser = await client.create(newUser);
-              // Combine Firebase and Sanity user data
               setCurrentUser({
                 ...firebaseUser,
                 ...createdUser,
-                sanityId: createdUser._id, // Add this critical field
+                sanityId: createdUser._id,
               });
             } else {
-              // Combine Firebase and Sanity user data
+              // Update existing user document if needed
+              const updates = {};
+              if (firebaseUser.displayName !== sanityUser.name) {
+                updates.name = firebaseUser.displayName;
+              }
+              if (firebaseUser.photoURL !== sanityUser.photoURL) {
+                updates.photoURL = firebaseUser.photoURL;
+              }
+              if (Object.keys(updates).length > 0) {
+                await client.patch(sanityUser._id).set(updates).commit();
+              }
+
               setCurrentUser({
                 ...firebaseUser,
                 ...sanityUser,
-                sanityId: sanityUser._id, // Add this critical field
+                ...updates,
+                sanityId: sanityUser._id,
               });
             }
           } else {
@@ -53,22 +73,39 @@ const useCurrentUser = () => {
           }
         } catch (err) {
           console.error("Failed to sync user:", err);
-          setError("Failed to load user profile");
+          setError(err.message || "Failed to load user profile");
         } finally {
           setLoading(false);
         }
       },
       (error) => {
         console.error("Auth error:", error);
-        setError("Failed to authenticate");
+        setError(error.message || "Failed to authenticate");
         setLoading(false);
       }
     );
 
-    return unsubscribe;
+    return () => unsubscribe();
   }, []);
 
-  return { currentUser, loading, error };
+  // Add methods that mirror authService for convenience
+  const enhancedMethods = {
+    register: authService.registerWithEmail,
+    login: authService.loginWithEmail,
+    socialLogin: (provider) => 
+      provider === 'google' 
+        ? authService.signInWithGoogle() 
+        : authService.signInWithFacebook(),
+    logout: authService.signOut,
+    resetPassword: authService.resetPassword
+  };
+
+  return { 
+    currentUser, 
+    loading, 
+    error,
+    ...enhancedMethods
+  };
 };
 
 export default useCurrentUser;

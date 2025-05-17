@@ -7,368 +7,428 @@ const DEFAULT_ANONYMOUS_AVATAR = 'https://www.shutterstock.com/image-vector/vect
 export const client = createClient({
   projectId: "wssoiuia",
   dataset: "production",
-  useCdn: false,
-  apiVersion: "2023-01-01",
+  useCdn: process.env.NODE_ENV === 'production',
+  apiVersion: "2023-05-03",
   token: process.env.REACT_APP_SANITY_API_TOKEN,
+  ignoreBrowserTokenWarning: true,
 });
 
 // Initialize the image URL builder
 const builder = imageUrlBuilder(client);
 
-// Generate URL for images stored in Sanity
+/**
+ * Generates URL for images stored in Sanity with fallback
+ * @param {Object} source - Sanity image reference
+ * @returns {string} Image URL
+ */
 export function urlFor(source) {
   if (!source) {
-    console.error("Invalid image reference: source is null or undefined");
+    console.warn("No image source provided, using default avatar");
     return DEFAULT_ANONYMOUS_AVATAR;
   }
 
-  const ref = source._ref || source.asset?._ref;
-
-  if (!ref) {
-    console.error("Invalid image reference:", source);
+  try {
+    return builder.image(source)
+      .auto('format')
+      .fit('max')
+      .quality(80);
+  } catch (error) {
+    console.error("Image URL generation failed:", error);
     return DEFAULT_ANONYMOUS_AVATAR;
   }
-
-  return builder.image({ _ref: ref });
 }
 
-// Fetch all articles with anonymous handling
-export const fetchArticles = async () => {
-  const query = `*[_type == "article"]{
-    _id,
-    title,
-    content,
-    "mainImage": mainImage.asset->url,
-    publishedDate,
-    readingTime,
-    isAnonymous,
-    likes,
-    "authorDisplay": select(
-      isAnonymous == true => {
-        "name": "Anonymous",
-        "photoURL": "${DEFAULT_ANONYMOUS_AVATAR}",
-        "_id": "anonymous"
-      },
-      author->{
-        _id,
-        name,
-        photoURL
-      }
-    ),
-    "comments": count(comments)
-  } | order(publishedDate desc)`;
-
-  try {
-    const articles = await client.fetch(query);
-    return articles;
-  } catch (error) {
-    console.error("Error fetching articles:", error);
-    throw error;
-  }
-};
-
-// Fetch a single article by ID with full anonymous handling
-export const fetchArticleById = async (id) => {
-  const query = `*[_type == "article" && _id == $id][0]{
-    ...,
-    "mainImage": mainImage.asset->url,
-    isAnonymous,
-    "authorDisplay": select(
-      isAnonymous == true => {
-        "name": "Anonymous",
-        "photoURL": "${DEFAULT_ANONYMOUS_AVATAR}",
-        "_id": "anonymous"
-      },
-      author->{
-        _id,
-        name,
-        photoURL
-      }
-    ),
-    "comments": comments[]->{
-      ...,
-      "author": author->{
-        _id,
-        name,
-        photoURL
-      }
-    }
-  }`;
-
-  try {
-    const article = await client.fetch(query, { id });
-    return article;
-  } catch (error) {
-    console.error("Error fetching article:", error);
-    throw error;
-  }
-};
-
-// Submit an article to Sanity with anonymous support
-export const submitArticle = async (articleData, user) => {
-  if (!user?.uid) throw new Error("User authentication required");
-
-  const article = {
-    _type: 'article',
-    title: articleData.title,
-    content: articleData.portableContent || articleData.content,
-    mainImage: articleData.mainImage,
-    author: {
-      _type: 'reference',
-      _ref: user.uid
-    },
-    isAnonymous: articleData.isAnonymous || false,
-    publishedDate: articleData.publishedDate || new Date().toISOString(),
-    readingTime: articleData.readingTime || 5,
-  };
-
-  try {
-    // Ensure user exists first
-    await ensureUserExistsInSanity(
-      user.uid,
-      user.displayName || user.name,
-      user.photoURL
-    );
-    
-    return await client.create(article);
-  } catch (error) {
-    console.error("Error submitting article:", error);
-    throw error;
-  }
-};
-
-// Upload image to Sanity
-export const uploadImageToSanity = async (file) => {
-  if (!file) throw new Error("No file provided");
-  if (!client.config().token) throw new Error("Missing Sanity API token");
-
-  const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
-  const maxSize = 10 * 1024 * 1024; // 10MB
-
-  if (!allowedTypes.includes(file.type)) {
-    throw new Error("Invalid file type. Only JPEG, PNG, GIF, and WEBP are allowed.");
-  }
-
-  if (file.size > maxSize) {
-    throw new Error(`File too large. Maximum size is ${maxSize/1024/1024}MB`);
-  }
-
-  try {
-    const result = await client.assets.upload("image", file, {
-      filename: file.name,
-      contentType: file.type,
-    });
-
-    if (!result?._id) {
-      throw new Error("Invalid response from Sanity");
-    }
-
-    return { _type: "image", asset: { _type: "reference", _ref: result._id } };
-  } catch (error) {
-    console.error("Image upload failed:", error);
-    throw error;
-  }
-};
-
-// User management functions
-export const ensureUserExistsInSanity = async (uid, displayName, photoURL) => {
-  try {
-    // First try to get the user by _id (must match Firebase UID exactly)
-    let userDoc = await client.fetch(`*[_type == "user" && _id == $uid][0]`, { uid });
-
-    if (!userDoc) {
-      // Create with _id matching Firebase UID
-      userDoc = await client.create({
-        _type: "user",
-        _id: uid,  // MUST match Firebase UID exactly
-        uid: uid,   // Additional field for querying
-        name: displayName || "Anonymous",
-        photoURL: photoURL || DEFAULT_ANONYMOUS_AVATAR,
-        role: "user",
-        _createdAt: new Date().toISOString(),
-        _updatedAt: new Date().toISOString()
-      });
-    }
-    return userDoc;
-  } catch (error) {
-    console.error("Error ensuring user exists:", error);
-    throw error;
-  }
-};
-// Get user from Sanity
-export const getUserFromSanity = async (uid) => {
-  const query = `*[_type == "user" && _id == $uid][0]`;
-  try {
-    const user = await client.fetch(query, { uid });
-    if (!user) {
-      throw new Error(`User with UID: ${uid} not found in Sanity`);
-    }
-    return user;
-  } catch (error) {
-    console.error("Error fetching user from Sanity:", error);
-    return null;
-  }
-};
-
-// Delete article with comprehensive reference handling
-export const deleteArticle = async (articleId) => {
-  try {
-    const referencesQuery = `*[references($articleId)]{
+// Article Operations
+export const articleAPI = {
+  /**
+   * Fetch all articles with optimized query
+   */
+  fetchAll: async () => {
+    const query = `*[_type == "article"] | order(publishedDate desc) {
       _id,
-      _type,
-      "references": *[references(^._id)]{_id, _type}
+      title,
+      slug,
+      excerpt,
+      "mainImage": mainImage.asset->{
+        url,
+        metadata
+      },
+      publishedDate,
+      readingTime,
+      isAnonymous,
+      likes,
+      views,
+      lastViewDate,
+      "author": select(
+        isAnonymous == true => {
+          "name": "Anonymous",
+          "photoURL": "${DEFAULT_ANONYMOUS_AVATAR}",
+          "_id": "anonymous"
+        },
+        author->{
+          _id,
+          name,
+          photoURL,
+          role
+        }
+      ),
+      "commentCount": count(*[_type == "comment" && references(^._id)])
     }`;
-    
-    const referencingDocs = await client.fetch(referencesQuery, { articleId });
-    const transactions = client.transaction();
 
-    for (const doc of referencingDocs) {
-      try {
-        if (doc._type === 'comment') {
-          transactions.delete(doc._id);
-          if (doc.references && doc.references.length > 0) {
-            doc.references.forEach(ref => {
-              transactions.delete(ref._id);
-            });
-          }
-        } else {
-          const fullDoc = await client.getDocument(doc._id);
-          Object.keys(fullDoc).forEach(key => {
-            const value = fullDoc[key];
-            if (value?._ref === articleId) {
-              transactions.patch(doc._id, { set: { [key]: null } });
-            }
-            if (Array.isArray(value)) {
-              value.forEach((item, index) => {
-                if (item?._ref === articleId) {
-                  transactions.patch(doc._id, {
-                    set: { [`${key}[${index}]`]: null }
-                  });
-                }
-              });
-            }
-          });
+    try {
+      return await client.fetch(query);
+    } catch (error) {
+      console.error("Error fetching articles:", error);
+      throw new Error("Failed to fetch articles");
+    }
+  },
+
+  /**
+   * Fetch single article by ID with all related data
+   */
+  fetchById: async (id) => {
+    const query = `*[_type == "article" && _id == $id][0] {
+      ...,
+      "mainImage": mainImage.asset->{
+        url,
+        metadata,
+        "dimensions": metadata.dimensions
+      },
+      isAnonymous,
+      "author": select(
+        isAnonymous == true => {
+          "name": "Anonymous",
+          "photoURL": "${DEFAULT_ANONYMOUS_AVATAR}",
+          "_id": "anonymous"
+        },
+        author->{
+          _id,
+          name,
+          photoURL,
+          role
         }
-      } catch (error) {
-        console.error(`Error processing document ${doc._id}:`, error);
-        transactions.delete(doc._id);
+      ),
+      "comments": *[_type == "comment" && references(^._id)] | order(_createdAt asc) {
+        _id,
+        _createdAt,
+        content,
+        "author": author->{
+          _id,
+          name,
+          photoURL
+        }
       }
+    }`;
+
+    try {
+      return await client.fetch(query, { id });
+    } catch (error) {
+      console.error(`Error fetching article ${id}:`, error);
+      throw new Error("Failed to fetch article");
+    }
+  },
+
+  /**
+   * Create new article with validation
+   */
+  create: async (articleData, userId) => {
+    if (!userId) throw new Error("Authentication required");
+    if (!articleData?.title || !articleData?.content) {
+      throw new Error("Title and content are required");
     }
 
-    transactions.delete(articleId);
-    await transactions.commit();
-    return true;
-  } catch (error) {
-    console.error("Error deleting article:", error);
-    throw error;
-  }
-};
+    const doc = {
+      _type: 'article',
+      title: articleData.title,
+      slug: { current: articleData.slug || articleData.title.toLowerCase().replace(/\s+/g, '-') },
+      content: articleData.content,
+      mainImage: articleData.mainImage,
+      author: { _type: 'reference', _ref: userId },
+      isAnonymous: Boolean(articleData.isAnonymous),
+      publishedDate: articleData.publishedDate || new Date().toISOString(),
+      readingTime: articleData.readingTime || 5,
+      likes: 0,
+      views: 0,
+      lastViewDate: null
+    };
 
-// Update article (including anonymous status)
-export const updateArticle = async (articleId, updates) => {
-  try {
-    return await client
-      .patch(articleId)
-      .set({
-        ...updates,
-        _updatedAt: new Date().toISOString()
-      })
-      .commit();
-  } catch (error) {
-    console.error("Error updating article:", error);
-    throw error;
-  }
-};
+    try {
+      await userAPI.ensureExists(userId);
+      return await client.create(doc);
+    } catch (error) {
+      console.error("Error creating article:", error);
+      throw new Error("Failed to create article");
+    }
+  },
 
-// Like/unlike an article
-export const toggleArticleLike = async (articleId, userId) => {
-  try {
-    const article = await client.getDocument(articleId);
-    const isLiked = article.likedBy?.some(ref => ref._ref === userId);
-
-    if (isLiked) {
-      // Unlike
+  /**
+   * Update existing article
+   */
+  update: async (id, updates) => {
+    try {
       return await client
-        .patch(articleId)
-        .setIfMissing({ likedBy: [] })
-        .insert('replace', 'likedBy[ref($userId)]', [])
-        .dec({ likes: 1 })
-        .commit({ userId });
-    } else {
-      // Like
-      return await client
-        .patch(articleId)
-        .setIfMissing({ likedBy: [] })
-        .insert('after', 'likedBy[-1]', [{
-          _type: 'reference',
-          _ref: userId
-        }])
-        .inc({ likes: 1 })
+        .patch(id)
+        .set({
+          ...updates,
+          _updatedAt: new Date().toISOString()
+        })
         .commit();
+    } catch (error) {
+      console.error(`Error updating article ${id}:`, error);
+      throw new Error("Failed to update article");
     }
-  } catch (error) {
-    console.error("Error toggling article like:", error);
-    throw error;
-  }
-};
+  },
 
-// Notification system (unchanged)
-export const getNotificationsForUser = async (userId, options = {}) => {
-  const { limit = 20, offset = 0, unreadOnly = false } = options;
-  
-  const query = `*[_type == "notification" && user._ref == $userId${
-    unreadOnly ? " && seen == false" : ""
-  }] | order(_createdAt desc) [${offset}...${offset + limit}] {
-    _id,
-    _createdAt,
-    type,
-    message,
-    link,
-    seen,
-    "sender": sender->{_id, name, photoURL},
-    "relatedArticle": relatedArticle->{_id, title}
-  }`;
-
-  try {
-    return await client.fetch(query, { userId });
-  } catch (error) {
-    console.error("Error fetching notifications:", error);
-    throw error;
-  }
-};
-
-export const createNotification = async (notificationData) => {
-  try {
-    return await client.create({
-      _type: 'notification',
-      ...notificationData,
-      seen: false,
-      _createdAt: new Date().toISOString()
-    });
-  } catch (error) {
-    console.error("Error creating notification:", error);
-    throw error;
-  }
-};
-
-export const markNotificationsAsRead = async (notificationIds) => {
-  try {
-    const transaction = client.transaction();
-    
-    notificationIds.forEach(id => {
-      transaction.patch(id, {
-        set: { 
-          seen: true,
-          readAt: new Date().toISOString() 
-        }
+  /**
+   * Delete article and all its references
+   */
+  delete: async (id) => {
+    try {
+      // First delete all comments
+      await client.delete({
+        query: `*[_type == "comment" && references($id)]`,
+        params: { id }
       });
-    });
-    
-    await transaction.commit();
-    return true;
+      
+      // Then delete the article
+      return await client.delete(id);
+    } catch (error) {
+      console.error(`Error deleting article ${id}:`, error);
+      throw new Error("Failed to delete article");
+    }
+  },
+
+  /**
+   * Increment article view count with daily tracking
+   */
+ // Add this to your articleAPI methods
+incrementViews: async (id) => {
+  try {
+    // Simply increment without any checks
+    const result = await client
+      .patch(id)
+      .setIfMissing({ views: 0 })
+      .inc({ views: 1 })
+      .commit();
+
+    return result.views;
   } catch (error) {
-    console.error("Error marking notifications as read:", error);
+    console.error("View count increment failed:", error);
     throw error;
+  }
+},
+
+  /**
+   * Toggle like on article
+   */
+  toggleLike: async (articleId, userId) => {
+    try {
+      const article = await client.getDocument(articleId);
+      const isLiked = article.likedBy?.some(ref => ref._ref === userId);
+
+      const patch = client
+        .patch(articleId)
+        .setIfMissing({ likedBy: [], likes: 0 });
+
+      if (isLiked) {
+        patch
+          .insert('replace', 'likedBy[ref($userId)]', [])
+          .dec({ likes: 1 });
+      } else {
+        patch
+          .insert('after', 'likedBy[-1]', [{
+            _type: 'reference',
+            _ref: userId
+          }])
+          .inc({ likes: 1 });
+      }
+
+      const result = await patch.commit({ userId });
+
+      // Create notification if liked
+      if (!isLiked && article.author?._ref && article.author._ref !== userId) {
+        await client.create({
+          _type: "notification",
+          user: { 
+            _type: "reference", 
+            _ref: article.author._ref
+          },
+          sender: { 
+            _type: "reference", 
+            _ref: userId
+          },
+          type: "like",
+          relatedArticle: { 
+            _type: "reference", 
+            _ref: articleId
+          },
+          seen: false,
+          createdAt: new Date().toISOString()
+        });
+      }
+
+      return result;
+    } catch (error) {
+      console.error(`Error toggling like for article ${articleId}:`, error);
+      throw new Error("Failed to toggle like");
+    }
+  }
+};
+
+// User Operations
+export const userAPI = {
+  /**
+   * Ensure user exists in Sanity (sync from auth provider)
+   */
+  ensureExists: async (uid, userData = {}) => {
+    try {
+      let user = await client.getDocument(uid).catch(() => null);
+      
+      if (!user) {
+        user = await client.create({
+          _type: 'user',
+          _id: uid,
+          uid: uid,
+          name: userData.name || 'Anonymous',
+          email: userData.email || '',
+          photoURL: userData.photoURL || DEFAULT_ANONYMOUS_AVATAR,
+          role: 'user',
+          providerData: userData.providerData || [],
+          primaryProvider: userData.primaryProvider || 'password',
+          emailVerified: Boolean(userData.emailVerified),
+          lastLogin: new Date().toISOString()
+        });
+      }
+      
+      return user;
+    } catch (error) {
+      console.error(`Error ensuring user ${uid} exists:`, error);
+      throw new Error("Failed to sync user");
+    }
+  },
+
+  /**
+   * Get user by ID with profile data
+   */
+  get: async (uid) => {
+    const query = `*[_type == "user" && _id == $uid][0] {
+      ...,
+      "articles": *[_type == "article" && author._ref == ^._id] | order(publishedDate desc) {
+        _id,
+        title,
+        publishedDate,
+        "commentCount": count(*[_type == "comment" && references(^._id)])
+      },
+      "comments": *[_type == "comment" && author._ref == ^._id] | order(_createdAt desc) {
+        _id,
+        _createdAt,
+        "article": ^.article->{
+          _id,
+          title
+        }
+      }
+    }`;
+
+    try {
+      return await client.fetch(query, { uid });
+    } catch (error) {
+      console.error(`Error fetching user ${uid}:`, error);
+      return null;
+    }
+  },
+
+  /**
+   * Update user profile
+   */
+  update: async (uid, updates) => {
+    try {
+      return await client
+        .patch(uid)
+        .set({
+          ...updates,
+          _updatedAt: new Date().toISOString()
+        })
+        .commit();
+    } catch (error) {
+      console.error(`Error updating user ${uid}:`, error);
+      throw new Error("Failed to update profile");
+    }
+  }
+};
+
+// Comment Operations
+export const commentAPI = {
+  /**
+   * Add comment to article
+   */
+  create: async (articleId, userId, content) => {
+    if (!content?.trim()) throw new Error("Comment text required");
+
+    try {
+      await userAPI.ensureExists(userId);
+      
+      return await client.create({
+        _type: 'comment',
+        article: { _type: 'reference', _ref: articleId },
+        author: { _type: 'reference', _ref: userId },
+        content: content.trim(),
+        _createdAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Error creating comment:", error);
+      throw new Error("Failed to post comment");
+    }
+  },
+
+  /**
+   * Delete comment
+   */
+  delete: async (commentId) => {
+    try {
+      return await client.delete(commentId);
+    } catch (error) {
+      console.error(`Error deleting comment ${commentId}:`, error);
+      throw new Error("Failed to delete comment");
+    }
+  }
+};
+
+// Media Operations
+export const mediaAPI = {
+  /**
+   * Upload image with validation
+   */
+  upload: async (file) => {
+    if (!file) throw new Error("No file provided");
+    
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    const maxSize = 10 * 1024 * 1024; // 10MB
+
+    if (!validTypes.includes(file.type)) {
+      throw new Error("Only JPG, PNG, WEBP, and GIF images are allowed");
+    }
+
+    if (file.size > maxSize) {
+      throw new Error(`File exceeds ${maxSize/1024/1024}MB size limit`);
+    }
+
+    try {
+      const result = await client.assets.upload('image', file, {
+        filename: file.name,
+        contentType: file.type,
+      });
+
+      return { 
+        _type: "image", 
+        asset: { 
+          _type: "reference", 
+          _ref: result._id 
+        } 
+      };
+    } catch (error) {
+      console.error("Image upload failed:", error);
+      throw new Error("Failed to upload image");
+    }
   }
 };
 

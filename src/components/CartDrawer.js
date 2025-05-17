@@ -328,6 +328,22 @@ export default function CartDrawer() {
 
   const totalQty = items.reduce((acc, item) => acc + item.quantity, 0);
 
+  // Helper function to get the image URL
+  const getImageUrl = (item) => {
+    // Handle different image formats from Sanity or other sources
+    if (item.image) {
+      // If image is a direct URL string
+      return item.image;
+    } else if (item.images?.[0]?.asset?.url) {
+      // If image is from Sanity (array format)
+      return item.images[0].asset.url;
+    } else if (item.images?.[0]?.url) {
+      // If image is in a simpler array format
+      return item.images[0].url;
+    }
+    return 'https://via.placeholder.com/150?text=No+Image';
+  };
+
   return (
     <>
       <DrawerOverlay isOpen={isOpen} onClick={toggleCart} />
@@ -357,17 +373,20 @@ export default function CartDrawer() {
             <ItemList>
               {items.map((item, i) => (
                 <Item key={`${item.id}-${i}`}>
-                  {/* Display the first product image */}
-                  {item.images?.[0] && (
-                    <ItemImage
-                      src={item.images[0].asset?.url}
-                      alt={item.name}
-                    />
-                  )}
+                  <ItemImage
+                    src={getImageUrl(item)}
+                    alt={item.name}
+                    onError={(e) => {
+                      e.target.src = 'https://via.placeholder.com/150?text=No+Image';
+                    }}
+                  />
                   <div style={{ flex: 1 }}>
                     <TopRow>
                       <div>
                         <ItemName>{item.name}</ItemName>
+                        {item.size && (
+                          <ItemSize>Size: {item.size}</ItemSize>
+                        )}
                         {item.selectedSize && (
                           <ItemSize>Size: {item.selectedSize}</ItemSize>
                         )}

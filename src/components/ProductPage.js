@@ -6,11 +6,13 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import { useCart } from '../CartContext';
 import { ShoppingBagIcon, ChevronLeftIcon } from '@heroicons/react/24/outline';
+import LoadingContainer from './LoadingContainer';
 
+// Styled Components
 const Wrapper = styled.div`
   max-width: 1200px;
-  margin: auto;
-  padding: 2rem;
+  margin: 0 auto;
+  padding: 2rem 1rem;
 `;
 
 const BackButton = styled.button`
@@ -26,56 +28,56 @@ const BackButton = styled.button`
   transition: color 0.2s ease;
 
   &:hover {
-    color: #4CAF50;
+    color: #044947;
   }
 `;
 
-const FlexGallery = styled.div`
-  display: flex;
-  flex-direction: row;
+const ProductLayout = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 3rem;
 
   @media (max-width: 768px) {
-    flex-direction: column;
+    grid-template-columns: 1fr;
   }
 `;
 
 const GallerySection = styled.div`
   display: flex;
-  flex-direction: row;
-  gap: 1.5rem;
-  position: relative;
+  flex-direction: column;
+  gap: 1rem;
 
-  @media (max-width: 768px) {
-    flex-direction: column;
-    align-items: center;
+  @media (min-width: 1024px) {
+    flex-direction: row-reverse;
   }
 `;
 
 const Thumbnails = styled.div`
   display: flex;
-  flex-direction: column;
   gap: 0.8rem;
-  overflow-y: auto;
-  max-height: 500px;
-
-  @media (max-width: 768px) {
-    flex-direction: row;
-    max-height: none;
-    max-width: 100%;
-    overflow-x: auto;
-    padding: 0.5rem 0;
-    order: 2;
-    margin-top: 1rem;
-  }
+  overflow-x: auto;
+  padding: 0.5rem 0;
 
   &::-webkit-scrollbar {
-    width: 4px;
     height: 4px;
   }
   &::-webkit-scrollbar-thumb {
     background: #ccc;
     border-radius: 2px;
+  }
+
+  @media (min-width: 1024px) {
+    flex-direction: column;
+    overflow-x: visible;
+    overflow-y: visible;
+    max-height: none;
+    padding-right: 1rem;
+    flex-wrap: wrap;
+    max-width: 80px;
+  }
+
+  @media (max-width: 768px) {
+    gap: 0.5rem;
   }
 `;
 
@@ -85,12 +87,18 @@ const Thumbnail = styled.img`
   object-fit: cover;
   border-radius: 8px;
   cursor: pointer;
-  border: ${({ selected }) => (selected ? '2px solid #333' : '1px solid #ddd')};
+  border: ${({ $selected }) => ($selected ? '2px solid #333' : '1px solid #ddd')};
   transition: all 0.2s ease;
 
   @media (max-width: 768px) {
     width: 60px;
     height: 60px;
+  }
+
+  @media (min-width: 1024px) {
+    width: 70px;
+    height: 70px;
+    margin-bottom: 0.8rem;
   }
 
   &:hover {
@@ -99,124 +107,74 @@ const Thumbnail = styled.img`
 `;
 
 const MainImageContainer = styled.div`
-  line-height: 0;
-  flex: 1;
   position: relative;
-
-  @media (max-width: 768px) {
-    width: 100%;
-    order: 1;
-  }
+  margin-bottom: 1rem;
+  flex-grow: 1;
 `;
 
 const MainImage = styled.img`
   width: 100%;
-  max-width: 500px;
-  height: auto;
   max-height: 500px;
   object-fit: contain;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 `;
 
-const ProductInfo = styled.div`
-  flex: 1;
-`;
+const ProductInfo = styled.div``;
 
 const Title = styled.h1`
   font-size: 2rem;
   margin-bottom: 0.5rem;
+  color: #2a2a2a;
 `;
 
 const Price = styled.p`
-  font-size: 1.5rem;
-  color: #4CAF50;
-  font-weight: 600;
+  font-size: 1.75rem;
+  color: #044947;
+  font-weight: 700;
   margin-bottom: 1.5rem;
 `;
 
 const Description = styled.p`
   line-height: 1.6;
   margin-bottom: 1.5rem;
+  color: #666;
 `;
 
-const Label = styled.p`
-  font-weight: bold;
-  margin: 1rem 0 0.5rem;
+const MetaSection = styled.div`
+  margin-bottom: 1.5rem;
+`;
+
+const MetaLabel = styled.p`
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #2a2a2a;
+`;
+
+const SizeOptions = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
 `;
 
 const SizeButton = styled.button`
-  background: ${({ selected }) => (selected ? '#4CAF50' : '#f5f5f5')};
-  color: ${({ selected }) => (selected ? 'white' : '#333')};
-  border: 1px solid #ccc;
-  padding: 0.4rem 0.8rem;
-  border-radius: 20px;
-  margin-right: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: ${({ $selected }) => ($selected ? '#044947' : '#fff')};
+  color: ${({ $selected }) => ($selected ? 'white' : '#333')};
+  border: 1px solid ${({ $selected }) => ($selected ? '#044947' : '#ddd')};
+  border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s ease;
 
   &:hover {
-    background: ${({ selected }) => (selected ? '#45a049' : '#eaeaea')};
-  }
-`;
-
-const ButtonGroup = styled.div`
-  display: flex;
-  gap: 1rem;
-  margin-top: 1rem;
-
-  @media (max-width: 480px) {
-    flex-direction: column;
-  }
-`;
-
-const AddToCartButton = styled.button`
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  font-size: 1rem;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-
-  &:hover {
-    background-color: #45a049;
-    transform: translateY(-1px);
+    border-color: #044947;
   }
 
-  &:active {
-    transform: translateY(0);
-  }
-`;
-
-const ViewCartButton = styled.button`
-  background-color: #333;
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  font-size: 1rem;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-
-  &:hover {
-    background-color: #222;
-    transform: translateY(-1px);
-  }
-
-  &:active {
-    transform: translateY(0);
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    border-color: #ddd;
   }
 `;
 
@@ -251,6 +209,63 @@ const QuantityInput = styled.input`
   font-size: 1rem;
 `;
 
+const ButtonGroup = styled.div`
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+  }
+`;
+
+const ActionButton = styled.button`
+  flex: 1;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: none;
+`;
+
+const AddToCartButton = styled(ActionButton)`
+  background-color: #044947;
+  color: white;
+
+  &:hover {
+    background-color: #033634;
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+  }
+`;
+
+const ViewCartButton = styled(ActionButton)`
+  background-color: #333;
+  color: white;
+
+  &:hover {
+    background-color: #222;
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+`;
+
 const CartBadge = styled.span`
   background-color: #ff5a5f;
   color: white;
@@ -261,12 +276,19 @@ const CartBadge = styled.span`
   margin-left: 0.3rem;
 `;
 
+const ErrorMessage = styled.div`
+  text-align: center;
+  padding: 3rem;
+  font-size: 1.2rem;
+  color: #ff0000;
+`;
+
 export default function ProductPage() {
   const { slug } = useParams();
   const navigate = useNavigate();
   const { addToCart, toggleCart, items } = useCart();
   const [product, setProduct] = useState(null);
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedImage, setSelectedImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -275,50 +297,72 @@ export default function ProductPage() {
   const totalItems = items.reduce((acc, item) => acc + item.quantity, 0);
 
   useEffect(() => {
-    setLoading(true);
-    sanityClient.fetch(`
-      *[_type == "product" && slug.current == $slug][0]{
-        _id,
-        name,
-        price,
-        stripePriceId,
-        stripePriceIds, // Object with size-specific price IDs
-        description,
-        material,
-        fit,
-        sizes,
-        colors,
-        images[]{asset->{url}}
-      }
-    `, { slug })
-      .then(data => {
-        if (data?.images?.length > 0) {
-          setSelectedImage(data.images[0].asset.url);
+    const fetchProduct = async () => {
+      try {
+        const data = await sanityClient.fetch(
+          `*[_type == "product" && slug.current == $slug][0]{
+            _id,
+            name,
+            price,
+            category,
+            stripePriceId,
+            stripePriceIds,
+            description,
+            material,
+            sizes,
+            sizeOptions[]{
+              size,
+              stock
+            },
+            colors,
+            images[]{asset->{url}}
+          }`,
+          { slug }
+        );
+
+        if (!data) {
+          setError('Product not found');
+        } else {
+          setProduct(data);
+          if (data.category !== 'plushie' && data.category !== 'sticker') {
+            if (data.sizeOptions?.length > 0) {
+              const firstInStock = data.sizeOptions.find(opt => opt.stock > 0);
+              if (firstInStock) setSelectedSize(firstInStock.size);
+            } else if (data.sizes?.length > 0) {
+              setSelectedSize(data.sizes[0]);
+            }
+          }
         }
-        setProduct(data);
+      } catch (err) {
+        setError('Failed to fetch product details');
+        console.error(err);
+      } finally {
         setLoading(false);
-      })
-      .catch(err => {
-        setError(err);
-        setLoading(false);
-      });
+      }
+    };
+
+    fetchProduct();
   }, [slug]);
 
   const handleAddToCart = () => {
-    if (!selectedSize) {
+    const isSizeRequired = product.category !== 'plushie' && product.category !== 'sticker';
+    
+    if (isSizeRequired && !selectedSize) {
       alert("Please select a size before adding to cart.");
       return;
     }
 
-    // Generate a unique ID for the cart item (combination of product ID and size)
-    const itemId = `${product._id}-${selectedSize}`;
+    const itemId = isSizeRequired 
+      ? `${product._id}-${selectedSize}`
+      : product._id;
     
-    // Get the appropriate Stripe price ID
-    const stripePriceId = product.stripePriceIds?.[selectedSize] || product.stripePriceId;
+    const stripePriceId = isSizeRequired 
+      ? product.stripePriceIds?.[selectedSize] || product.stripePriceId
+      : product.stripePriceId;
     
     if (!stripePriceId) {
       alert("This product is not available for purchase at the moment. Please try again later.");
-      console.error("Missing Stripe price ID for product:", product.name, "size:", selectedSize);
+      console.error("Missing Stripe price ID for product:", product.name);
       return;
     }
 
@@ -327,79 +371,150 @@ export default function ProductPage() {
       name: product.name,
       price: product.price,
       quantity: quantity,
-      selectedSize: selectedSize,
-      images: product.images,
-      stripePriceId: stripePriceId, // This is crucial for Stripe checkout
-      // Include any other necessary product data
+      ...(isSizeRequired && { size: selectedSize }),
+      image: product.images[0]?.asset?.url,
+      stripePriceId: stripePriceId,
       colors: product.colors,
       material: product.material,
-      fit: product.fit
+      category: product.category
     });
   };
 
-  if (loading) return <Wrapper><p>Loading...</p></Wrapper>;
-  if (error) return <Wrapper><p>Something went wrong. Please try again later.</p></Wrapper>;
-  if (!product) return <Wrapper><p>Product not found</p></Wrapper>;
+  if (loading) {
+    return <LoadingContainer 
+      message="Loading product details..." 
+      spinnerColor="#fea500"
+      textColor="#555"
+      size="large"
+    />;
+  }
+
+  if (error) return <ErrorMessage>{error}</ErrorMessage>;
+  if (!product) return <ErrorMessage>Product not found</ErrorMessage>;
+
+  const showSizeSelector = product.category !== 'plushie' && 
+                         product.category !== 'sticker' && 
+                         (product.sizeOptions?.length > 0 || product.sizes?.length > 0);
 
   return (
     <Wrapper>
       <BackButton onClick={() => navigate(-1)}>
         <ChevronLeftIcon width={20} height={20} />
-        Go Back
+        Back to Products
       </BackButton>
-      <FlexGallery>
-        <GallerySection>
-          <Thumbnails>
-            {product.images.map((image, index) => (
-              <Thumbnail
-                key={index}
-                src={image.asset.url}
-                alt={`Product Thumbnail ${index + 1}`}
-                selected={image.asset.url === selectedImage}
-                onClick={() => setSelectedImage(image.asset.url)}
-              />
-            ))}
-          </Thumbnails>
 
+      <ProductLayout>
+        <GallerySection>
           <MainImageContainer>
             <Zoom>
-              <MainImage src={selectedImage} alt="Main Product" />
+              <MainImage 
+                src={product.images[selectedImage]?.asset?.url || 'https://via.placeholder.com/600x600?text=Product+Image'} 
+                alt={product.name}
+              />
             </Zoom>
           </MainImageContainer>
+
+          {product.images?.length > 1 && (
+            <Thumbnails>
+              {product.images.map((image, index) => (
+                <Thumbnail
+                  key={index}
+                  src={image.asset.url}
+                  alt={`${product.name} thumbnail ${index + 1}`}
+                  $selected={index === selectedImage}
+                  onClick={() => setSelectedImage(index)}
+                />
+              ))}
+            </Thumbnails>
+          )}
         </GallerySection>
 
         <ProductInfo>
           <Title>{product.name}</Title>
-          <Price>${product.price}</Price>
-          <Description>{product.description}</Description>
+          <Price>${product.price?.toFixed(2)}</Price>
+          
+          <Description>
+            {product.description || 'No description available.'}
+          </Description>
 
-          <Label>Select Size</Label>
-          <div>
-            {product.sizes.map((size, index) => (
-              <SizeButton
-                key={index}
-                selected={selectedSize === size}
-                onClick={() => setSelectedSize(size)}
-              >
-                {size}
-              </SizeButton>
-            ))}
-          </div>
+          <MetaSection>
+            {product.material && (
+              <>
+                <MetaLabel>Material</MetaLabel>
+                <p>{product.material}</p>
+              </>
+            )}
+            {product.category && (
+              <>
+                <MetaLabel>Category</MetaLabel>
+                <p>{product.category}</p>
+              </>
+            )}
+          </MetaSection>
 
-          <Label>Quantity</Label>
+          {showSizeSelector && (
+            <div>
+              <MetaLabel>Select Size</MetaLabel>
+              <SizeOptions>
+                {product.sizeOptions?.length > 0 ? (
+                  product.sizeOptions.map((option, index) => (
+                    <SizeButton
+                      key={index}
+                      $selected={selectedSize === option.size}
+                      onClick={() => setSelectedSize(option.size)}
+                      disabled={option.stock <= 0}
+                    >
+                      {option.size} {option.stock <= 0 && '(Out of Stock)'}
+                    </SizeButton>
+                  ))
+                ) : (
+                  product.sizes?.map((size, index) => (
+                    <SizeButton
+                      key={index}
+                      $selected={selectedSize === size}
+                      onClick={() => setSelectedSize(size)}
+                    >
+                      {size}
+                    </SizeButton>
+                  ))
+                )}
+              </SizeOptions>
+            </div>
+          )}
+
+          <MetaLabel>Quantity</MetaLabel>
           <QuantitySelector>
-            <QuantityButton onClick={() => setQuantity(prev => Math.max(1, prev - 1))}>–</QuantityButton>
+            <QuantityButton 
+              onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
+              aria-label="Decrease quantity"
+            >
+              –
+            </QuantityButton>
             <QuantityInput
               type="number"
               min="1"
               value={quantity}
               onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+              aria-label="Quantity"
             />
-            <QuantityButton onClick={() => setQuantity(prev => prev + 1)}>+</QuantityButton>
+            <QuantityButton 
+              onClick={() => setQuantity(prev => prev + 1)}
+              aria-label="Increase quantity"
+            >
+              +
+            </QuantityButton>
           </QuantitySelector>
 
           <ButtonGroup>
-            <AddToCartButton onClick={handleAddToCart}>
+            <AddToCartButton 
+              onClick={handleAddToCart}
+              disabled={
+                showSizeSelector && 
+                (!selectedSize || 
+                 (product.sizeOptions?.length > 0 && 
+                  product.sizeOptions.find(opt => opt.size === selectedSize)?.stock <= 0))
+              }
+            >
               Add to Cart
             </AddToCartButton>
             <ViewCartButton onClick={toggleCart}>
@@ -409,7 +524,7 @@ export default function ProductPage() {
             </ViewCartButton>
           </ButtonGroup>
         </ProductInfo>
-      </FlexGallery>
+      </ProductLayout>
     </Wrapper>
   );
 }

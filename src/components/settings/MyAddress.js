@@ -2,8 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import styled from "styled-components";
 
 import { db, doc, getDoc, updateDoc } from "../../firestore";
-import { useAuth } from "../../AuthContext";
-
+import { useAuth } from "../../context/AuthContext";
 const MyAddresses = () => {
   const { currentUser } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);

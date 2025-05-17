@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { fetchArticleById, urlFor } from "../sanityClient";
+import { articleAPI, urlFor } from "../sanityClient";
 import styled from "styled-components";
 import ArticleCounters from "./ArticleCounters";
 import CommentSection from "./CommentSection";
@@ -22,7 +22,7 @@ const ArticleDetail = () => {
       setLoading(true);
       setError(null);
       try {
-        const fetchedArticle = await fetchArticleById(id);
+        const fetchedArticle = await articleAPI.fetchById(id);
         if (!fetchedArticle) {
           throw new Error("Article not found");
         }
@@ -53,15 +53,14 @@ const ArticleDetail = () => {
   if (!article) return <ErrorMessage>Article not found.</ErrorMessage>;
 
   // Handle author display based on anonymous status
-  const authorName = article.isAnonymous ? 'Anonymous' : article.authorDisplay?.name || 'Unknown author';
+  const authorName = article.isAnonymous ? 'Anonymous' : article.author?.name || 'Unknown author';
   const authorImageSrc = article.isAnonymous
     ? DEFAULT_ANONYMOUS_AVATAR
-    : article.authorDisplay?.photoURL || DEFAULT_ANONYMOUS_AVATAR;
-  const authorBio = article.isAnonymous ? '' : article.authorDisplay?.bio;
+    : article.author?.photoURL || DEFAULT_ANONYMOUS_AVATAR;
+  const authorBio = article.isAnonymous ? '' : article.author?.bio;
 
   // Get main image URL
-  const mainImageSrc = article.mainImage || 'https://via.placeholder.com/1200x600';
-
+  const mainImageSrc = article.mainImage?.url || 'https://via.placeholder.com/1200x600';
 
   const components = {
     types: {
@@ -133,7 +132,6 @@ const ArticleDetail = () => {
     },
   };
 
-
   return (
     <ArticleDetailContainer>
       <MetaInfoContainer>
@@ -165,7 +163,6 @@ const ArticleDetail = () => {
         loading="eager"
       />
 
-
       <ContentWrapper>
         <PortableText
           value={article.content}
@@ -174,7 +171,7 @@ const ArticleDetail = () => {
       </ContentWrapper>
 
       <Divider />
-      <ArticleCounters articleId={id} user={user} />
+      <ArticleCounters articleId={id} isDetailView={true} />
       <CommentSection articleId={id} user={user} />
     </ArticleDetailContainer>
   );

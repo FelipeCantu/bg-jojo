@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import styled from 'styled-components';
-import { uploadImageToSanity, client } from '../sanityClient';
+import { articleAPI, mediaAPI, client } from '../sanityClient';
 import { db } from '../firestore';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
@@ -9,11 +9,11 @@ import { portableTextToHtml } from './utils/portableTextHtml';
 import { convertHtmlToPortableText } from './utils/htmlToPortableText';
 import { FaArrowLeft } from 'react-icons/fa';
 import { auth, onAuthStateChanged } from '../firestore';
+import AuthForm from './AuthForm';
 
 const DEFAULT_ANONYMOUS_AVATAR = 'https://www.shutterstock.com/image-vector/vector-flat-illustration-grayscale-avatar-600nw-2281862025.jpg';
 
 const ArticleForm = ({ onArticleSubmitted }) => {
-  // All hooks properly ordered at the top
   const [formData, setFormData] = useState({
     title: '',
     mainImage: '',
@@ -33,7 +33,6 @@ const ArticleForm = ({ onArticleSubmitted }) => {
   const [tempDisplayName, setTempDisplayName] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
   const navigate = useNavigate();
-  const { signInWithGoogle } = require('../firebaseconfig');
 
   const handleContentChange = useCallback((htmlContent) => {
     setFormData(prev => ({
@@ -50,9 +49,9 @@ const ArticleForm = ({ onArticleSubmitted }) => {
 
     if (!formData.title?.trim()) newErrors.title = 'Title is required';
     if (!formData.mainImage) newErrors.mainImage = 'Main image is required';
-    
-    const isEmpty = !htmlContent || htmlContent === '<p></p>' || 
-                   htmlContent === '<p><br></p>' || editorRef.current?.isEmpty?.();
+
+    const isEmpty = !htmlContent || htmlContent === '<p></p>' ||
+      htmlContent === '<p><br></p>' || editorRef.current?.isEmpty?.();
     if (isEmpty) newErrors.content = 'Content is required';
 
     return newErrors;
@@ -67,9 +66,13 @@ const ArticleForm = ({ onArticleSubmitted }) => {
       }
 
       try {
+        // Sync user to Sanity first
+        await syncUserToSanity(currentUser);
+
+        // Then get Firestore data
         const userDocRef = doc(db, 'users', currentUser.uid);
         const userDoc = await getDoc(userDocRef);
-        
+
         const userData = {
           uid: currentUser.uid,
           displayName: currentUser.displayName || '',
@@ -87,7 +90,7 @@ const ArticleForm = ({ onArticleSubmitted }) => {
 
         setUser(userData);
       } catch (error) {
-        console.error('Error fetching user data:', error);
+        console.error('Error handling user state:', error);
       } finally {
         setIsUserLoading(false);
       }
@@ -96,10 +99,9 @@ const ArticleForm = ({ onArticleSubmitted }) => {
     return () => unsubscribe();
   }, []);
 
-  // Regular functions after hooks
   const updateUserDisplayName = async () => {
     if (!tempDisplayName.trim()) return;
-    
+
     try {
       const userDocRef = doc(db, 'users', user.uid);
       await updateDoc(userDocRef, { name: tempDisplayName });
@@ -147,7 +149,7 @@ const ArticleForm = ({ onArticleSubmitted }) => {
       const imageUrl = URL.createObjectURL(file);
       setImagePreview(imageUrl);
 
-      const imageAsset = await uploadImageToSanity(file);
+      const imageAsset = await mediaAPI.upload(file);
       setFormData(prev => ({
         ...prev,
         mainImage: imageAsset.asset._ref
@@ -186,56 +188,79 @@ const ArticleForm = ({ onArticleSubmitted }) => {
   };
 
   const handleSubmit = async () => {
-  setIsSubmitting(true);
-  setShowConfirmDialog(false);
+    setIsSubmitting(true);
+    setShowConfirmDialog(false);
 
-  try {
-    const articleData = {
-      _type: 'article',
-      title: formData.title,
-      content: formData.portableContent,
-      mainImage: {
-        _type: 'image',
-        asset: {
-          _type: 'reference',
-          _ref: formData.mainImage
-        }
-      },
-      publishedDate: new Date().toISOString(),
-      author: {
-        _type: 'reference',
-        _ref: user.uid
-      },
-      isAnonymous: isAnonymous
-    };
+    try {
+      const articleData = {
+        title: formData.title,
+        content: formData.portableContent,
+        mainImage: {
+          _type: 'image',
+          asset: {
+            _type: 'reference',
+            _ref: formData.mainImage
+          }
+        },
+        publishedDate: new Date().toISOString(),
+        author: { _type: 'reference', _ref: user.uid },
+        isAnonymous: isAnonymous,
+        readingTime: Math.ceil(formData.portableText?.length / 200) || 5
+      };
 
-    const submittedArticle = await client.create(articleData);
+      const submittedArticle = await articleAPI.create(articleData, user.uid);
 
-    setFormData({
-      title: '',
-      mainImage: '',
-      htmlContent: '',
-      portableContent: []
-    });
-    editorRef.current?.clearContent();
-    setImagePreview(null);
-    setIsAnonymous(false);
+      // Reset form and navigate
+      setFormData({ title: '', mainImage: '', htmlContent: '', portableContent: [] });
+      editorRef.current?.clearContent();
+      setImagePreview(null);
+      setIsAnonymous(false);
 
-    if (onArticleSubmitted) {
-      onArticleSubmitted(submittedArticle);
+      navigate(`/article/${submittedArticle._id}`);
+
+    } catch (error) {
+      console.error('Submission error:', error);
+      alert('Failed to submit article. Please try again later.');
+    } finally {
+      setIsSubmitting(false);
     }
-    
-    // Navigate to the new article page after successful submission
-    navigate(`/article/${submittedArticle._id}`);
-    
-  } catch (error) {
-    console.error('Submission error:', error);
-    alert(error.message || 'Failed to submit article. Please try again later.');
-  } finally {
-    setIsSubmitting(false);
-  }
-};
-  // Conditional rendering after all hooks
+  };
+
+  const syncUserToSanity = async (user) => {
+    if (!user) return;
+
+    try {
+      let imageAsset;
+      if (user.photoURL) {
+        const response = await fetch(user.photoURL);
+        const blob = await response.blob();
+        const file = new File([blob], 'profile.jpg', { type: blob.type });
+        const result = await mediaAPI.upload(file);
+        imageAsset = {
+          _type: 'image',
+          asset: {
+            _type: 'reference',
+            _ref: result.asset._ref
+          }
+        };
+      }
+
+      await client.createOrReplace({
+        _type: 'user',
+        _id: user.uid,
+        name: user.displayName || user.email?.split('@')[0] || 'User',
+        email: user.email || '',
+        photoURL: user.photoURL || DEFAULT_ANONYMOUS_AVATAR,
+        image: imageAsset,
+        role: 'user',
+        providerData: user.providerData?.map(p => p.providerId) || [],
+        lastLogin: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('User sync error:', error);
+    }
+  };
+
   if (isUserLoading) {
     return (
       <PageContainer>
@@ -248,19 +273,10 @@ const ArticleForm = ({ onArticleSubmitted }) => {
 
   if (!user) {
     return (
-      <PageContainer>
-        <Container>
-          <LoginPrompt>
-            <p>You need to be logged in to create an article.</p>
-            <LoginButton onClick={signInWithGoogle}>
-              Login with Google
-            </LoginButton>
-            <BackToListingButton onClick={() => window.history.back()}>
-              Back to Articles
-            </BackToListingButton>
-          </LoginPrompt>
-        </Container>
-      </PageContainer>
+      <>
+        <H1>Please log in to create an article</H1>
+        <AuthForm />
+      </>
     );
   }
 
@@ -270,11 +286,11 @@ const ArticleForm = ({ onArticleSubmitted }) => {
     <PageContainer>
       <Container>
         <h2>Write Your Article</h2>
-        
+
         <AuthorSection>
-          <AuthorPhoto 
-            src={isAnonymous ? DEFAULT_ANONYMOUS_AVATAR : (user?.photoURL || DEFAULT_ANONYMOUS_AVATAR)} 
-            alt={isAnonymous ? 'Anonymous' : (user?.displayName || 'User')} 
+          <AuthorPhoto
+            src={isAnonymous ? DEFAULT_ANONYMOUS_AVATAR : (user?.photoURL || DEFAULT_ANONYMOUS_AVATAR)}
+            alt={isAnonymous ? 'Anonymous' : (user?.displayName || 'User')}
           />
           <AuthorName>{isAnonymous ? 'Anonymous' : (user?.displayName || 'Loading...')}</AuthorName>
         </AuthorSection>
@@ -378,8 +394,8 @@ const ArticleForm = ({ onArticleSubmitted }) => {
                 <DialogButton onClick={() => setShowNameDialog(false)}>
                   Cancel
                 </DialogButton>
-                <DialogButton 
-                  $primary 
+                <DialogButton
+                  $primary
                   onClick={updateUserDisplayName}
                   disabled={!tempDisplayName.trim()}
                 >
@@ -397,6 +413,7 @@ const ArticleForm = ({ onArticleSubmitted }) => {
     </PageContainer>
   );
 };
+
 
 // Styled components remain exactly the same as before
 const PageContainer = styled.div`
@@ -433,55 +450,30 @@ const Container = styled.div`
   }
 `;
 
+const H1 = styled.h1`
+  color: #014a47; 
+  background-color: f7f9fc;
+  text-align: center;
+  font-size: 2.5rem;
+  margin: 0;
+  padding-top: 5px;
+  font-weight: 600;
+  line-height: 1.2;
+  width: 100%;
+
+  @media (max-width: 768px) {
+    font-size: 2rem;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 1.75rem;
+  }
+`;
+
 const LoadingMessage = styled.div`
   padding: 40px;
   text-align: center;
   font-size: 18px;
-`;
-
-const LoginPrompt = styled.div`
-  padding: 40px;
-  text-align: center;
-  max-width: 400px;
-  margin: 0 auto;
-`;
-
-const LoginButton = styled.button`
-  padding: 12px 20px;
-  background-color: #014a47;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 16px;
-  margin-top: 20px;
-  transition: background-color 0.2s;
-
-  &:hover {
-    background-color: #012f2d;
-  }
-`;
-
-const BackToListingButton = styled.button`
-  padding: 12px 20px;
-  background-color: #6c757d;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 16px;
-  margin-top: 10px;
-  margin-left: 10px;
-  transition: background-color 0.2s;
-
-  &:hover {
-    background-color: #5a6268;
-  }
-
-  @media (max-width: 480px) {
-    margin-top: 10px;
-    margin-left: 0;
-  }
 `;
 
 const AuthorSection = styled.div`

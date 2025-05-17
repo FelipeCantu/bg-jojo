@@ -1,13 +1,18 @@
 import React, { createContext, useState, useEffect, useContext, useMemo } from "react";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { app } from "./firebaseconfig";
+import { app } from "../firebaseconfig";
 import { motion, AnimatePresence } from "framer-motion";
+import * as authService from "../services/authService";
 
 const AuthContext = createContext({
   currentUser: null,
   loading: true,
   error: null,
   isAuthenticated: false,
+  isEmailVerified: false,
+  authProvider: null,
+  logout: () => {},
+  refreshUser: () => {},
 });
 
 export function useAuth() {
@@ -27,26 +32,72 @@ export function AuthProvider({ children }) {
     timestamp: null
   });
 
+  const refreshUser = async () => {
+    try {
+      const auth = getAuth(app);
+      if (auth.currentUser) {
+        await auth.currentUser.reload();
+        setCurrentUser({ ...auth.currentUser });
+      }
+    } catch (err) {
+      console.error("Error refreshing user:", err);
+      setError({
+        message: err.message || "Failed to refresh user data",
+        code: err.code || "refresh-failed",
+        timestamp: new Date().toISOString()
+      });
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await authService.signOut();
+      setCurrentUser(null);
+    } catch (err) {
+      console.error("Logout error:", err);
+      setError({
+        message: err.message || "Failed to logout",
+        code: err.code || "logout-failed",
+        timestamp: new Date().toISOString()
+      });
+    }
+  };
+
   useEffect(() => {
     const auth = getAuth(app);
     let isMounted = true;
 
-    // Check for localStorage availability
-    if (typeof window !== 'undefined' && !window.localStorage) {
-      console.warn("LocalStorage not available - auth state won't persist");
-    }
-
     const unsubscribe = onAuthStateChanged(
       auth,
-      (user) => {
+      async (user) => {
         if (isMounted) {
-          setCurrentUser(user);
-          setLoading(false);
-          setError({
-            message: null,
-            code: null,
-            timestamp: null
-          });
+          try {
+            if (user) {
+              if (!user.emailVerified && user.providerData[0]?.providerId === 'password') {
+                await user.reload();
+                setCurrentUser(auth.currentUser);
+              } else {
+                setCurrentUser(user);
+              }
+            } else {
+              setCurrentUser(null);
+            }
+            
+            setLoading(false);
+            setError({
+              message: null,
+              code: null,
+              timestamp: null
+            });
+          } catch (err) {
+            console.error("Error handling auth state:", err);
+            setError({
+              message: err.message || "Failed to process authentication",
+              code: err.code || "auth-processing",
+              timestamp: new Date().toISOString()
+            });
+            setLoading(false);
+          }
         }
       },
       (err) => {
@@ -54,7 +105,7 @@ export function AuthProvider({ children }) {
           console.error("Auth state error:", err);
           setError({
             message: err.message || "Failed to check authentication",
-            code: err.code || "unknown",
+            code: err.code || "auth-check-failed",
             timestamp: new Date().toISOString()
           });
           setLoading(false);
@@ -64,11 +115,7 @@ export function AuthProvider({ children }) {
 
     return () => {
       isMounted = false;
-      try {
-        unsubscribe();
-      } catch (cleanupError) {
-        console.error("Error during auth cleanup:", cleanupError);
-      }
+      unsubscribe();
     };
   }, []);
 
@@ -77,9 +124,14 @@ export function AuthProvider({ children }) {
     loading,
     error,
     isAuthenticated: !!currentUser,
-    // Add helper methods
     isEmailVerified: currentUser?.emailVerified || false,
-    authProvider: currentUser?.providerData?.[0]?.providerId || null
+    authProvider: currentUser?.providerData?.[0]?.providerId || null,
+    logout,
+    refreshUser,
+    getUserName: () => currentUser?.displayName || currentUser?.email?.split('@')[0] || 'User',
+    getUserAvatar: () => currentUser?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(
+      currentUser?.displayName || currentUser?.email?.split('@')[0] || 'User'
+    )}&background=random`
   }), [currentUser, loading, error]);
 
   const pageVariants = {

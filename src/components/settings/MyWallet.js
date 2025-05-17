@@ -3,7 +3,7 @@ import styled from "styled-components";
 import { useForm } from "react-hook-form";
 import InputMask from "react-input-mask";
 import { db, collection, doc, addDoc, getDocs, deleteDoc } from "../../firestore";
-import { useAuth } from "../../AuthContext";
+import { useAuth } from "../../context/AuthContext";
 import toast from "react-hot-toast";
 import 'react-credit-cards-2/dist/es/styles-compiled.css';
 import Cards from 'react-credit-cards-2';

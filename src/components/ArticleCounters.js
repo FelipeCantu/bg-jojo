@@ -1,83 +1,70 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { HeartIcon } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartIconSolid } from "@heroicons/react/24/solid";
 import styled, { keyframes } from "styled-components";
-import { client } from "../sanityClient";
+import { client, articleAPI } from "../sanityClient";
 import useCurrentUser from "../hook/useCurrentUser";
 
 const ArticleCounters = ({ articleId, isDetailView = false }) => {
   const { currentUser } = useCurrentUser();
-  const [viewCount, setViewCount] = useState(0);
   const [commentCount, setCommentCount] = useState(0);
   const [likeCount, setLikeCount] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [hasCountedView, setHasCountedView] = useState(false);
+  const [viewCount, setViewCount] = useState(0);
 
-  // Track view count only in detail view
-  useEffect(() => {
-    const countView = async () => {
-      if (!articleId || !isDetailView || hasCountedView) return;
+  // Fetch all counter data
+  const fetchCounters = useCallback(async () => {
+    if (!articleId) return;
 
-      try {
-        // Increment view count in Sanity
-        await client
-          .patch(articleId)
-          .setIfMissing({ views: 0 })
-          .inc({ views: 1 })
-          .commit();
+    setIsLoading(true);
+    try {
+      const data = await client.fetch(
+        `*[_type == "article" && _id == $articleId][0]{
+          views,
+          likes,
+          "likedBy": likedBy[]->_id,
+          "commentCount": count(*[_type == "comment" && article._ref == ^._id])
+        }`,
+        { articleId }
+      );
 
-        // Update local state
-        setViewCount(prev => prev + 1);
-        setHasCountedView(true);
-        
-        // Store in sessionStorage to prevent duplicate counts
-        sessionStorage.setItem(`viewCounted-${articleId}`, 'true');
-      } catch (err) {
-        console.error("Error counting view:", err);
-      }
-    };
-
-    // Check if we've already counted this view in this session
-    const alreadyCounted = sessionStorage.getItem(`viewCounted-${articleId}`) === 'true';
-    if (alreadyCounted) {
-      setHasCountedView(true);
-    } else {
-      countView();
+      setViewCount(data?.views || 0);
+      setLikeCount(data?.likes || 0);
+      setCommentCount(data?.commentCount || 0);
+      setIsLiked(data?.likedBy?.includes(currentUser?.sanityId) || false);
+    } catch (err) {
+      console.error("Error loading counters:", err);
+    } finally {
+      setIsLoading(false);
     }
-  }, [articleId, isDetailView, hasCountedView]);
-
-  // Fetch initial data
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!articleId) return;
-
-      try {
-        const data = await client.fetch(
-          `*[_type == "article" && _id == $articleId][0]{
-            views,
-            likes,
-            "likedBy": likedBy[]->_id,
-            "commentCount": count(*[_type == "comment" && article._ref == ^._id])
-          }`,
-          { articleId }
-        );
-
-        setViewCount(data?.views || 0);
-        setLikeCount(data?.likes || 0);
-        setCommentCount(data?.commentCount || 0);
-        setIsLiked(data?.likedBy?.includes(currentUser?.sanityId) || false);
-      } catch (err) {
-        console.error("Error loading article data:", err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
   }, [articleId, currentUser?.sanityId]);
 
-  // Handle like click (unchanged from your original)
+  // Handle view increment - executed only once when component mounts
+  useEffect(() => {
+    if (!articleId || !isDetailView) return;
+    
+    const incrementView = async () => {
+      try {
+        console.log("Incrementing view count for article:", articleId);
+        const updatedViewCount = await articleAPI.incrementViews(articleId);
+        setViewCount(updatedViewCount);
+        console.log("View count incremented successfully:", updatedViewCount);
+      } catch (err) {
+        console.error("Failed to increment view count:", err);
+      }
+    };
+
+    // Increment view immediately when component mounts
+    incrementView();
+  }, [articleId, isDetailView]); // Dependencies ensure this runs only once when component mounts
+
+  // Initial data load
+  useEffect(() => {
+    fetchCounters();
+  }, [fetchCounters]);
+
+  // Handle like action
   const handleLike = async () => {
     if (!currentUser?.sanityId) {
       alert("Please sign in to like articles");
@@ -96,80 +83,46 @@ const ArticleCounters = ({ articleId, isDetailView = false }) => {
         { articleId }
       );
 
-      if (!article) {
-        throw new Error("Article not found");
-      }
+      const alreadyLiked = article.likedByRefs?.includes(currentUser.sanityId);
+      const newLikeCount = alreadyLiked ? likeCount - 1 : likeCount + 1;
 
-      const alreadyLiked = article.likedByRefs?.includes(currentUser.sanityId) || false;
-      
-      const updatedLikedBy = alreadyLiked
-        ? (article.likedByRefs || []).filter(id => id && id !== currentUser.sanityId)
-        : [...(article.likedByRefs || []).filter(Boolean), currentUser.sanityId];
-
-      const likedByReferences = updatedLikedBy
-        .filter(Boolean)
-        .map(userId => ({
-          _type: "reference",
-          _ref: String(userId)
-        }));
-
-      const newLikeCount = alreadyLiked ? Math.max(0, likeCount - 1) : likeCount + 1;
-
-      await client
-        .patch(articleId)
-        .set({ 
-          likes: newLikeCount,
-          likedBy: likedByReferences.length > 0 ? likedByReferences : []
-        })
-        .commit();
-
-      if (!alreadyLiked && article.author?._id && article.author._id !== currentUser.sanityId) {
-        await client.create({
-          _type: "notification",
-          user: { 
-            _type: "reference", 
-            _ref: String(article.author._id)
-          },
-          sender: { 
-            _type: "reference", 
-            _ref: String(currentUser.sanityId)
-          },
-          type: "like",
-          relatedArticle: { 
-            _type: "reference", 
-            _ref: String(article._id)
-          },
-          seen: false,
-          createdAt: new Date().toISOString()
-        });
-      }
-
+      // Optimistic UI update
       setLikeCount(newLikeCount);
       setIsLiked(!alreadyLiked);
+
+      await articleAPI.toggleLike(articleId, currentUser.sanityId);
+      
+      // Refresh data to ensure sync
+      await fetchCounters();
     } catch (err) {
-      console.error("Error updating like:", err);
-      alert("Failed to update like. Please try again.");
+      // Rollback on error
+      setLikeCount(prev => prev);
+      setIsLiked(prev => prev);
+      console.error("Like action failed:", err);
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (isLoading) return <LoadingSpinner />;
+  if (isLoading && (!viewCount && !likeCount && !commentCount)) {
+    return <LoadingSpinner />;
+  }
 
   return (
     <CountersSection>
       <CounterItem>
         <EyeIcon />
-        {viewCount} Views
+        {viewCount} {viewCount === 1 ? "View" : "Views"}
       </CounterItem>
       <CounterItem>
         <CommentIcon />
-        {commentCount} Comments
+        {commentCount} {commentCount === 1 ? "Comment" : "Comments"}
       </CounterItem>
       <HeartIconWrapper 
         onClick={handleLike} 
         $liked={isLiked ? 1 : 0}
         disabled={isLoading}
+        aria-label={isLiked ? "Unlike article" : "Like article"}
       >
         {isLiked ? (
           <HeartIconSolidStyled className="icon" />
@@ -182,7 +135,7 @@ const ArticleCounters = ({ articleId, isDetailView = false }) => {
   );
 };
 
-// Styled components (unchanged from your original)
+// Styled Components
 const spin = keyframes`
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }

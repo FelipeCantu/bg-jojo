@@ -12,6 +12,22 @@ export const product = defineType({
       validation: (Rule) => Rule.required(),
     }),
     defineField({
+      name: 'category',
+      title: 'Category',
+      type: 'string',
+      options: {
+        list: [
+          { title: 'T-shirt', value: 't-shirt' },
+          { title: 'Hoodie', value: 'hoodie' },
+          { title: 'Sweater', value: 'sweater' },
+          { title: 'Sticker', value: 'sticker' },
+          { title: 'Plushie', value: 'plushie' }
+        ],
+        layout: 'dropdown'
+      },
+      validation: (Rule) => Rule.required(),
+    }),
+    defineField({
       name: 'slug',
       title: 'Slug',
       type: 'slug',
@@ -130,6 +146,7 @@ export const product = defineType({
   preview: {
     select: {
       title: 'name',
+      subtitle: 'category',
       media: 'images.0',
     },
   },

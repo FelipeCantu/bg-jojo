@@ -25,11 +25,15 @@ import {
   ArticleForm,
   EditArticle,
   LoadingContainer,
-  // CartDrawer,
-  // ProductPage,
-  // ProductsPage,
-  // CheckoutPage,
-  // SuccessPage
+  CartDrawer,
+  ProductPage,
+  ProductsPage,
+  CheckoutPage,
+  SuccessPage,
+  AuthForm,
+  EmailVerification,
+  Dashboard,
+  PrivacyPolicy,
 } from './components';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -105,6 +109,11 @@ function App() {
 
       <AnimatePresence mode="wait" initial={false}>
         <Routes location={location} key={location.pathname}>
+          <Route path="/auth" element={<AuthForm />} />
+          <Route path="/login" element={<AuthForm mode="login" />} />
+          <Route path="/signup" element={<AuthForm mode="signup" />} />
+          <Route path="/email-verification" element={<EmailVerification />} />
+          <Route path='/dashboard' element={<SlideUpRoute><Dashboard /></SlideUpRoute>} />
           <Route path="/" element={<Navigate to="/home" replace />} />
           <Route path="/home" element={<SlideUpRoute><Home /></SlideUpRoute>} />
           <Route path="/about" element={<SlideUpRoute><About /></SlideUpRoute>} />
@@ -120,11 +129,11 @@ function App() {
           <Route path="/yourgift" element={<SlideUpRoute><YourGift /></SlideUpRoute>} />
           <Route path="/donate" element={<SlideUpRoute><Donate /></SlideUpRoute>} />
           <Route path="/SupportingGiveBackJojo" element={<SlideUpRoute><SupportingGiveBackJojo /></SlideUpRoute>} />
-          {/* <Route path="/products/:slug" element={<SlideUpRoute><ProductPage /></SlideUpRoute>} />
+          <Route path="/products/:slug" element={<SlideUpRoute><ProductPage /></SlideUpRoute>} />
           <Route path="/products" element={<SlideUpRoute><ProductsPage /></SlideUpRoute>} />
-          <Route path="/checkout" element={<SlideUpRoute><CheckoutPage /></SlideUpRoute>} /> 
-          <Route path="/success" element={<SlideUpRoute><SuccessPage /></SlideUpRoute>} /> 
-           */}
+          <Route path="/checkout" element={<SlideUpRoute><CheckoutPage /></SlideUpRoute>} />
+          <Route path="/success" element={<SlideUpRoute><SuccessPage /></SlideUpRoute>} />
+          <Route path="/privacy" element={<SlideUpRoute><PrivacyPolicy /></SlideUpRoute>} />
           <Route
             path="/account-settings/*"
             element={
@@ -164,7 +173,7 @@ function App() {
       </AnimatePresence>
 
       <Footer />
-      {/* <CartDrawer /> */}
+      <CartDrawer />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { UserCircleIcon, ChevronDownIcon } from '@heroicons/react/24/solid';
-import { signInWithGoogle, logOut } from '../../firebaseconfig';
+import { logOut } from '../../firebaseconfig';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../../firebaseconfig';
 import styled, { keyframes } from 'styled-components';
@@ -48,6 +48,11 @@ const LoginButton = ({ hideInNavbar, closeSidebar }) => {
     if (closeSidebar) closeSidebar();
   };
 
+  const handleLoginClick = () => {
+    navigate('/auth'); // Redirect to your AuthForm component
+    if (closeSidebar) closeSidebar();
+  };
+
   return (
     <Icons>
       {user ? (
@@ -86,7 +91,7 @@ const LoginButton = ({ hideInNavbar, closeSidebar }) => {
         </UserProfile>
       ) : (
         !hideInNavbar && (
-          <LoginContainer onClick={signInWithGoogle}>
+          <LoginContainer onClick={handleLoginClick}>
             <UserCircleIcon />
             <LoginText>Login</LoginText>
           </LoginContainer>
@@ -96,7 +101,7 @@ const LoginButton = ({ hideInNavbar, closeSidebar }) => {
   );
 };
 
-// Styled Components
+// Styled Components (keep all your existing styles)
 const Icons = styled.div`
   display: flex;
   align-items: center;
@@ -203,12 +208,7 @@ const DropdownItem = styled.div`
   color: ${props => props.$danger ? 'var(--error-color, #e53e3e)' : 'var(--text-color)'};
   
   &:hover {
-    // background-color: rgba(0, 0, 0, 0.05);
     color: ${props => props.$danger ? 'var(--error-color, #e53e3e)' : 'var(--secondary-color)'};
-  }
-  
-  &:active {
-    // background-color: rgba(0, 0, 0, 0.1);
   }
 `;
 
@@ -217,5 +217,6 @@ const Divider = styled.div`
   background-color: var(--border-color, #e2e8f0);
   margin: 0.5rem 0;
 `;
+
 
 export default LoginButton;

@@ -139,7 +139,7 @@ const AccountSettings = () => {
               to="settings" 
               className={({ isActive }) => isActive ? "active" : ""}
             >
-              Settings
+              My Settings
             </NavItem>
             <ActiveIndicator ref={indicatorRef} />
           </Navbar>

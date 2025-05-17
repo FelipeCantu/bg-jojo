@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { fetchArticles } from '../sanityClient';
+import { articleAPI } from '../sanityClient';
 import ArticleCounters from './ArticleCounters';
 import CreateArticleButton from './CreateArticleButton';
 import styled from 'styled-components';
@@ -20,7 +20,7 @@ const ArticleList = () => {
   useEffect(() => {
     const getArticles = async () => {
       try {
-        const fetchedArticles = await fetchArticles();
+        const fetchedArticles = await articleAPI.fetchAll();
         setArticles(fetchedArticles);
         setFilteredArticles(fetchedArticles);
       } catch (err) {
@@ -66,11 +66,11 @@ const ArticleList = () => {
         <ArticleGrid>
           {filteredArticles.map((article) => {
             // Handle anonymous vs. regular author display
-            const authorName = article.isAnonymous ? 'Anonymous' : article.authorDisplay?.name || 'Unknown author';
+            const authorName = article.isAnonymous ? 'Anonymous' : article.author?.name || 'Unknown author';
             const authorImageSrc = article.isAnonymous 
               ? DEFAULT_ANONYMOUS_AVATAR 
-              : article.authorDisplay?.photoURL || DEFAULT_ANONYMOUS_AVATAR;
-            const mainImageSrc = article.mainImage || 'https://via.placeholder.com/350x250';
+              : article.author?.photoURL || DEFAULT_ANONYMOUS_AVATAR;
+            const mainImageSrc = article.mainImage?.url || 'https://via.placeholder.com/350x250';
 
             return (
               <LinkWrapper to={`/article/${article._id}`} key={article._id}>
@@ -111,7 +111,6 @@ const ArticleList = () => {
     </ArticleContainer>
   );
 };
-
 // Styled components (remain exactly the same as your original)
 const ErrorMessage = styled.p`
   font-size: 1.2rem;
