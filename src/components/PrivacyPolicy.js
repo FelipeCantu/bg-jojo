@@ -7,12 +7,12 @@ const PrivacyContainer = styled.div`
   margin: 0 auto;
   padding: 2rem;
   line-height: 1.6;
-  color: #333;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: var(--text-color);
+  font-family: var(--font-body);
 `;
 
 const LastUpdated = styled.p`
-  color: #666;
+  color: var(--text-light);
   font-style: italic;
   margin-bottom: 2rem;
 `;
@@ -23,21 +23,21 @@ const Section = styled.section`
 
 const Heading1 = styled.h1`
   font-size: 2.5rem;
-  color: #2c3e50;
+  color: var(--text-color);
   margin-bottom: 1rem;
-  border-bottom: 2px solid #f0f0f0;
+  border-bottom: 2px solid var(--border-color);
   padding-bottom: 0.5rem;
 `;
 
 const Heading2 = styled.h2`
   font-size: 1.8rem;
-  color: #34495e;
+  color: var(--text-color);
   margin: 2rem 0 1rem;
 `;
 
 const Heading3 = styled.h3`
   font-size: 1.4rem;
-  color: #3a5169;
+  color: var(--text-color);
   margin: 1.5rem 0 0.8rem;
 `;
 
@@ -59,18 +59,18 @@ const DefinitionList = styled.ul`
       content: '•';
       position: absolute;
       left: 0;
-      color: #3498db;
+      color: var(--info-color);
     }
   }
 `;
 
 const ExternalLink = styled.a`
-  color: #2980b9;
+  color: var(--info-color);
   text-decoration: none;
   transition: color 0.2s;
 
   &:hover {
-    color: #1a5276;
+    color: var(--info-color);
     text-decoration: underline;
   }
 `;
@@ -87,17 +87,17 @@ const PrivacyPolicy = () => {
     <PrivacyContainer>
       <Heading1>Privacy Policy</Heading1>
       <LastUpdated>Last updated: May 16, 2025</LastUpdated>
-      
+
       <Section>
         <Paragraph>
-          This Privacy Policy describes Our policies and procedures on the collection, 
-          use and disclosure of Your information when You use the Service and tells 
+          This Privacy Policy describes Our policies and procedures on the collection,
+          use and disclosure of Your information when You use the Service and tells
           You about Your privacy rights and how the law protects You.
         </Paragraph>
         <Paragraph>
-          We use Your Personal data to provide and improve the Service. By using the Service, 
-          You agree to the collection and use of information in accordance with this Privacy Policy. 
-         
+          We use Your Personal data to provide and improve the Service. By using the Service,
+          You agree to the collection and use of information in accordance with this Privacy Policy.
+
         </Paragraph>
       </Section>
 
@@ -105,10 +105,10 @@ const PrivacyPolicy = () => {
         <Heading2>Interpretation and Definitions</Heading2>
         <Heading3>Interpretation</Heading3>
         <Paragraph>
-          The words of which the initial letter is capitalized have meanings defined under the following conditions. 
+          The words of which the initial letter is capitalized have meanings defined under the following conditions.
           The following definitions shall have the same meaning regardless of whether they appear in singular or in plural.
         </Paragraph>
-        
+
         <Heading3>Definitions</Heading3>
         <Paragraph>For the purposes of this Privacy Policy:</Paragraph>
         <DefinitionList>

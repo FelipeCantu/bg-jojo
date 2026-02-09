@@ -5,75 +5,72 @@ import MyWallet from '../settings/MyWallet';
 import MyAddress from '../settings/MyAddress';
 import MySettings from '../settings/MySettings';
 import styled, { css } from 'styled-components';
+import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
+
+const pageVariants = {
+  initial: (direction) => ({
+    x: direction > 0 ? '100%' : '-100%',
+    opacity: 1
+  }),
+  in: {
+    x: 0,
+    opacity: 1
+  },
+  out: (direction) => ({
+    x: direction < 0 ? '100%' : '-100%',
+    opacity: 1
+  })
+};
+
+const pageTransition = {
+  type: "tween",
+  ease: "easeInOut",
+  duration: 0.3
+};
+
+const tabs = ['account', 'wallet', 'address', 'settings'];
 
 const AccountSettings = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const navRef = useRef(null);
   const touchStartRef = useRef(0);
   const location = useLocation();
-  const indicatorRef = useRef(null);
-  const navItemsRef = useRef([]);
-  const [isAnimating, setIsAnimating] = useState(false);
 
-  const updateIndicatorPosition = useCallback((immediate = false) => {
-    if (isAnimating) return;
-    
-    const path = location.pathname.split('/').pop() || 'account';
-    const activeIndex = ['account', 'wallet', 'address', 'settings'].indexOf(path);
-    
-    if (activeIndex >= 0 && navItemsRef.current[activeIndex] && indicatorRef.current) {
-      const activeElement = navItemsRef.current[activeIndex];
-      const { offsetLeft, offsetWidth } = activeElement;
+  useEffect(() => {
+    if (navRef.current) {
+      const activeLink = navRef.current.querySelector('a.active');
+      if (activeLink) {
+        const container = navRef.current;
+        const scrollLeft = activeLink.offsetLeft - (container.offsetWidth / 2) + (activeLink.offsetWidth / 2);
 
-      if (immediate) {
-        indicatorRef.current.style.transition = 'none';
-        indicatorRef.current.style.left = `${offsetLeft}px`;
-        indicatorRef.current.style.width = `${offsetWidth}px`;
-      } else {
-        setIsAnimating(true);
-        indicatorRef.current.style.transition = 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
-        indicatorRef.current.style.left = `${offsetLeft}px`;
-        indicatorRef.current.style.width = `${offsetWidth}px`;
-        
-        const onTransitionEnd = () => {
-          setIsAnimating(false);
-          indicatorRef.current.removeEventListener('transitionend', onTransitionEnd);
-        };
-        indicatorRef.current.addEventListener('transitionend', onTransitionEnd);
-      }
-
-      if (isMobile && navRef.current) {
-        const containerWidth = navRef.current.offsetWidth;
-        const itemCenter = offsetLeft + (offsetWidth / 2);
-        const scrollPosition = itemCenter - (containerWidth / 2);
-        
-        navRef.current.scrollTo({
-          left: scrollPosition,
-          behavior: immediate ? 'auto' : 'smooth'
+        container.scrollTo({
+          left: scrollLeft,
+          behavior: 'smooth'
         });
       }
     }
-  }, [location.pathname, isMobile, isAnimating]);
+  }, [location.pathname]);
+
+  const getTabIndex = (path) => {
+    const currentTab = tabs.find(tab => path.endsWith(tab));
+    return currentTab ? tabs.indexOf(currentTab) : 0;
+  };
+
+  const [visualDirection, setVisualDirection] = useState(0);
+  const prevPathRef = useRef(location.pathname);
 
   useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-      updateIndicatorPosition(true);
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [updateIndicatorPosition]);
-
-  useEffect(() => {
-    updateIndicatorPosition();
-  }, [location.pathname, updateIndicatorPosition]);
+    const prevIndex = getTabIndex(prevPathRef.current);
+    const currIndex = getTabIndex(location.pathname);
+    setVisualDirection(currIndex - prevIndex);
+    prevPathRef.current = location.pathname;
+  }, [location.pathname]);
 
   const handleScroll = (direction) => {
-    if (navRef.current && !isAnimating) {
-      navRef.current.scrollBy({ 
-        left: direction === 'left' ? -200 : 200, 
-        behavior: 'smooth' 
+    if (navRef.current) {
+      navRef.current.scrollBy({
+        left: direction === 'left' ? -200 : 200,
+        behavior: 'smooth'
       });
     }
   };
@@ -99,54 +96,81 @@ const AccountSettings = () => {
         <Title>Account Settings</Title>
         <NavbarWrapper>
           {isMobile && (
-            <ScrollButton 
+            <ScrollButton
               onClick={() => handleScroll('left')}
-              disabled={isAnimating}
               aria-label="Scroll left"
             >
               ‹
             </ScrollButton>
           )}
-          <Navbar 
-            ref={navRef} 
-            isMobile={isMobile} 
-            onTouchStart={handleTouchStart} 
-            onTouchMove={handleTouchMove}
-          >
-            <NavItem 
-              ref={el => navItemsRef.current[0] = el}
-              to="account" 
-              className={({ isActive }) => isActive ? "active" : ""}
+          <LayoutGroup>
+            <Navbar
+              ref={navRef}
+              isMobile={isMobile}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
             >
-              My Account
-            </NavItem>
-            <NavItem 
-              ref={el => navItemsRef.current[1] = el}
-              to="wallet" 
-              className={({ isActive }) => isActive ? "active" : ""}
-            >
-              My Wallet
-            </NavItem>
-            <NavItem 
-              ref={el => navItemsRef.current[2] = el}
-              to="address" 
-              className={({ isActive }) => isActive ? "active" : ""}
-            >
-              My Address
-            </NavItem>
-            <NavItem 
-              ref={el => navItemsRef.current[3] = el}
-              to="settings" 
-              className={({ isActive }) => isActive ? "active" : ""}
-            >
-              My Settings
-            </NavItem>
-            <ActiveIndicator ref={indicatorRef} />
-          </Navbar>
+              <NavItem
+                to="account"
+                className={({ isActive }) => isActive ? "active" : ""}
+              >
+                My Account
+                {location.pathname.endsWith('/account') && (
+                  <Underline
+                    layoutId="underline"
+                    initial={{ opacity: 1, y: 0 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  />
+                )}
+              </NavItem>
+              <NavItem
+                to="wallet"
+                className={({ isActive }) => isActive ? "active" : ""}
+              >
+                My Wallet
+                {location.pathname.endsWith('/wallet') && (
+                  <Underline
+                    layoutId="underline"
+                    initial={{ opacity: 1, y: 0 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  />
+                )}
+              </NavItem>
+              <NavItem
+                to="address"
+                className={({ isActive }) => isActive ? "active" : ""}
+              >
+                My Address
+                {location.pathname.endsWith('/address') && (
+                  <Underline
+                    layoutId="underline"
+                    initial={{ opacity: 1, y: 0 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  />
+                )}
+              </NavItem>
+              <NavItem
+                to="settings"
+                className={({ isActive }) => isActive ? "active" : ""}
+              >
+                My Settings
+                {location.pathname.endsWith('/settings') && (
+                  <Underline
+                    layoutId="underline"
+                    initial={{ opacity: 1, y: 0 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  />
+                )}
+              </NavItem>
+            </Navbar>
+          </LayoutGroup>
           {isMobile && (
-            <ScrollButton 
+            <ScrollButton
               onClick={() => handleScroll('right')}
-              disabled={isAnimating}
               aria-label="Scroll right"
             >
               ›
@@ -155,16 +179,62 @@ const AccountSettings = () => {
         </NavbarWrapper>
 
         <ContentArea>
-          <Routes>
-            <Route index element={<Navigate to="account" replace />} />
-            <Route path="account" element={<MyAccount />} />
-            <Route path="wallet" element={<MyWallet />} />
-            <Route path="address" element={<MyAddress />} />
-            <Route path="settings" element={<MySettings />} />
-          </Routes>
+          <AnimatePresence initial={false} mode="popLayout" custom={visualDirection}>
+            <Routes location={location} key={location.pathname}>
+              <Route index element={<Navigate to="account" replace />} />
+              <Route path="account" element={
+                <PageWrapper
+                  custom={visualDirection}
+                  initial="initial"
+                  animate="in"
+                  exit="out"
+                  variants={pageVariants}
+                  transition={pageTransition}
+                >
+                  <MyAccount />
+                </PageWrapper>
+              } />
+              <Route path="wallet" element={
+                <PageWrapper
+                  custom={visualDirection}
+                  initial="initial"
+                  animate="in"
+                  exit="out"
+                  variants={pageVariants}
+                  transition={pageTransition}
+                >
+                  <MyWallet />
+                </PageWrapper>
+              } />
+              <Route path="address" element={
+                <PageWrapper
+                  custom={visualDirection}
+                  initial="initial"
+                  animate="in"
+                  exit="out"
+                  variants={pageVariants}
+                  transition={pageTransition}
+                >
+                  <MyAddress />
+                </PageWrapper>
+              } />
+              <Route path="settings" element={
+                <PageWrapper
+                  custom={visualDirection}
+                  initial="initial"
+                  animate="in"
+                  exit="out"
+                  variants={pageVariants}
+                  transition={pageTransition}
+                >
+                  <MySettings />
+                </PageWrapper>
+              } />
+            </Routes>
+          </AnimatePresence>
         </ContentArea>
       </Container>
-    </ContainerWrapper>
+    </ContainerWrapper >
   );
 };
 
@@ -174,7 +244,7 @@ const ContainerWrapper = styled.div`
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  background: #f3f3f3;
+  background: var(--background-alt);
   padding: 0;
   overflow: hidden;
   width: 100%;
@@ -221,7 +291,7 @@ const Container = styled.div`
 const Title = styled.h1`
   font-size: 1.5rem;
   margin-bottom: 1rem;
-  color: #2d1f0f;
+  color: var(--secondary-color);
   padding: 0 0.5rem;
   
   @media (min-width: 768px) {
@@ -261,28 +331,26 @@ const Navbar = styled.nav`
   }
 
   @media (max-width: 768px) {
-    justify-content: flex-start; // Only change for mobile
-    padding: 0 1rem; // Add padding for mobile
-    gap: 2rem; // Slightly reduce gap for mobile
+    justify-content: flex-start;
+    padding: 0 1rem 12px;
+    margin-bottom: 1.5rem;
+    gap: 1.5rem;
   }
 `;
 
-const ActiveIndicator = styled.div`
+const Underline = styled(motion.div)`
   position: absolute;
   bottom: 0;
-  height: 4px;
-  background-color: #0d3b2e;
-  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   left: 0;
-  width: 0;
+  right: 0;
+  height: 4px;
+  background-color: var(--secondary-color);
   border-radius: 2px 2px 0 0;
-  will-change: left, width;
-  margin: 0;
 `;
 
 const NavItem = styled(NavLink)`
   text-decoration: none;
-  color: #2d1f0f;
+  color: var(--text-color);
   font-size: 1.2rem;
   font-weight: normal;
   position: relative;
@@ -292,7 +360,7 @@ const NavItem = styled(NavLink)`
   margin: 0;
   
   &.active {
-    color: #0d3b2e;
+    color: var(--secondary-color);
     font-weight: bold;
   }
 
@@ -348,7 +416,20 @@ const ContentArea = styled.div`
   @media (min-width: 768px) {
     padding: 0;
     overflow-y: visible;
+    overflow-x: hidden;
+    position: relative;
+    display: grid;
+    grid-template-columns: 100%;
+    grid-template-rows: 1fr;
+    align-items: start;
   }
+`;
+
+const PageWrapper = styled(motion.div)`
+  width: 100%;
+  height: auto;
+  grid-column: 1;
+  grid-row: 1;
 `;
 
 export default AccountSettings;

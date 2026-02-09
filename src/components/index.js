@@ -21,6 +21,7 @@ export { default as ProductPage } from './ProductPage';
 export { default as ProductsPage } from './ProductsPage';
 export { default as CheckoutPage } from './CheckOutPage';
 export { default as SuccessPage } from './SuccessPage';
+export { default as DonationSuccess } from './DonationSuccess';
 
 // Navbar & Related Pages
 export { default as Navbar } from './Navbar/Navbar';

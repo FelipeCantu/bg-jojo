@@ -3,9 +3,11 @@ import { auth, db } from '../../firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import styled from 'styled-components';
-import { FaCamera } from 'react-icons/fa';
+import { FaCamera, FaHeart, FaShoppingCart, FaBell } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 import UserArticles from './UserArticles';
 import { client } from '../../sanityClient'; // Assuming you've set up Sanity client
+import AuthForm from '../AuthForm';
 
 const Profile = () => {
   const [user, setUser] = useState(null);
@@ -14,6 +16,7 @@ const Profile = () => {
   const [banner, setBanner] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -96,7 +99,15 @@ const Profile = () => {
     }
   };
 
-  if (!user) return <Message>Please log in to view your profile.</Message>;
+  if (!user) {
+    return (
+      <AuthForm
+        title="Sign in to View Profile"
+        subtitle="Manage your bio, articles, and settings"
+        redirectTo="/profile"
+      />
+    );
+  }
 
   return (
     <ProfileContainer>
@@ -129,39 +140,69 @@ const Profile = () => {
           </UserInfo>
         </Banner>
         <ProfileContent>
-          <BioSection>
-            <BioLabel>About Yourself</BioLabel>
-            {isEditing ? (
-              <>
-                <BioTextarea
-                  value={bio}
-                  onChange={handleBioChange}
-                  placeholder="Tell us about yourself..."
-                  maxLength={500}
-                />
-                <CharacterCount exceeded={bio.length > 500}>
-                  {bio.length}/500 characters
-                </CharacterCount>
-                <ButtonGroup>
-                  <SaveBioButton onClick={handleSaveBio} disabled={isSaving || bio.length > 500}>
-                    {isSaving ? 'Saving...' : 'Save'}
-                  </SaveBioButton>
-                  <CancelButton onClick={() => setIsEditing(false)}>
-                    Cancel
-                  </CancelButton>
-                </ButtonGroup>
-              </>
-            ) : (
-              <BioDisplay onClick={() => setIsEditing(true)}>
-                {bio}
-              </BioDisplay>
-            )}
-          </BioSection>
+          <MainGrid>
+            <LeftColumn>
+              <SectionTitle>About Yourself</SectionTitle>
+              <BioSection>
+                {isEditing ? (
+                  <>
+                    <BioTextarea
+                      value={bio}
+                      onChange={handleBioChange}
+                      placeholder="Tell us about yourself..."
+                      maxLength={500}
+                    />
+                    <CharacterCount exceeded={bio.length > 500}>
+                      {bio.length}/500 characters
+                    </CharacterCount>
+                    <ButtonGroup>
+                      <SaveBioButton onClick={handleSaveBio} disabled={isSaving || bio.length > 500}>
+                        {isSaving ? 'Saving...' : 'Save'}
+                      </SaveBioButton>
+                      <CancelButton onClick={() => setIsEditing(false)}>
+                        Cancel
+                      </CancelButton>
+                    </ButtonGroup>
+                  </>
+                ) : (
+                  <BioDisplay onClick={() => setIsEditing(true)}>
+                    {bio}
+                  </BioDisplay>
+                )}
+              </BioSection>
+            </LeftColumn>
+
+            <RightColumn>
+              <SectionTitle>Quick Actions</SectionTitle>
+              <DashboardGrid>
+                <DashboardCard onClick={() => navigate('/tributes')}>
+                  <IconWrapper><FaHeart /></IconWrapper>
+                  <h3>Your Tributes</h3>
+                  <p>View memorials</p>
+                </DashboardCard>
+
+                <DashboardCard onClick={() => navigate('/orders')}>
+                  <IconWrapper><FaShoppingCart /></IconWrapper>
+                  <h3>Orders</h3>
+                  <p>Purchase history</p>
+                </DashboardCard>
+
+                <DashboardCard onClick={() => navigate('/notifications')}>
+                  <IconWrapper><FaBell /></IconWrapper>
+                  <h3>Notifications</h3>
+                  <p>View updates</p>
+                </DashboardCard>
+              </DashboardGrid>
+            </RightColumn>
+          </MainGrid>
         </ProfileContent>
-        {user?.uid && <UserArticles userId={user.uid} />}
-        {!user?.uid && <p>No articles yet.</p>}
+        <ArticlesSection>
+          <SectionTitle>My Articles</SectionTitle>
+          {user?.uid && <UserArticles userId={user.uid} />}
+          {!user?.uid && <p>No articles yet.</p>}
+        </ArticlesSection>
       </ProfileCard>
-    </ProfileContainer>
+    </ProfileContainer >
   );
 };
 
@@ -301,20 +342,86 @@ const JoinDate = styled.p`
 `;
 
 const ProfileContent = styled.div`
+  padding: 20px;
+`;
+
+const MainGrid = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+`;
+
+const LeftColumn = styled.div`
+  width: 100%;
+`;
+
+const RightColumn = styled.div`
+  width: 100%;
+`;
+
+const SectionTitle = styled.h3`
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #f0f0f0;
+`;
+
+const DashboardGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+`;
+
+const DashboardCard = styled.div`
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.25rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
   display: flex;
   flex-direction: column;
   align-items: center;
+  text-align: center;
+  
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border-color: #024a47;
+  }
+
+  h3 {
+    font-size: 1rem;
+    margin: 0.5rem 0 0.25rem;
+    color: #333;
+  }
+
+  p {
+    font-size: 0.85rem;
+    color: #666;
+    margin: 0;
+  }
+`;
+
+const IconWrapper = styled.div`
+  font-size: 1.5rem;
+  color: #024a47;
+  margin-bottom: 0.5rem;
+`;
+
+const ArticlesSection = styled.div`
   padding: 20px;
+  border-top: 1px solid #eee;
 `;
 
 const BioSection = styled.div`
   width: 100%;
-  max-width: 800px;
-  margin: 30px auto;
-  padding: 20px;
   background: #ffffff;
   border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e0e0e0;
+  padding: 1.5rem;
 `;
 
 const BioLabel = styled.label`

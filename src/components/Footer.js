@@ -5,37 +5,37 @@ import { faFacebookF, faInstagram, faYoutube } from "@fortawesome/free-brands-sv
 
 const Footer = () => {
   return (
-    <FooterContainer>
+    <FooterContainer className="Footer">
       <CrisisAlert>
         <CrisisText>
-          If you or someone you know is in crisis, reach out to your local crisis line, 
+          If you or someone you know is in crisis, reach out to your local crisis line,
           text or call the 988 Suicide and Crisis Lifeline at{' '}
-          <ClickableNumber href="tel:988">988</ClickableNumber>, 
+          <ClickableNumber href="tel:988">988</ClickableNumber>,
           or visit <CrisisLink href="https://988lifeline.org" target="_blank" rel="noopener noreferrer">988lifeline.org</CrisisLink> for more details.
         </CrisisText>
       </CrisisAlert>
-      
+
       <FooterContent>
         <SocialMedia>
-          <SocialLink 
-            href="https://www.facebook.com/profile.php?id=61564086892164" 
-            target="_blank" 
+          <SocialLink
+            href="https://www.facebook.com/profile.php?id=61564086892164"
+            target="_blank"
             rel="noopener noreferrer"
             aria-label="Facebook"
           >
             <FontAwesomeIcon icon={faFacebookF} />
           </SocialLink>
-          <SocialLink 
-            href="https://www.instagram.com/givebackjojo/" 
-            target="_blank" 
+          <SocialLink
+            href="https://www.instagram.com/givebackjojo/"
+            target="_blank"
             rel="noopener noreferrer"
             aria-label="Instagram"
           >
             <FontAwesomeIcon icon={faInstagram} />
           </SocialLink>
-          <SocialLink 
-            href="https://www.youtube.com/watch?v=bqnwdX3x_l0" 
-            target="_blank" 
+          <SocialLink
+            href="https://www.youtube.com/watch?v=bqnwdX3x_l0"
+            target="_blank"
             rel="noopener noreferrer"
             aria-label="YouTube"
           >
@@ -63,6 +63,7 @@ const FooterContainer = styled.footer`
   background-color: var(--primary-color);
   color: var(--text-color);
   position: relative;
+  padding: 0;
 `;
 
 const CrisisAlert = styled.div`

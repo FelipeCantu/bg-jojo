@@ -196,7 +196,7 @@ const LoadingPlaceholder = styled.div`
     width: 40px;
     height: 40px;
     border: 4px solid rgba(254, 165, 0, 0.3);
-    border-top-color: #fea500;
+    border-top-color: var(--primary-color);
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }
@@ -209,7 +209,7 @@ const LoadingPlaceholder = styled.div`
 const Paragraph = styled.p`
   margin-bottom: 1.5rem;
   font-size: 1.125rem;
-  color: #333;
+  color: var(--text-color);
   text-align: ${props => props.$align || 'left'};
 `;
 
@@ -217,7 +217,7 @@ const H1 = styled.h1`
   font-size: 2rem;
   margin: 2rem 0 1rem;
   line-height: 1.3;
-  color: #333;
+  color: var(--text-color);
   text-align: ${props => props.$align || 'left'};
 `;
 
@@ -225,7 +225,7 @@ const H2 = styled.h2`
   font-size: 1.75rem;
   margin: 1.75rem 0 0.75rem;
   line-height: 1.3;
-  color: #333;
+  color: var(--text-color);
   text-align: ${props => props.$align || 'left'};
 `;
 
@@ -233,7 +233,7 @@ const H3 = styled.h3`
   font-size: 1.5rem;
   margin: 1.5rem 0 0.5rem;
   line-height: 1.3;
-  color: #333;
+  color: var(--text-color);
   text-align: ${props => props.$align || 'left'};
 `;
 
@@ -241,17 +241,17 @@ const H4 = styled.h4`
   font-size: 1.25rem;
   margin: 1.25rem 0 0.5rem;
   line-height: 1.3;
-  color: #333;
+  color: var(--text-color);
   text-align: ${props => props.$align || 'left'};
 `;
 
 const Blockquote = styled.blockquote`
-  border-left: 4px solid #054944;
+  border-left: 4px solid var(--secondary-color);
   padding: 1rem 1.5rem;
   margin: 1.5rem 0;
-  background: #f5f5f5;
+  background: var(--background-alt);
   font-style: italic;
-  color: #666;
+  color: var(--text-light);
   text-align: ${props => props.$align || 'left'};
 `;
 
@@ -301,29 +301,29 @@ const AuthorDetails = styled.div`
 const AuthorName = styled.span`
   font-weight: 600;
   font-size: 1rem;
-  color: #333;
+  color: var(--text-color);
 `;
 
 const AuthorBio = styled.span`
   font-size: 0.875rem;
-  color: #666;
+  color: var(--text-light);
 `;
 
 const MetaText = styled.span`
   font-size: 0.875rem;
-  color: #666;
+  color: var(--text-light);
 `;
 
 const Title = styled.h1`
   font-size: 2.5rem;
   line-height: 1.2;
   margin-bottom: 1rem;
-  color: #333;
+  color: var(--text-color);
 `;
 
 const Subtitle = styled.p`
   font-size: 1.25rem;
-  color: #666;
+  color: var(--text-light);
   margin-bottom: 2rem;
 `;
 
@@ -355,11 +355,11 @@ const Ol = styled.ol`
 const Li = styled.li`
   margin-bottom: 0.5rem;
   font-size: 1.125rem;
-  color: #333;
+  color: var(--text-color);
 `;
 
 const ExternalLink = styled.a`
-  color: #007BFF;
+  color: var(--info-color);
   text-decoration: underline;
   &:hover {
     text-decoration: none;
@@ -367,7 +367,7 @@ const ExternalLink = styled.a`
 `;
 
 const InternalLink = styled(Link)`
-  color: #007BFF;
+  color: var(--info-color);
   text-decoration: underline;
   &:hover {
     text-decoration: none;
@@ -383,8 +383,8 @@ const Em = styled.em`
 `;
 
 const InlineCode = styled.code`
-  font-family: 'Courier New', monospace;
-  background: #f5f5f5;
+  font-family: var(--font-code);
+  background: var(--code-bg);
   padding: 0.2rem 0.4rem;
   border-radius: 4px;
   font-size: 0.9em;
@@ -405,14 +405,14 @@ const ContentImage = styled.img`
 
 const Figcaption = styled.figcaption`
   font-size: 0.875rem;
-  color: #666;
+  color: var(--text-light);
   text-align: center;
   margin-top: 0.5rem;
 `;
 
 const CodeBlock = styled.div`
   margin: 2rem 0;
-  background: #f5f5f5;
+  background: var(--code-bg);
   border-radius: 6px;
   overflow: hidden;
   pre {
@@ -425,19 +425,19 @@ const CodeBlock = styled.div`
 const CodeFilename = styled.div`
   padding: 0.5rem 1rem;
   background: rgba(0, 0, 0, 0.1);
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-code);
   font-size: 0.875rem;
 `;
 
 const Divider = styled.hr`
   margin: 3rem 0;
   border: none;
-  border-top: 1px solid #ddd;
+  border-top: 1px solid var(--border-color);
 `;
 
 const ErrorMessage = styled.p`
   font-size: 1.25rem;
-  color: #dc3545;
+  color: var(--error-color);
   text-align: center;
   margin: 2rem 0;
 `;

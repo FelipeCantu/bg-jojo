@@ -273,10 +273,11 @@ const ArticleForm = ({ onArticleSubmitted }) => {
 
   if (!user) {
     return (
-      <>
-        <H1>Please log in to create an article</H1>
-        <AuthForm />
-      </>
+      <AuthForm
+        title="Sign in to Create an Article"
+        subtitle="Share your story and resources with the community"
+        redirectTo="/create-article"
+      />
     );
   }
 
@@ -430,7 +431,7 @@ const Container = styled.div`
   width: 100%;
   max-width: 800px;
   margin: 0 auto;
-  background: #f4f4f4;
+  background: var(--background-alt);
   border-radius: 10px;
   position: relative;
   display: flex;
@@ -451,8 +452,8 @@ const Container = styled.div`
 `;
 
 const H1 = styled.h1`
-  color: #014a47; 
-  background-color: f7f9fc;
+  color: var(--secondary-color); 
+  background-color: var(--background-alt);
   text-align: center;
   font-size: 2.5rem;
   margin: 0;
@@ -529,18 +530,18 @@ const TitleInput = styled.input`
   padding: 12px;
   font-size: 18px;
   border: none;
-  border-bottom: 2px solid #ddd;
+  border-bottom: 2px solid var(--border-color);
   margin-bottom: 20px;
   background: transparent;
   width: 100%;
 
   &::placeholder {
-    color: #aaa;
+    color: var(--text-muted);
   }
 
   &:focus {
     outline: none;
-    border-bottom: 2px solid #007bff;
+    border-bottom: 2px solid var(--info-color);
   }
 
   @media (max-width: 480px) {
@@ -556,7 +557,7 @@ const ImageUploadContainer = styled.div`
 const ImageInput = styled.input`
   padding: 10px;
   border: none;
-  border-bottom: 2px solid #ddd;
+  border-bottom: 2px solid var(--border-color);
   margin-bottom: 10px;
   background: transparent;
   width: 100%;
@@ -564,7 +565,7 @@ const ImageInput = styled.input`
 
 const UploadStatus = styled.p`
   font-size: 14px;
-  color: #666;
+  color: var(--text-light);
   margin: 5px 0;
 `;
 
@@ -588,7 +589,7 @@ const PreviewImage = styled.img`
 `;
 
 const ErrorMessage = styled.p`
-  color: red;
+  color: var(--error-color);
   font-size: 12px;
   margin-top: -10px;
   margin-bottom: 10px;
@@ -602,7 +603,7 @@ const ToggleContainer = styled.div`
   width: 100%;
   margin: 15px 0;
   padding: 15px;
-  background: #f8f8f8;
+  background: var(--background-alt);
   border-radius: 8px;
 `;
 
@@ -619,7 +620,7 @@ const ToggleInput = styled.input`
   height: 0;
 
   &:checked + span {
-    background-color: #014a47;
+    background-color: var(--secondary-color);
   }
 
   &:checked + span:before {
@@ -632,7 +633,7 @@ const ToggleSlider = styled.span`
   display: inline-block;
   width: 50px;
   height: 24px;
-  background-color: #ccc;
+  background-color: var(--border-color);
   border-radius: 24px;
   transition: .4s;
   margin-right: 10px;
@@ -658,12 +659,12 @@ const ToggleText = styled.span`
 const AnonymousNote = styled.p`
   margin-top: 10px;
   font-size: 13px;
-  color: #666;
+  color: var(--text-light);
 `;
 
 const SubmitButton = styled.button`
   padding: 12px 20px;
-  background-color: ${({ disabled }) => disabled ? '#ccc' : '#014a47'};
+  background-color: ${({ disabled }) => disabled ? 'var(--border-color)' : 'var(--secondary-color)'};
   color: white;
   border: none;
   border-radius: 5px;
@@ -675,7 +676,7 @@ const SubmitButton = styled.button`
   margin-top: 20px;
 
   &:hover {
-    background-color: ${({ disabled }) => disabled ? '#ccc' : '#012f2d'};
+    background-color: ${({ disabled }) => disabled ? 'var(--border-color)' : 'var(--secondary-color-dark)'};
   }
 `;
 
@@ -685,13 +686,13 @@ const BackButton = styled.button`
   left: 20px;
   background: none;
   border: none;
-  color: #014a47;
+  color: var(--secondary-color);
   cursor: pointer;
   font-size: 18px;
   text-decoration: none;
 
   &:hover {
-    color: #012f2d;
+    color: var(--secondary-color-dark);
   }
 `;
 
@@ -735,7 +736,7 @@ const DialogButton = styled.button`
   padding: 8px 16px;
   border: none;
   border-radius: 4px;
-  background-color: ${({ $primary }) => $primary ? '#007bff' : '#f0f0f0'};
+  background-color: ${({ $primary }) => $primary ? 'var(--info-color)' : '#f0f0f0'};
   color: ${({ $primary }) => $primary ? 'white' : '#333'};
   cursor: pointer;
   
@@ -748,7 +749,7 @@ const NameInput = styled.input`
   padding: 10px;
   width: 100%;
   margin-top: 10px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
 `;
 

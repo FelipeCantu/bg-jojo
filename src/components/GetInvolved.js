@@ -407,7 +407,7 @@ const FormContainer = styled.div`
 `;
 
 const BottomSection = styled.div`
-  background-color: #56483f;
+  background-color: var(--secondary-color-dark);
   width: 100%;
   padding: 3rem 0;
   margin-top: 2rem;
@@ -416,13 +416,13 @@ const BottomSection = styled.div`
 const Title = styled.h2`
   font-size: 1.75rem;
   font-weight: bold;
-  color: #2c3e50;
+  color: var(--text-color);
   margin-bottom: 1rem;
   text-align: center;
 `;
 
 const Description = styled.p`
-  color: #7f8c8d;
+  color: var(--text-light);
   margin-bottom: 1.5rem;
   text-align: center;
   line-height: 1.5;
@@ -447,28 +447,28 @@ const Label = styled.label`
   
   &:after {
     content: ${props => props.required ? "'*'" : "''"};
-    color: #e74c3c;
+    color: var(--error-color);
     margin-left: 0.25rem;
   }
 `;
 
 const Input = styled.input`
   padding: 0.75rem;
-  border: 1px solid ${props => props.error ? '#e74c3c' : '#ddd'};
+  border: 1px solid ${props => props.error ? 'var(--error-color)' : 'var(--border-color)'};
   border-radius: 4px;
   font-size: 1rem;
   transition: all 0.3s ease;
   
   &:focus {
     outline: none;
-    border-color: ${props => props.error ? '#e74c3c' : '#ffcc00'};
-    box-shadow: 0 0 0 3px ${props => props.error ? 'rgba(231, 76, 60, 0.2)' : 'rgba(255, 204, 0, 0.3)'};
+    border-color: ${props => props.error ? 'var(--error-color)' : 'var(--primary-color)'};
+    box-shadow: 0 0 0 3px ${props => props.error ? 'rgba(220, 38, 38, 0.2)' : 'rgba(254, 165, 0, 0.3)'};
   }
 `;
 
 const TextArea = styled.textarea`
   padding: 0.75rem;
-  border: 1px solid ${props => props.error ? '#e74c3c' : '#ddd'};
+  border: 1px solid ${props => props.error ? 'var(--error-color)' : 'var(--border-color)'};
   border-radius: 4px;
   font-size: 1rem;
   resize: vertical;
@@ -477,19 +477,19 @@ const TextArea = styled.textarea`
   
   &:focus {
     outline: none;
-    border-color: ${props => props.error ? '#e74c3c' : '#ffcc00'};
-    box-shadow: 0 0 0 3px ${props => props.error ? 'rgba(231, 76, 60, 0.2)' : 'rgba(255, 204, 0, 0.3)'};
+    border-color: ${props => props.error ? 'var(--error-color)' : 'var(--primary-color)'};
+    box-shadow: 0 0 0 3px ${props => props.error ? 'rgba(220, 38, 38, 0.2)' : 'rgba(254, 165, 0, 0.3)'};
   }
 `;
 
 const ErrorMessage = styled.span`
-  color: #e74c3c;
+  color: var(--error-color);
   font-size: 0.8rem;
   margin-top: 0.25rem;
 `;
 
 const Button = styled.button`
-  background-color: #044947;
+  background-color: var(--secondary-color);
   color: white;
   padding: 0.75rem;
   font-size: 1rem;
@@ -501,7 +501,7 @@ const Button = styled.button`
   transition: background-color 0.3s ease;
   
   &:hover {
-    background-color: #033634;
+    background-color: var(--secondary-color-dark);
   }
   
   &:disabled {
@@ -519,10 +519,10 @@ const RolesSection = styled.div`
 
 const RolesTitle = styled.h2`
   font-size: 2rem;
-  color: #2c3e50;
+  color: var(--text-color);
   margin-top: 4rem;
   text-align: center;
-  font-family: 'Aptos',
+
 `;
 
 const RolesGrid = styled.div`
@@ -547,7 +547,7 @@ const RoleCard = styled.div`
   padding: 1.5rem;
   position: relative;
   margin-top: 2rem;
-  border: 1px solid #ecf0f1;
+  border: 1px solid var(--border-color);
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -580,7 +580,7 @@ const RoleNumber = styled.div`
 const RoleTitle = styled.h3`
   font-size: 1.25rem;
   font-weight: bold;
-  color: #2c3e50;
+  color: var(--text-color);
   margin-top: 1rem;
   margin-bottom: 1rem;
   text-align: center;
@@ -593,14 +593,14 @@ const RoleList = styled.ul`
 `;
 
 const RoleItem = styled.li`
-  color: #34495e;
+  color: var(--text-color);
   margin-bottom: 0.75rem;
   line-height: 1.5;
   font-size: 0.95rem;
 `;
 
 const Commitment = styled.p`
-  color: #16a085;
+  color: var(--secondary-color);
   font-weight: 600;
   margin-top: auto;
   padding-top: 1rem;
@@ -617,12 +617,12 @@ const SocialIconsContainer = styled.div`
 `;
 
 const SocialIcon = styled.a`
-  color: #2c3e50;
+  color: var(--text-color);
   font-size: 1.5rem;
   transition: color 0.3s ease;
   
   &:hover {
-    color: #ffcc00;
+    color: var(--primary-color);
   }
 `;
 

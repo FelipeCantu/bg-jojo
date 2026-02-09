@@ -9,6 +9,7 @@ import {
 import { HeartIcon } from '@heroicons/react/24/solid';
 import { auth } from '../../firebaseconfig';
 import { client } from '../../sanityClient';
+import AuthForm from '../AuthForm';
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
@@ -126,17 +127,17 @@ const Notifications = () => {
   const markNotificationAsRead = async (notificationId) => {
     try {
       await client.patch(notificationId)
-        .set({ 
-          seen: true, 
-          readAt: new Date().toISOString() 
+        .set({
+          seen: true,
+          readAt: new Date().toISOString()
         })
         .commit();
 
-      setNotifications(prev => prev.map(n => 
-        n._id === notificationId ? { 
-          ...n, 
-          seen: true, 
-          readAt: new Date().toISOString() 
+      setNotifications(prev => prev.map(n =>
+        n._id === notificationId ? {
+          ...n,
+          seen: true,
+          readAt: new Date().toISOString()
         } : n
       ));
     } catch (err) {
@@ -151,19 +152,19 @@ const Notifications = () => {
     try {
       const transaction = client.transaction();
       unreadNotifications.forEach(n => {
-        transaction.patch(n._id, { 
-          set: { 
-            seen: true, 
-            readAt: new Date().toISOString() 
-          } 
+        transaction.patch(n._id, {
+          set: {
+            seen: true,
+            readAt: new Date().toISOString()
+          }
         });
       });
       await transaction.commit();
 
-      setNotifications(prev => prev.map(n => ({ 
-        ...n, 
-        seen: true, 
-        readAt: n.seen ? n.readAt : new Date().toISOString() 
+      setNotifications(prev => prev.map(n => ({
+        ...n,
+        seen: true,
+        readAt: n.seen ? n.readAt : new Date().toISOString()
       })));
     } catch (err) {
       console.error("Error marking all as read:", err);
@@ -182,7 +183,7 @@ const Notifications = () => {
 
   const deleteAllNotifications = async () => {
     if (notifications.length === 0) return;
-    
+
     try {
       const transaction = client.transaction();
       notifications.forEach(n => {
@@ -207,7 +208,7 @@ const Notifications = () => {
         return <DefaultIcon />;
     }
   };
-  
+
   const getNotificationMessage = (notification) => {
     const senderName = notification.sender?.name || 'Someone';
     const currentUserIsSender = notification.sender?._id === currentUser?.sanityId;
@@ -230,7 +231,7 @@ const Notifications = () => {
     if (!notification.seen) {
       markNotificationAsRead(notification._id);
     }
-    
+
     if (notification.relatedArticle?.slug) {
       navigate(`/articles/${notification.relatedArticle.slug}`);
     } else if (notification.link) {
@@ -238,7 +239,22 @@ const Notifications = () => {
     }
   }, [navigate]);
 
-  if (loading) return <Loader>Loading notifications...</Loader>;
+  if (loading) return (
+    <Container>
+      <Loader>Loading notifications...</Loader>
+    </Container>
+  );
+
+  if (error === "Please sign in to view notifications" || !currentUser) {
+    return (
+      <AuthForm
+        title="Sign in to View Notifications"
+        subtitle="Stay updated with the latest activity from the community"
+        redirectTo="/notifications"
+      />
+    );
+  }
+
   if (error) return <Error>{error}</Error>;
 
   return (
@@ -292,7 +308,7 @@ const Notifications = () => {
                   {getNotificationIcon(notification.type)}
                 </NotificationBadge>
               </AvatarWrapper>
-        
+
               <Content>
                 <Message>{getNotificationMessage(notification)}</Message>
                 <Time>
@@ -302,14 +318,14 @@ const Notifications = () => {
                   )}
                 </Time>
               </Content>
-        
+
               <DeleteButton
                 onClick={(e) => deleteNotification(notification._id, e)}
                 aria-label="Delete notification"
               >
                 <TrashIcon className="h-4 w-4" />
               </DeleteButton>
-        
+
               {!notification.seen && <UnreadIndicator data-unread={!notification.seen} />}
             </NotificationItem>
           ))}

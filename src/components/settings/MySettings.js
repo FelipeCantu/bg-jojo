@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import styled from "styled-components";
-import { 
-  FaUser, 
-  FaBell, 
-  FaLock, 
-  FaPalette, 
+import {
+  FaUser,
+  FaBell,
+  FaLock,
+  FaPalette,
   FaQuestionCircle,
   FaBars,
   FaChevronDown,
@@ -16,7 +16,7 @@ const MySettings = () => {
   const [isMobileDropdownOpen, setIsMobileDropdownOpen] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
   const dropdownRef = useRef(null);
-  
+
   const [notifications, setNotifications] = useState({
     email: true,
     sms: false,
@@ -26,7 +26,7 @@ const MySettings = () => {
     supportMessages: true,
     emergencyAlerts: true
   });
-  
+
   const [theme, setTheme] = useState("light");
   const [privacySettings, setPrivacySettings] = useState({
     showInDirectory: false,
@@ -51,7 +51,7 @@ const MySettings = () => {
     handleResize();
     window.addEventListener('resize', handleResize);
     document.addEventListener('mousedown', handleClickOutside);
-    
+
     return () => {
       window.removeEventListener('resize', handleResize);
       document.removeEventListener('mousedown', handleClickOutside);
@@ -103,7 +103,7 @@ const MySettings = () => {
               </span>
               <FaChevronDown className={`dropdown-chevron ${isMobileDropdownOpen ? 'open' : ''}`} />
             </MobileMenuButton>
-            
+
             <DropdownMenu $isOpen={isMobileDropdownOpen}>
               <DropdownItem onClick={() => handleTabChange("account")}>
                 <FaUser /> Account
@@ -132,32 +132,32 @@ const MySettings = () => {
       {/* Desktop Sidebar */}
       {!isMobileView && (
         <SidebarTabs>
-          <TabButton 
-            active={activeTab === "account"} 
+          <TabButton
+            active={activeTab === "account"}
             onClick={() => handleTabChange("account")}
           >
             <FaUser /> <span>Account</span>
           </TabButton>
-          <TabButton 
-            active={activeTab === "notifications"} 
+          <TabButton
+            active={activeTab === "notifications"}
             onClick={() => handleTabChange("notifications")}
           >
             <FaBell /> <span>Notifications</span>
           </TabButton>
-          <TabButton 
-            active={activeTab === "privacy"} 
+          <TabButton
+            active={activeTab === "privacy"}
             onClick={() => handleTabChange("privacy")}
           >
             <FaLock /> <span>Privacy</span>
           </TabButton>
-          <TabButton 
-            active={activeTab === "appearance"} 
+          <TabButton
+            active={activeTab === "appearance"}
             onClick={() => handleTabChange("appearance")}
           >
             <FaPalette /> <span>Appearance</span>
           </TabButton>
-          <TabButton 
-            active={activeTab === "help"} 
+          <TabButton
+            active={activeTab === "help"}
             onClick={() => handleTabChange("help")}
           >
             <FaQuestionCircle /> <span>Help</span>
@@ -195,26 +195,26 @@ const MySettings = () => {
         {activeTab === "notifications" && (
           <NotificationSettings>
             <SectionTitle>Notification Preferences</SectionTitle>
-            
+
             <NotificationSection>
               <NotificationTitle>Notification Methods</NotificationTitle>
               <ToggleOption>
                 <span>Email Notifications</span>
-                <ToggleSwitch 
+                <ToggleSwitch
                   checked={notifications.email}
                   onChange={() => handleNotificationChange("email")}
                 />
               </ToggleOption>
               <ToggleOption>
                 <span>SMS Notifications</span>
-                <ToggleSwitch 
+                <ToggleSwitch
                   checked={notifications.sms}
                   onChange={() => handleNotificationChange("sms")}
                 />
               </ToggleOption>
               <ToggleOption>
                 <span>Push Notifications</span>
-                <ToggleSwitch 
+                <ToggleSwitch
                   checked={notifications.push}
                   onChange={() => handleNotificationChange("push")}
                 />
@@ -225,14 +225,14 @@ const MySettings = () => {
               <NotificationTitle>Content Notifications</NotificationTitle>
               <ToggleOption>
                 <span>New Articles</span>
-                <ToggleSwitch 
+                <ToggleSwitch
                   checked={notifications.newArticles}
                   onChange={() => handleNotificationChange("newArticles")}
                 />
               </ToggleOption>
               <ToggleOption>
                 <span>Product Updates</span>
-                <ToggleSwitch 
+                <ToggleSwitch
                   checked={notifications.productUpdates}
                   onChange={() => handleNotificationChange("productUpdates")}
                 />
@@ -243,14 +243,14 @@ const MySettings = () => {
               <NotificationTitle>Support Notifications</NotificationTitle>
               <ToggleOption>
                 <span>Support Messages</span>
-                <ToggleSwitch 
+                <ToggleSwitch
                   checked={notifications.supportMessages}
                   onChange={() => handleNotificationChange("supportMessages")}
                 />
               </ToggleOption>
               <ToggleOption>
                 <span>Emergency Alerts</span>
-                <ToggleSwitch 
+                <ToggleSwitch
                   checked={notifications.emergencyAlerts}
                   onChange={() => handleNotificationChange("emergencyAlerts")}
                 />
@@ -265,26 +265,26 @@ const MySettings = () => {
         {activeTab === "privacy" && (
           <PrivacySettings>
             <SectionTitle>Privacy & Security</SectionTitle>
-            
+
             <PrivacySection>
               <PrivacyTitle>Privacy Settings</PrivacyTitle>
               <ToggleOption>
                 <span>Show my profile in community directory</span>
-                <ToggleSwitch 
+                <ToggleSwitch
                   checked={privacySettings.showInDirectory}
                   onChange={() => handlePrivacyChange("showInDirectory")}
                 />
               </ToggleOption>
               <ToggleOption>
                 <span>Allow direct messages from other users</span>
-                <ToggleSwitch 
+                <ToggleSwitch
                   checked={privacySettings.allowMessages}
                   onChange={() => handlePrivacyChange("allowMessages")}
                 />
               </ToggleOption>
               <ToggleOption>
                 <span>Show my activity status</span>
-                <ToggleSwitch 
+                <ToggleSwitch
                   checked={privacySettings.showActivity}
                   onChange={() => handlePrivacyChange("showActivity")}
                 />
@@ -320,23 +320,23 @@ const MySettings = () => {
         {activeTab === "appearance" && (
           <AppearanceSettings>
             <SectionTitle>Appearance</SectionTitle>
-            
+
             <ThemeSection>
               <ThemeTitle>Theme</ThemeTitle>
               <ThemeOptions>
-                <ThemeOption 
+                <ThemeOption
                   active={theme === "light"}
                   onClick={() => setTheme("light")}
                 >
                   Light
                 </ThemeOption>
-                <ThemeOption 
+                <ThemeOption
                   active={theme === "dark"}
                   onClick={() => setTheme("dark")}
                 >
                   Dark
                 </ThemeOption>
-                <ThemeOption 
+                <ThemeOption
                   active={theme === "system"}
                   onClick={() => setTheme("system")}
                 >
@@ -361,7 +361,7 @@ const MySettings = () => {
         {activeTab === "help" && (
           <HelpSettings>
             <SectionTitle>Help & Support</SectionTitle>
-            
+
             <HelpSection>
               <HelpTitle>Resources</HelpTitle>
               <HelpLink href="#">Help Center</HelpLink>
@@ -407,7 +407,7 @@ const MobileHeader = styled.div`
   display: flex;
   align-items: center;
   padding: 15px;
-  background-color: #024a47;
+  background-color: var(--secondary-color);
   color: white;
   position: relative;
   z-index: 10;
@@ -491,7 +491,7 @@ const DropdownItem = styled.div`
 
   svg {
     margin-right: 10px;
-    color: #024a47;
+    color: var(--secondary-color);
   }
 
   &.logout {
@@ -533,12 +533,12 @@ const TabButton = styled.button`
   padding: 12px 20px;
   border: none;
   background: ${props => props.active ? '#e3f2fd' : 'transparent'};
-  color: ${props => props.active ? '#024a47' : '#555'};
+  color: ${props => props.active ? 'var(--secondary-color)' : 'var(--text-light)'};
   font-weight: ${props => props.active ? '600' : 'normal'};
   cursor: pointer;
   transition: all 0.2s;
   text-align: left;
-  border-left: 3px solid ${props => props.active ? '#024a47' : 'transparent'};
+  border-left: 3px solid ${props => props.active ? 'var(--secondary-color)' : 'transparent'};
 
   &:hover {
     background-color: #e3f2fd;
@@ -577,7 +577,7 @@ const ContentArea = styled.div`
 
 const SectionTitle = styled.h2`
   font-size: 1.5rem;
-  color: #024a47;
+  color: var(--secondary-color);
   margin-bottom: 25px;
   padding-bottom: 10px;
   border-bottom: 1px solid #eee;
@@ -619,7 +619,7 @@ const Input = styled.input`
   transition: border 0.2s;
 
   &:focus {
-    border-color: #024a47;
+    border-color: var(--secondary-color);
     outline: none;
   }
 
@@ -630,7 +630,7 @@ const Input = styled.input`
 `;
 
 const SaveButton = styled.button`
-  background-color: #024a47;
+  background-color: var(--secondary-color);
   color: white;
   padding: 10px 20px;
   border: none;
@@ -641,7 +641,7 @@ const SaveButton = styled.button`
   margin-top: 10px;
 
   &:hover {
-    background-color: #013634;
+    background-color: var(--secondary-color-dark);
   }
 
   @media (max-width: 768px) {
@@ -710,7 +710,7 @@ const ToggleSwitch = styled.input.attrs({ type: 'checkbox' })`
   flex-shrink: 0;
 
   &:checked {
-    background: #024a47;
+    background: var(--secondary-color);
   }
 
   &::before {
@@ -761,9 +761,9 @@ const SecurityOption = styled(ToggleOption)``;
 
 const ActionButton = styled.button`
   background-color: #f0f7f7;
-  color: #024a47;
+  color: var(--secondary-color);
   padding: 6px 12px;
-  border: 1px solid #024a47;
+  border: 1px solid var(--secondary-color);
   border-radius: 5px;
   font-size: 0.9rem;
   cursor: pointer;
@@ -771,7 +771,7 @@ const ActionButton = styled.button`
   flex-shrink: 0;
 
   &:hover {
-    background-color: #024a47;
+    background-color: var(--secondary-color);
     color: white;
   }
 

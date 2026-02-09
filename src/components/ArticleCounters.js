@@ -43,7 +43,7 @@ const ArticleCounters = ({ articleId, isDetailView = false }) => {
   // Handle view increment - executed only once when component mounts
   useEffect(() => {
     if (!articleId || !isDetailView) return;
-    
+
     const incrementView = async () => {
       try {
         console.log("Incrementing view count for article:", articleId);
@@ -91,7 +91,7 @@ const ArticleCounters = ({ articleId, isDetailView = false }) => {
       setIsLiked(!alreadyLiked);
 
       await articleAPI.toggleLike(articleId, currentUser.sanityId);
-      
+
       // Refresh data to ensure sync
       await fetchCounters();
     } catch (err) {
@@ -118,8 +118,8 @@ const ArticleCounters = ({ articleId, isDetailView = false }) => {
         <CommentIcon />
         {commentCount} {commentCount === 1 ? "Comment" : "Comments"}
       </CounterItem>
-      <HeartIconWrapper 
-        onClick={handleLike} 
+      <HeartIconWrapper
+        onClick={handleLike}
         $liked={isLiked ? 1 : 0}
         disabled={isLoading}
         aria-label={isLiked ? "Unlike article" : "Like article"}
@@ -145,9 +145,9 @@ const LoadingSpinner = styled.div`
   display: inline-block;
   width: 20px;
   height: 20px;
-  border: 3px solid rgba(255, 215, 0, 0.3);
+  border: 3px solid rgba(254, 165, 0, 0.3);
   border-radius: 50%;
-  border-top: 3px solid #ffd700;
+  border-top: 3px solid var(--primary-color);
   animation: ${spin} 1s linear infinite;
   margin: 0 auto;
 `;
@@ -165,7 +165,7 @@ const CounterItem = styled.div`
   align-items: center;
   gap: 6px;
   font-size: 14px;
-  color: #666;
+  color: var(--text-light);
 `;
 
 const EyeIcon = styled.span`
@@ -200,7 +200,7 @@ const HeartIconWrapper = styled.button`
   &:hover {
     transform: scale(1.05);
     .icon {
-      color: ${({ $liked }) => ($liked ? "#dc2626" : "#9ca3af")};
+      color: ${({ $liked }) => ($liked ? "var(--error-color)" : "var(--text-muted)")};
     }
   }
 
@@ -211,7 +211,7 @@ const HeartIconWrapper = styled.button`
 
   span {
     font-size: 14px;
-    color: ${({ $liked }) => ($liked ? "#dc2626" : "#6b7280")};
+    color: ${({ $liked }) => ($liked ? "var(--error-color)" : "var(--text-muted)")};
     font-weight: ${({ $liked }) => ($liked ? "600" : "400")};
   }
 `;
@@ -219,14 +219,14 @@ const HeartIconWrapper = styled.button`
 const HeartIconStyled = styled(HeartIcon)`
   width: 24px;
   height: 24px;
-  color: #9ca3af;
+  color: var(--text-muted);
   transition: all 0.2s ease;
 `;
 
 const HeartIconSolidStyled = styled(HeartIconSolid)`
   width: 24px;
   height: 24px;
-  color: #dc2626;
+  color: var(--error-color);
   transition: all 0.2s ease;
 `;
 

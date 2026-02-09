@@ -10,7 +10,7 @@ const PageContainer = styled.div`
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background-color: #f9fafb;
+  background-color: var(--background-alt);
   padding: 1rem;
 `;
 
@@ -28,25 +28,25 @@ const SuccessCard = styled.div`
 const SuccessIcon = styled.svg`
   height: 4rem;
   width: 4rem;
-  color: #10b981;
+  color: var(--success-color);
   margin: 0 auto 1rem;
 `;
 
 const Title = styled.h2`
   font-size: 1.5rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--text-color);
   margin-bottom: 0.5rem;
 `;
 
 const Message = styled.p`
-  color: #4b5563;
+  color: var(--text-light);
   margin-bottom: 1.5rem;
   line-height: 1.5;
 `;
 
 const OrderInfo = styled.div`
-  background-color: #f3f4f6;
+  background-color: var(--background-alt);
   padding: 1rem;
   border-radius: 0.375rem;
   margin-bottom: 1.5rem;
@@ -54,7 +54,7 @@ const OrderInfo = styled.div`
 `;
 
 const OrderId = styled.span`
-  color: #2563eb;
+  color: var(--info-color);
   font-weight: 500;
   font-family: monospace;
   cursor: pointer;
@@ -66,7 +66,7 @@ const OrderId = styled.span`
 const HomeButton = styled.button`
   margin-top: 1.5rem;
   padding: 0.75rem 1.5rem;
-  background-color: #044947;
+  background-color: var(--secondary-color);
   color: white;
   border-radius: 0.375rem;
   border: none;
@@ -74,7 +74,7 @@ const HomeButton = styled.button`
   font-weight: 500;
   transition: background-color 0.2s;
   &:hover {
-    background-color: #033332;
+    background-color: var(--secondary-color-dark);
   }
 `;
 
@@ -130,15 +130,15 @@ export default function SuccessPage() {
             d="M5 13l4 4L19 7"
           />
         </SuccessIcon>
-        
+
         <Title>Payment Successful!</Title>
-        
+
         <Message>
           Thank you for your purchase. We've sent a confirmation to your email.
           <br />
           <strong>Save your Order ID</strong> for reference.
         </Message>
-        
+
         <OrderInfo>
           <p>
             Order ID:{' '}
@@ -147,7 +147,7 @@ export default function SuccessPage() {
             </OrderId>
           </p>
         </OrderInfo>
-        
+
         <HomeButton onClick={() => (window.location.href = '/')}>
           Return Home
         </HomeButton>

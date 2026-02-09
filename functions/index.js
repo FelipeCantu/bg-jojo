@@ -105,6 +105,136 @@ const corsOptions = {
 // Apply CORS middleware
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
+
+// Webhook route must be registered BEFORE express.json() to access raw body
+app.post("/webhook", express.raw({ type: "application/json" }), async (req, res) => {
+  try {
+    if (!stripe) stripe = initializeStripe();
+    if (!stripe) throw new Error("Payment service unavailable");
+
+    const sig = req.headers["stripe-signature"];
+    if (!sig) return res.status(400).json({ error: "Missing stripe-signature header" });
+
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    if (!webhookSecret) throw new Error("Webhook secret not configured");
+
+    let event;
+    try {
+      event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+    } catch (err) {
+      console.error("Webhook signature verification failed:", err.message);
+      return res.status(400).json({ error: `Webhook Error: ${err.message}` });
+    }
+
+    const db = admin.firestore();
+
+    switch (event.type) {
+      case "payment_intent.succeeded": {
+        const pi = event.data.object;
+        if (pi.metadata?.type === "donation" && pi.metadata?.donationId) {
+          await db.collection("donations").doc(pi.metadata.donationId).update({
+            status: "paid",
+            stripePaymentIntentId: pi.id,
+            paidAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+        } else if (pi.metadata?.orderId) {
+          await db.collection("orders").doc(pi.metadata.orderId).update({
+            status: "paid",
+            paymentId: pi.id,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+        }
+        break;
+      }
+      case "payment_intent.payment_failed": {
+        const pi = event.data.object;
+        if (pi.metadata?.type === "donation" && pi.metadata?.donationId) {
+          await db.collection("donations").doc(pi.metadata.donationId).update({
+            status: "failed",
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+        } else if (pi.metadata?.orderId) {
+          await db.collection("orders").doc(pi.metadata.orderId).update({
+            status: "failed",
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+        }
+        break;
+      }
+      case "checkout.session.completed": {
+        const session = event.data.object;
+        if (session.metadata?.type === "donation" && session.metadata?.donationId) {
+          const updateData = {
+            status: session.mode === "subscription" ? "active" : "paid",
+            stripeSessionId: session.id,
+            stripeCustomerId: session.customer || null,
+            paidAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          };
+          if (session.subscription) {
+            updateData.stripeSubscriptionId = session.subscription;
+          }
+          await db.collection("donations").doc(session.metadata.donationId).update(updateData);
+        } else if (session.metadata?.orderId) {
+          await db.collection("orders").doc(session.metadata.orderId).update({
+            status: "paid",
+            paymentId: session.id,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+        }
+        break;
+      }
+      case "invoice.paid": {
+        const invoice = event.data.object;
+        if (invoice.subscription_details?.metadata?.type === "donation") {
+          const donationId = invoice.subscription_details.metadata.donationId;
+          if (donationId) {
+            await db.collection("donations").doc(donationId).update({
+              status: "active",
+              paidAt: admin.firestore.FieldValue.serverTimestamp(),
+              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+          }
+        }
+        break;
+      }
+      case "invoice.payment_failed": {
+        const invoice = event.data.object;
+        if (invoice.subscription_details?.metadata?.type === "donation") {
+          const donationId = invoice.subscription_details.metadata.donationId;
+          if (donationId) {
+            await db.collection("donations").doc(donationId).update({
+              status: "failed",
+              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+          }
+        }
+        break;
+      }
+      case "customer.subscription.deleted": {
+        const subscription = event.data.object;
+        if (subscription.metadata?.type === "donation" && subscription.metadata?.donationId) {
+          await db.collection("donations").doc(subscription.metadata.donationId).update({
+            status: "cancelled",
+            cancelledAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+        }
+        break;
+      }
+      default:
+        console.log(`Unhandled event type: ${event.type}`);
+    }
+
+    res.json({ received: true });
+  } catch (error) {
+    console.error("Webhook error:", error);
+    res.status(500).json({ error: "Webhook processing failed" });
+  }
+});
+
+// JSON parsing for all other routes
 app.use(express.json({ limit: "10kb" }));
 app.use(rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -130,6 +260,9 @@ app.get("/", (req, res) => {
     endpoints: {
       payment: "POST /createPaymentIntent",
       checkout: "POST /createCheckoutSession",
+      donationPayment: "POST /createDonationPaymentIntent (callable)",
+      donationCheckout: "POST /createDonationCheckoutSession (callable)",
+      webhook: "POST /webhook",
     },
   });
 });
@@ -221,8 +354,8 @@ app.use((err, req, res, _next) => { // Prefix unused parameter with underscore
   res.status(500).json({ error: "Internal server error" });
 });
 
-// Export the HTTP API function
-exports.api = onRequest({
+// Export the HTTP API function (webhook + REST endpoints)
+exports.httpApi = onRequest({
   minInstances: CONFIG.minInstances,
   invoker: "public",
   cors: true,
@@ -293,6 +426,206 @@ exports.api = onCall({
       id: session.id,
       url: session.url,
       expires: session.expires_at,
+    };
+  }
+
+  // Create Donation Payment Intent
+  if (endpoint === "createDonationPaymentIntent") {
+    const { amountCents, currency = "usd", donorInfo = {}, frequency = "one_time" } = data;
+
+    if (!amountCents || isNaN(amountCents) || amountCents < 100) {
+      throw new Error("Invalid amount. Minimum donation is $1.00");
+    }
+    if (amountCents > 5000000) {
+      throw new Error("Amount exceeds maximum donation limit");
+    }
+
+    const db = admin.firestore();
+    const donationRef = await db.collection("donations").add({
+      donorEmail: donorInfo.email || null,
+      donorName: donorInfo.firstName && donorInfo.lastName ?
+        `${donorInfo.firstName} ${donorInfo.lastName}` : null,
+      userId: request.auth?.uid || null,
+      amount: amountCents / 100,
+      amountCents,
+      currency,
+      frequency,
+      paymentMethod: "card",
+      stripePaymentIntentId: null,
+      stripeSessionId: null,
+      stripeSubscriptionId: null,
+      stripeCustomerId: null,
+      status: "pending",
+      tierDescription: donorInfo.tierDescription || null,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      paidAt: null,
+      cancelledAt: null,
+    });
+
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(amountCents),
+      currency,
+      metadata: {
+        type: "donation",
+        donationId: donationRef.id,
+        userId: (request.auth?.uid || "guest").toString(),
+        donorEmail: (donorInfo.email || "").toString(),
+        frequency,
+      },
+      automatic_payment_methods: { enabled: true },
+    });
+
+    await donationRef.update({ stripePaymentIntentId: paymentIntent.id });
+
+    return {
+      clientSecret: paymentIntent.client_secret,
+      donationId: donationRef.id,
+    };
+  }
+
+  // Create Donation Checkout Session
+  if (endpoint === "createDonationCheckoutSession") {
+    const { amountCents, currency = "usd", donorInfo = {}, frequency = "one_time", successUrl, cancelUrl } = data;
+
+    if (!amountCents || isNaN(amountCents) || amountCents < 100) {
+      throw new Error("Invalid amount. Minimum donation is $1.00");
+    }
+    if (amountCents > 5000000) {
+      throw new Error("Amount exceeds maximum donation limit");
+    }
+
+    const allowedDomains = ["bg-jojo.web.app", "bg-jojo.firebaseapp.com", "localhost", "givebackjojo.org"];
+    const isValidUrl = url => allowedDomains.some(domain => url.includes(domain));
+
+    if (!isValidUrl(successUrl) || !isValidUrl(cancelUrl)) {
+      throw new Error("Invalid URL domain");
+    }
+
+    const db = admin.firestore();
+    const donationRef = await db.collection("donations").add({
+      donorEmail: donorInfo.email || null,
+      donorName: donorInfo.firstName && donorInfo.lastName ?
+        `${donorInfo.firstName} ${donorInfo.lastName}` : null,
+      userId: request.auth?.uid || null,
+      amount: amountCents / 100,
+      amountCents,
+      currency,
+      frequency,
+      paymentMethod: "stripe_checkout",
+      stripePaymentIntentId: null,
+      stripeSessionId: null,
+      stripeSubscriptionId: null,
+      stripeCustomerId: null,
+      status: "pending",
+      tierDescription: donorInfo.tierDescription || null,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      paidAt: null,
+      cancelledAt: null,
+    });
+
+    const sessionParams = {
+      payment_method_types: ["card"],
+      customer_email: donorInfo.email || undefined,
+      metadata: {
+        type: "donation",
+        donationId: donationRef.id,
+        userId: (request.auth?.uid || "guest").toString(),
+        frequency,
+      },
+      success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}&donation_id=${donationRef.id}`,
+      cancel_url: cancelUrl,
+      expires_at: Math.floor(Date.now() / 1000) + 1800,
+    };
+
+    if (frequency === "monthly") {
+      // eslint-disable-next-line camelcase
+      const price = await stripe.prices.create({
+        unit_amount: Math.round(amountCents), // eslint-disable-line camelcase
+        currency,
+        recurring: { interval: "month" },
+        product_data: { // eslint-disable-line camelcase
+          name: `Monthly Donation - $${(amountCents / 100).toFixed(2)}`,
+          metadata: { type: "donation", donationId: donationRef.id },
+        },
+      });
+
+      sessionParams.mode = "subscription";
+      sessionParams.line_items = [{ price: price.id, quantity: 1 }];
+      sessionParams.subscription_data = { // eslint-disable-line camelcase
+        metadata: {
+          type: "donation",
+          donationId: donationRef.id,
+          userId: (request.auth?.uid || "guest").toString(),
+        },
+      };
+    } else {
+      sessionParams.mode = "payment";
+      sessionParams.line_items = [{
+        price_data: { // eslint-disable-line camelcase
+          currency,
+          unit_amount: Math.round(amountCents), // eslint-disable-line camelcase
+          product_data: { // eslint-disable-line camelcase
+            name: `One-Time Donation - $${(amountCents / 100).toFixed(2)}`,
+            metadata: { type: "donation", donationId: donationRef.id },
+          },
+        },
+        quantity: 1,
+      }];
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
+
+    await donationRef.update({ stripeSessionId: session.id });
+
+    return {
+      id: session.id,
+      url: session.url,
+      donationId: donationRef.id,
+    };
+  }
+
+  // Cancel Donation Subscription
+  if (endpoint === "cancelDonationSubscription") {
+    if (!request.auth?.uid) {
+      throw new Error("Authentication required");
+    }
+
+    const { donationId } = data;
+    if (!donationId) throw new Error("Missing donationId");
+
+    const db = admin.firestore();
+    const donationRef = db.collection("donations").doc(donationId);
+    const donationSnap = await donationRef.get();
+
+    if (!donationSnap.exists) {
+      throw new Error("Donation not found");
+    }
+
+    const donation = donationSnap.data();
+
+    if (donation.userId !== request.auth.uid) {
+      throw new Error("Unauthorized");
+    }
+
+    if (!donation.stripeSubscriptionId) {
+      throw new Error("No active subscription found for this donation");
+    }
+
+    const subscription = await stripe.subscriptions.cancel(
+      donation.stripeSubscriptionId
+    );
+
+    await donationRef.update({
+      status: "cancelled",
+      cancelledAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    return {
+      success: true,
+      status: subscription.status,
     };
   }
 

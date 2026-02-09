@@ -85,7 +85,7 @@ const MyAddresses = () => {
     <Container>
       <Title>My Addresses</Title>
       <Description>Add and manage the addresses you use often.</Description>
-      
+
       {addresses.length === 0 ? (
         <Message>You haven't saved any addresses yet.</Message>
       ) : (
@@ -117,7 +117,7 @@ const MyAddresses = () => {
           ))}
         </AddressList>
       )}
-      
+
       <AddButton onClick={() => setIsModalOpen(true)}>+ Add New Address</AddButton>
 
       {isModalOpen && (
@@ -139,7 +139,7 @@ const MyAddresses = () => {
                   placeholder="123 Main St"
                 />
               </FormGroup>
-              
+
               <FormRow>
                 <FormGroup style={{ flex: 2 }}>
                   <Label>City</Label>
@@ -152,7 +152,7 @@ const MyAddresses = () => {
                     placeholder="New York"
                   />
                 </FormGroup>
-                
+
                 <FormGroup style={{ flex: 1 }}>
                   <Label>Zip Code</Label>
                   <Input
@@ -165,7 +165,7 @@ const MyAddresses = () => {
                   />
                 </FormGroup>
               </FormRow>
-              
+
               <ModalActions>
                 <CancelButton type="button" onClick={() => setIsModalOpen(false)}>Cancel</CancelButton>
                 <SaveButton type="submit">{isEditing ? "Save Changes" : "Save Address"}</SaveButton>
@@ -228,7 +228,7 @@ const Message = styled.p`
 `;
 
 const AddButton = styled.button`
-  background-color: #024a47; 
+  background-color: var(--secondary-color); 
   color: white;
   padding: 12px 18px;
   border: none;
@@ -243,7 +243,7 @@ const AddButton = styled.button`
   gap: 8px;
   margin-top: 10px;
   &:hover {
-    background-color: #013d3b; 
+    background-color: var(--secondary-color-dark); 
   }
 
   @media (min-width: 768px) {
@@ -337,7 +337,7 @@ const Input = styled.input`
   box-sizing: border-box;
 
   &:focus {
-    border-color: #fea500;
+    border-color: var(--primary-color);
     outline: none;
   }
 `;
@@ -365,7 +365,7 @@ const CancelButton = styled.button`
 `;
 
 const SaveButton = styled.button`
-  background-color: #024a47; 
+  background-color: var(--secondary-color); 
   color: white;
   padding: 10px 20px;
   border: none;
@@ -375,7 +375,7 @@ const SaveButton = styled.button`
   transition: background-color 0.3s ease;
 
   &:hover {
-    background-color: #013d3b; 
+    background-color: var(--secondary-color-dark); 
   }
 `;
 
@@ -413,7 +413,7 @@ const AddressText = styled.p`
 
 const DefaultLabel = styled.span`
   display: inline-block;
-  background-color: #fea500;
+  background-color: var(--primary-color);
   color: white;
   padding: 4px 8px;
   border-radius: 4px;

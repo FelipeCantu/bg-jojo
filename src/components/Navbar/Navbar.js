@@ -5,14 +5,12 @@ import Menu from './Menu';
 import LoginButton from './LoginButton';
 import NotificationBell from './NotificationBell'
 
-const NavbarFontStyle = createGlobalStyle`
-  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap');
-`;
+
 
 const Navbar = () => {
   return (
     <>
-      <NavbarFontStyle />
+
       <Nav>
         <NavContent>
           <LogoLink to="/Home">
@@ -32,7 +30,7 @@ const Navbar = () => {
                 <StyledLink to="/GetInvolved">Get Involved</StyledLink>
                 <StyledLink to="/Articles">Articles</StyledLink>
                 <StyledLink to="/Tributes">Remembering Loved Ones</StyledLink>
-                {/* <StyledLink to="/Products">Product</StyledLink> */}
+                <StyledLink to="/products">Shop</StyledLink>
               </DropdownMenu>
             </MoreLink>
           </NavLinks>
@@ -42,7 +40,7 @@ const Navbar = () => {
           </MobileMenu>
 
           <NavbarLoginContainer>
-            <NotificationBell /> 
+            <NotificationBell />
             <LoginButton hideInNavbar={false} />
           </NavbarLoginContainer>
         </NavContent>
@@ -73,16 +71,16 @@ const StyledLink = styled(Link)`
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
   font-weight: 900;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--font-heading);
   border-radius: var(--border-radius);
   transition: all 0.3s ease;
   
   &:hover {
-    background-color: rgb(243, 86, 134);
+    background-color: var(--accent-pink);
   }
   
   &.active {
-    background-color: rgb(243, 86, 134);
+    background-color: var(--accent-pink);
   }
 
   ${DropdownMenu} & {
@@ -91,7 +89,7 @@ const StyledLink = styled(Link)`
     border-radius: 0;
     
     &:hover {
-      background-color: rgb(243, 86, 134);
+      background-color: var(--accent-pink);
     }
     
     &:first-child {
@@ -112,12 +110,12 @@ const MoreLink = styled.div`
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
   font-weight: 900;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--font-heading);
   color: var(--text-color);
   border-radius: var(--border-radius);
   
   &:hover {
-    background-color: rgb(243, 86, 134);
+    background-color: var(--accent-pink);
     
     > ${DropdownMenu} {
       opacity: 1;

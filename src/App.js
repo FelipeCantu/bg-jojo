@@ -30,6 +30,7 @@ import {
   ProductsPage,
   CheckoutPage,
   SuccessPage,
+  DonationSuccess,
   AuthForm,
   EmailVerification,
   Dashboard,
@@ -47,14 +48,14 @@ const ScrollToTop = () => {
   return null;
 };
 
-const SlideUpRoute = ({ children, disableAnimation = false }) => {
+const SlideUpRoute = ({ children, disableAnimation = false, noPadding = false }) => {
   if (disableAnimation) {
-    return <div className="route-container">{children}</div>;
+    return <div className={`route-container ${noPadding ? 'no-padding' : ''}`}>{children}</div>;
   }
 
   return (
     <motion.div
-      className="route-container"
+      className={`route-container ${noPadding ? 'no-padding' : ''}`}
       initial={{ opacity: 0, y: 100 }}
       animate={{
         opacity: 1,
@@ -112,32 +113,33 @@ function App() {
           <Route path="/auth" element={<AuthForm />} />
           <Route path="/login" element={<AuthForm mode="login" />} />
           <Route path="/signup" element={<AuthForm mode="signup" />} />
-          <Route path="/email-verification" element={<EmailVerification />} />
-          <Route path='/dashboard' element={<SlideUpRoute><Dashboard /></SlideUpRoute>} />
+          <Route path="/email-verification" element={<SlideUpRoute noPadding><EmailVerification /></SlideUpRoute>} />
+          <Route path='/dashboard' element={<Navigate to="/profile" replace />} />
           <Route path="/" element={<Navigate to="/home" replace />} />
-          <Route path="/home" element={<SlideUpRoute><Home /></SlideUpRoute>} />
-          <Route path="/about" element={<SlideUpRoute><About /></SlideUpRoute>} />
+          <Route path="/home" element={<SlideUpRoute noPadding>{<Home />}</SlideUpRoute>} />
+          <Route path="/about" element={<SlideUpRoute noPadding><About /></SlideUpRoute>} />
           <Route path="/hotlines" element={<SlideUpRoute><Hotlines /></SlideUpRoute>} />
-          <Route path="/getinvolved" element={<SlideUpRoute><GetInvolved /></SlideUpRoute>} />
-          <Route path="/events" element={<SlideUpRoute><Events /></SlideUpRoute>} />
+          <Route path="/getinvolved" element={<SlideUpRoute noPadding><GetInvolved /></SlideUpRoute>} />
+          <Route path="/events" element={<SlideUpRoute noPadding><Events /></SlideUpRoute>} />
           <Route path="/events/:id" element={<SlideUpRoute><EventDetail /></SlideUpRoute>} />
-          <Route path="/articles" element={<SlideUpRoute><ArticleList /></SlideUpRoute>} />
+          <Route path="/articles" element={<SlideUpRoute noPadding><ArticleList /></SlideUpRoute>} />
           <Route path="/article/:id" element={<SlideUpRoute><ArticleDetail /></SlideUpRoute>} />
           <Route path="/edit-article/:articleId" element={<SlideUpRoute><EditArticle /></SlideUpRoute>} />
-          <Route path="/tributes" element={<SlideUpRoute><TributeGallery /></SlideUpRoute>} />
+          <Route path="/tributes" element={<SlideUpRoute noPadding><TributeGallery /></SlideUpRoute>} />
           <Route path="/tribute/:slug" element={<SlideUpRoute><TributeDetail /></SlideUpRoute>} />
-          <Route path="/yourgift" element={<SlideUpRoute><YourGift /></SlideUpRoute>} />
-          <Route path="/donate" element={<SlideUpRoute><Donate /></SlideUpRoute>} />
+          <Route path="/yourgift" element={<SlideUpRoute noPadding><YourGift /></SlideUpRoute>} />
+          <Route path="/donate" element={<SlideUpRoute noPadding><Donate /></SlideUpRoute>} />
           <Route path="/SupportingGiveBackJojo" element={<SlideUpRoute><SupportingGiveBackJojo /></SlideUpRoute>} />
           <Route path="/products/:slug" element={<SlideUpRoute><ProductPage /></SlideUpRoute>} />
           <Route path="/products" element={<SlideUpRoute><ProductsPage /></SlideUpRoute>} />
           <Route path="/checkout" element={<SlideUpRoute><CheckoutPage /></SlideUpRoute>} />
           <Route path="/success" element={<SlideUpRoute><SuccessPage /></SlideUpRoute>} />
+          <Route path="/donation-success" element={<SlideUpRoute><DonationSuccess /></SlideUpRoute>} />
           <Route path="/privacy" element={<SlideUpRoute><PrivacyPolicy /></SlideUpRoute>} />
           <Route
             path="/account-settings/*"
             element={
-              <SlideUpRoute disableAnimation>
+              <SlideUpRoute disableAnimation noPadding>
                 <AccountSettings />
               </SlideUpRoute>
             }
@@ -145,7 +147,7 @@ function App() {
           <Route
             path="/profile"
             element={
-              <SlideUpRoute disableAnimation>
+              <SlideUpRoute disableAnimation noPadding>
                 <Profile />
               </SlideUpRoute>
             }
@@ -153,7 +155,7 @@ function App() {
           <Route
             path="/notifications"
             element={
-              <SlideUpRoute disableAnimation>
+              <SlideUpRoute disableAnimation noPadding>
                 <Notifications />
               </SlideUpRoute>
             }
@@ -161,13 +163,13 @@ function App() {
           <Route
             path="/subscriptions"
             element={
-              <SlideUpRoute disableAnimation>
+              <SlideUpRoute disableAnimation noPadding>
                 <Subscriptions />
               </SlideUpRoute>
             }
           />
 
-          <Route path="/create-article" element={<SlideUpRoute><ArticleForm /></SlideUpRoute>} />
+          <Route path="/create-article" element={<SlideUpRoute noPadding><ArticleForm /></SlideUpRoute>} />
           <Route path="*" element={<SlideUpRoute><NotFound /></SlideUpRoute>} />
         </Routes>
       </AnimatePresence>

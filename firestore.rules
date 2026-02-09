@@ -31,6 +31,15 @@ service cloud.firestore {
       allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
     }
 
+    // 🔹 Donations
+    match /donations/{donationId} {
+      allow create: if true;  // Guest one-time donations allowed
+      allow read: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow update: if request.auth != null
+        && request.auth.uid == resource.data.userId
+        && request.resource.data.status in ['paid'];
+    }
+
     // 🔹 User Profiles
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;

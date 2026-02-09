@@ -5,8 +5,8 @@ const DEFAULT_ANONYMOUS_AVATAR = 'https://www.shutterstock.com/image-vector/vect
 
 // Initialize Sanity client
 export const client = createClient({
-  projectId: "wssoiuia",
-  dataset: "production",
+  projectId: process.env.REACT_APP_SANITY_PROJECT_ID || "wssoiuia",
+  dataset: process.env.REACT_APP_SANITY_DATASET || "production",
   useCdn: process.env.NODE_ENV === 'production',
   apiVersion: "2023-05-03",
   token: process.env.REACT_APP_SANITY_API_TOKEN,
@@ -189,7 +189,7 @@ export const articleAPI = {
         query: `*[_type == "comment" && references($id)]`,
         params: { id }
       });
-      
+
       // Then delete the article
       return await client.delete(id);
     } catch (error) {
@@ -201,22 +201,22 @@ export const articleAPI = {
   /**
    * Increment article view count with daily tracking
    */
- // Add this to your articleAPI methods
-incrementViews: async (id) => {
-  try {
-    // Simply increment without any checks
-    const result = await client
-      .patch(id)
-      .setIfMissing({ views: 0 })
-      .inc({ views: 1 })
-      .commit();
+  // Add this to your articleAPI methods
+  incrementViews: async (id) => {
+    try {
+      // Simply increment without any checks
+      const result = await client
+        .patch(id)
+        .setIfMissing({ views: 0 })
+        .inc({ views: 1 })
+        .commit();
 
-    return result.views;
-  } catch (error) {
-    console.error("View count increment failed:", error);
-    throw error;
-  }
-},
+      return result.views;
+    } catch (error) {
+      console.error("View count increment failed:", error);
+      throw error;
+    }
+  },
 
   /**
    * Toggle like on article
@@ -249,17 +249,17 @@ incrementViews: async (id) => {
       if (!isLiked && article.author?._ref && article.author._ref !== userId) {
         await client.create({
           _type: "notification",
-          user: { 
-            _type: "reference", 
+          user: {
+            _type: "reference",
             _ref: article.author._ref
           },
-          sender: { 
-            _type: "reference", 
+          sender: {
+            _type: "reference",
             _ref: userId
           },
           type: "like",
-          relatedArticle: { 
-            _type: "reference", 
+          relatedArticle: {
+            _type: "reference",
             _ref: articleId
           },
           seen: false,
@@ -283,7 +283,7 @@ export const userAPI = {
   ensureExists: async (uid, userData = {}) => {
     try {
       let user = await client.getDocument(uid).catch(() => null);
-      
+
       if (!user) {
         user = await client.create({
           _type: 'user',
@@ -299,7 +299,7 @@ export const userAPI = {
           lastLogin: new Date().toISOString()
         });
       }
-      
+
       return user;
     } catch (error) {
       console.error(`Error ensuring user ${uid} exists:`, error);
@@ -366,7 +366,7 @@ export const commentAPI = {
 
     try {
       await userAPI.ensureExists(userId);
-      
+
       return await client.create({
         _type: 'comment',
         article: { _type: 'reference', _ref: articleId },
@@ -400,7 +400,7 @@ export const mediaAPI = {
    */
   upload: async (file) => {
     if (!file) throw new Error("No file provided");
-    
+
     const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
     const maxSize = 10 * 1024 * 1024; // 10MB
 
@@ -409,7 +409,7 @@ export const mediaAPI = {
     }
 
     if (file.size > maxSize) {
-      throw new Error(`File exceeds ${maxSize/1024/1024}MB size limit`);
+      throw new Error(`File exceeds ${maxSize / 1024 / 1024}MB size limit`);
     }
 
     try {
@@ -418,12 +418,12 @@ export const mediaAPI = {
         contentType: file.type,
       });
 
-      return { 
-        _type: "image", 
-        asset: { 
-          _type: "reference", 
-          _ref: result._id 
-        } 
+      return {
+        _type: "image",
+        asset: {
+          _type: "reference",
+          _ref: result._id
+        }
       };
     } catch (error) {
       console.error("Image upload failed:", error);

@@ -41,7 +41,7 @@ const Drawer = styled.div`
   max-width: 420px;
   height: 100vh;
   background: #fff;
-  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
+  box-shadow: -5px 0 30px rgba(0, 0, 0, 0.15);
   z-index: 1000;
   padding: 1.5rem;
   display: flex;
@@ -59,7 +59,7 @@ const Header = styled.div`
   align-items: center;
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #eee;
 `;
 
 const Title = styled.h2`
@@ -68,8 +68,9 @@ const Title = styled.h2`
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  font-weight: 600;
-  color: #333;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: -0.5px;
 `;
 
 const CartIconWrapper = styled.div`
@@ -107,8 +108,9 @@ const CloseBtn = styled.button`
   transition: all 0.2s ease;
 
   &:hover {
-    background: #e0e0e0;
+    background: #f0f0f0;
     transform: rotate(90deg);
+    color: #ff5a5f;
   }
 
   svg {
@@ -158,22 +160,24 @@ const TopRow = styled.div`
 `;
 
 const ItemName = styled.span`
-  font-weight: 500;
-  color: #333;
-  flex: 1;
+  font-weight: 700;
+  color: #1a1a1a;
+  font-size: 1rem;
+  line-height: 1.3;
+  margin-right: 0.5rem;
 `;
 
 const ItemPrice = styled.span`
-  font-weight: 600;
-  color: #333;
-  min-width: 80px;
-  text-align: right;
+  font-weight: 700;
+  color: #1a1a1a;
+  font-size: 1rem;
+  white-space: nowrap;
 `;
 
 const ItemSize = styled.span`
   font-size: 0.85rem;
   color: #777;
-  margin-top: 0.25rem;
+  font-weight: 500;
 `;
 
 const QuantityControls = styled.div`
@@ -183,21 +187,24 @@ const QuantityControls = styled.div`
 `;
 
 const QtyBtn = styled.button`
-  background: #f5f5f5;
-  border: none;
-  padding: 0.25rem 0.75rem;
-  font-size: 1rem;
+  background: #f9f9f9;
+  border: 1px solid #eee;
+  padding: 0;
+  font-size: 1.1rem;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 6px;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 32px;
   height: 32px;
+  color: #555;
 
   &:hover {
-    background: #e0e0e0;
+    background: #024a47;
+    color: white;
+    border-color: #024a47;
   }
 
   &:active {
@@ -206,9 +213,10 @@ const QtyBtn = styled.button`
 `;
 
 const QtyDisplay = styled.span`
-  width: 30px;
+  width: 24px;
   text-align: center;
-  font-weight: 500;
+  font-weight: 600;
+  color: #333;
 `;
 
 const DeleteBtn = styled.button`
@@ -235,23 +243,32 @@ const DeleteBtn = styled.button`
 `;
 
 const Total = styled.div`
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid #f0f0f0;
+  background: #f9f9f9;
+  border-top: 1px solid #eee;
+  padding: 1.5rem;
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+`;
+
+const TotalRow = styled.div`
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-end;
 `;
 
 const TotalLabel = styled.span`
   font-size: 1.1rem;
-  font-weight: 500;
+  font-weight: 600;
+  color: #555;
 `;
 
 const TotalAmount = styled.span`
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: #333;
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #1a1a1a;
+  line-height: 1;
 `;
 
 const EmptyMessage = styled.div`
@@ -288,20 +305,23 @@ const EmptyText = styled.p`
 `;
 
 const CheckoutButton = styled.button`
-  background: #333;
+  background: #024a47;
   color: white;
   border: none;
-  padding: 1rem;
-  font-size: 1rem;
-  font-weight: 600;
-  border-radius: 6px;
+  width: 100%;
+  padding: 1.25rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  margin-top: 1.5rem;
+  transition: all 0.3s ease;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 15px rgba(2, 74, 71, 0.2);
 
   &:hover {
-    background: #222;
+    background: #01332f;
     transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(2, 74, 71, 0.3);
   }
 
   &:active {
@@ -380,53 +400,58 @@ export default function CartDrawer() {
                       e.target.src = 'https://via.placeholder.com/150?text=No+Image';
                     }}
                   />
-                  <div style={{ flex: 1 }}>
-                    <TopRow>
-                      <div>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div style={{ flex: 1 }}>
                         <ItemName>{item.name}</ItemName>
-                        {item.size && (
-                          <ItemSize>Size: {item.size}</ItemSize>
-                        )}
-                        {item.selectedSize && (
-                          <ItemSize>Size: {item.selectedSize}</ItemSize>
+                        {(item.size || item.selectedSize) && (
+                          <div style={{ marginTop: '0.25rem' }}>
+                            <ItemSize>Size: {item.size || item.selectedSize}</ItemSize>
+                          </div>
                         )}
                       </div>
                       <ItemPrice>${(item.price * item.quantity).toFixed(2)}</ItemPrice>
-                    </TopRow>
-                    <QuantityControls>
-                      <QtyBtn
-                        onClick={() =>
-                          updateQuantity(item, Math.max(item.quantity - 1, 1))
-                        }
-                        aria-label="Decrease quantity"
-                      >
-                        -
-                      </QtyBtn>
-                      <QtyDisplay>{item.quantity}</QtyDisplay>
-                      <QtyBtn
-                        onClick={() => updateQuantity(item, item.quantity + 1)}
-                        aria-label="Increase quantity"
-                      >
-                        +
-                      </QtyBtn>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <QuantityControls>
+                        <QtyBtn
+                          onClick={() =>
+                            updateQuantity(item, Math.max(item.quantity - 1, 1))
+                          }
+                          aria-label="Decrease quantity"
+                        >
+                          -
+                        </QtyBtn>
+                        <QtyDisplay>{item.quantity}</QtyDisplay>
+                        <QtyBtn
+                          onClick={() => updateQuantity(item, item.quantity + 1)}
+                          aria-label="Increase quantity"
+                        >
+                          +
+                        </QtyBtn>
+                      </QuantityControls>
+
                       <DeleteBtn onClick={() => removeItem(item)} aria-label="Remove item">
                         <TrashIcon />
                       </DeleteBtn>
-                    </QuantityControls>
+                    </div>
                   </div>
                 </Item>
               ))}
             </ItemList>
             <Total>
-              <TotalLabel>Total:</TotalLabel>
-              <TotalAmount>${total.toFixed(2)}</TotalAmount>
+              <TotalRow>
+                <TotalLabel>Subtotal</TotalLabel>
+                <TotalAmount>${total.toFixed(2)}</TotalAmount>
+              </TotalRow>
+              <CheckoutButton onClick={() => {
+                toggleCart();
+                navigate('/checkout');
+              }}>
+                CHECKOUT
+              </CheckoutButton>
             </Total>
-            <CheckoutButton onClick={() => {
-              toggleCart();
-              navigate('/checkout');
-            }}>
-              Proceed to Checkout
-            </CheckoutButton>
           </>
         )}
       </Drawer>

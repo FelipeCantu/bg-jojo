@@ -94,7 +94,7 @@ const BackgroundVideo = styled.video`
 const Title = styled.h2`
   font-size: 3rem;
   font-weight: bold;
-  color: #d1b7a1;
+  color: var(--primary-color);
   text-transform: uppercase;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
   z-index: 1;
@@ -140,7 +140,7 @@ const ContentWrapper = styled.div`
 const CarouselTitle = styled.h1`
   font-size: 3rem;
   font-weight: bold;
-  color: #333;
+  color: var(--text-color);
   margin: 3rem 0 1rem;
   text-align: center;
   width: 100%;
@@ -171,7 +171,7 @@ const Divider = styled.hr`
 const Subtitle = styled.h3`
   font-size: 1.75rem;
   font-weight: bold;
-  color: #1f2937;
+  color: var(--text-color);
   margin-bottom: 1rem;
   
   @media (max-width: 768px) {
@@ -180,17 +180,17 @@ const Subtitle = styled.h3`
 `;
 
 const Description = styled.div`
-  color: #374151;
+  color: var(--text-light);
   font-size: 1.1rem;
   line-height: 1.5;
 `;
 
 const AboutContainer = styled.div`
   padding: 2rem;
-  color: #333;
+  color: var(--text-color);
   max-width: 800px;
   margin: 0 auto;
-  font-family: Arial, sans-serif;
+  font-family: var(--font-body);
   
   @media (max-width: 768px) {
     padding: 1rem;
@@ -234,14 +234,14 @@ const StyledImage = styled.img`
 `;
 
 const ReportLink = styled.a`
-  color: #3b82f6;
+  color: var(--info-color);
   text-decoration: none; 
   transition: all 0.3s ease;
   margin: 0 0.25rem;
   position: relative; 
   
   &:hover {
-    color: #2563eb;
+    color: var(--info-color);
     
     &::after {
       content: '';
@@ -250,7 +250,7 @@ const ReportLink = styled.a`
       height: 2px;
       bottom: -2px;
       left: 0;
-      background-color: #2563eb; 
+      background-color: var(--info-color); 
       transform: none; 
       opacity: 1; 
     }

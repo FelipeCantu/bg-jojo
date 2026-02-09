@@ -24,8 +24,8 @@ const Wallet = () => {
         const userRef = doc(db, "users", currentUser.uid);
         const paymentMethodsRef = collection(userRef, "paymentMethods");
         const querySnapshot = await getDocs(paymentMethodsRef);
-        const methods = querySnapshot.docs.map(doc => ({ 
-          id: doc.id, 
+        const methods = querySnapshot.docs.map(doc => ({
+          id: doc.id,
           ...doc.data(),
           isDefault: doc.id === defaultCardId
         }));
@@ -43,7 +43,7 @@ const Wallet = () => {
     try {
       const userRef = doc(db, "users", currentUser.uid);
       const paymentMethodsRef = collection(userRef, "paymentMethods");
-      
+
       const newMethod = {
         cardholderName: data.cardholderName,
         cardNumber: data.cardNumber.replace(/\s/g, ''),
@@ -74,7 +74,7 @@ const Wallet = () => {
         await deleteDoc(doc(userRef, "paymentMethods", id));
         setPaymentMethods(paymentMethods.filter(method => method.id !== id));
         toast.success("Payment method deleted");
-        
+
         if (defaultCardId === id) {
           setDefaultCardId(paymentMethods.length > 1 ? paymentMethods[1].id : null);
         }
@@ -102,7 +102,7 @@ const Wallet = () => {
     <WalletContainer>
       <Title>Wallet</Title>
       <Description>Manage your saved payment methods</Description>
-      
+
       {paymentMethods.length > 0 ? (
         <CardsList>
           {paymentMethods.map((method) => (
@@ -116,7 +116,7 @@ const Wallet = () => {
                   focused={focused}
                 />
               </CardPreview>
-              
+
               <CardDetails>
                 <CardHolder>
                   {method.cardholderName}
@@ -124,7 +124,7 @@ const Wallet = () => {
                 </CardHolder>
                 <CardNumber>•••• •••• •••• {method.cardNumber.slice(-4)}</CardNumber>
                 <Expiry>Expires: {method.expiry}</Expiry>
-                
+
                 <CardActions>
                   {method.id !== defaultCardId && (
                     <SetDefaultButton onClick={() => handleSetDefault(method.id)}>
@@ -132,7 +132,7 @@ const Wallet = () => {
                     </SetDefaultButton>
                   )}
                   <DeleteButton onClick={() => handleDelete(method.id)}>
-                      <DeleteIcon /> Delete
+                    <DeleteIcon /> Delete
                   </DeleteButton>
                 </CardActions>
               </CardDetails>
@@ -146,7 +146,7 @@ const Wallet = () => {
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         <ModalContent>
           <ModalTitle>Add New Payment Method</ModalTitle>
-          
+
           <Form onSubmit={handleSubmit(onSubmit)}>
             <CardPreviewContainer>
               <Cards
@@ -170,9 +170,9 @@ const Wallet = () => {
 
             <FormGroup>
               <Label>Card Number</Label>
-              <InputMask 
+              <InputMask
                 mask="9999 9999 9999 9999"
-                {...register("cardNumber", { 
+                {...register("cardNumber", {
                   required: "Card number is required",
                   validate: value => value.replace(/\s/g, '').length === 16 || "Invalid card number"
                 })}
@@ -243,14 +243,14 @@ const WalletContainer = styled.div`
   margin: 0 auto;
   padding: 2rem;
   // min-height: 100vh;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  background: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
 `;
 
 const Title = styled.h2`
   font-size: 1.75rem;
-  color: #333;
+  color: var(--secondary-color);
   margin: 0 0 0.5rem 0;
   padding: 0;
 `;
@@ -337,8 +337,8 @@ const SetDefaultButton = styled.button`
   align-items: center;
   gap: 0.25rem;
   background: transparent;
-  color: #024a47;
-  border: 1px solid #024a47;
+  color: var(--secondary-color);
+  border: 1px solid var(--secondary-color);
   padding: 0.5rem 0.75rem;
   border-radius: 6px;
   font-size: 0.9rem;
@@ -356,8 +356,8 @@ const DeleteButton = styled.button`
   align-items: center;
   gap: 0.25rem;
   background: transparent;
-  color: #d32f2f;
-  border: 1px solid #d32f2f;
+  color: var(--error-color);
+  border: 1px solid var(--error-color);
   padding: 0.5rem 0.75rem;
   border-radius: 6px;
   font-size: 0.9rem;
@@ -371,7 +371,7 @@ const DeleteButton = styled.button`
 `;
 
 const DefaultBadge = styled.span`
-  background: #fea500;
+  background: var(--primary-color);
   color: white;
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
@@ -383,7 +383,7 @@ const AddButton = styled.button`
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: #024a47;
+  background: var(--secondary-color);
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
@@ -394,7 +394,7 @@ const AddButton = styled.button`
   margin-top: 1rem;
 
   &:hover {
-    background: #013d3b;
+    background: var(--secondary-color-dark);
   }
 `;
 
@@ -469,7 +469,7 @@ const Input = styled.input`
   transition: all 0.2s;
 
   &:focus {
-    border-color: #024a47;
+    border-color: var(--secondary-color);
     outline: none;
     box-shadow: 0 0 0 2px rgba(2, 74, 71, 0.2);
   }
@@ -508,7 +508,7 @@ const CancelButton = styled.button`
 
 const SaveButton = styled.button`
   padding: 0.75rem 1.5rem;
-  background: #024a47;
+  background: var(--secondary-color);
   color: white;
   border: none;
   border-radius: 8px;
@@ -517,7 +517,7 @@ const SaveButton = styled.button`
   transition: all 0.2s;
 
   &:hover {
-    background: #013d3b;
+    background: var(--secondary-color-dark);
   }
 `;
 
