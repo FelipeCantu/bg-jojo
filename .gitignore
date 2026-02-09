@@ -29,3 +29,5 @@ yarn-error.log*
 # Firebase service account key (sensitive data)
 serviceAccountKey.json
 functions/.runtimeconfig.json
+.claude/
+CLAUDE.md
