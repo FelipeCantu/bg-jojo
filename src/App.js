@@ -33,7 +33,6 @@ import {
   DonationSuccess,
   AuthForm,
   EmailVerification,
-  Dashboard,
   PrivacyPolicy,
 } from './components';
 import { motion, AnimatePresence } from 'framer-motion';

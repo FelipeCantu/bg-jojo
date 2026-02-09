@@ -451,306 +451,288 @@ const Container = styled.div`
   }
 `;
 
-const H1 = styled.h1`
-  color: var(--secondary-color); 
-  background-color: var(--background-alt);
-  text-align: center;
-  font-size: 2.5rem;
-  margin: 0;
-  padding-top: 5px;
-  font-weight: 600;
-  line-height: 1.2;
-  width: 100%;
 
-  @media (max-width: 768px) {
-    font-size: 2rem;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 1.75rem;
-  }
-`;
 
 const LoadingMessage = styled.div`
-  padding: 40px;
-  text-align: center;
-  font-size: 18px;
+padding: 40px;
+text - align: center;
+font - size: 18px;
 `;
 
 const AuthorSection = styled.div`
-  display: flex;
-  align-items: center;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-  justify-content: center;
+display: flex;
+align - items: center;
+margin - bottom: 20px;
+flex - wrap: wrap;
+justify - content: center;
 `;
 
 const AuthorPhoto = styled.img`
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  margin-right: 15px;
-  object-fit: cover;
+width: 60px;
+height: 60px;
+border - radius: 50 %;
+margin - right: 15px;
+object - fit: cover;
 
-  @media (max-width: 480px) {
-    width: 40px;
-    height: 40px;
-  }
+@media(max - width: 480px) {
+  width: 40px;
+  height: 40px;
+}
 `;
 
 const AuthorName = styled.p`
-  font-weight: bold;
-  font-size: 18px;
+font - weight: bold;
+font - size: 18px;
 
-  @media (max-width: 480px) {
-    font-size: 14px;
-  }
+@media(max - width: 480px) {
+  font - size: 14px;
+}
 `;
 
 const Form = styled.form`
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  width: 100%;
-  max-width: 600px;
-  justify-content: center;
-  align-items: center;
+display: flex;
+flex - direction: column;
+gap: 20px;
+width: 100 %;
+max - width: 600px;
+justify - content: center;
+align - items: center;
 
-  @media (max-width: 768px) {
-    width: 90%;
-  }
+@media(max - width: 768px) {
+  width: 90 %;
+}
 
-  @media (max-width: 480px) {
-    width: 100%;
-    margin: 0;
-  }
+@media(max - width: 480px) {
+  width: 100 %;
+  margin: 0;
+}
 `;
 
 const TitleInput = styled.input`
-  padding: 12px;
-  font-size: 18px;
-  border: none;
-  border-bottom: 2px solid var(--border-color);
-  margin-bottom: 20px;
-  background: transparent;
-  width: 100%;
+padding: 12px;
+font - size: 18px;
+border: none;
+border - bottom: 2px solid var(--border - color);
+margin - bottom: 20px;
+background: transparent;
+width: 100 %;
 
   &::placeholder {
-    color: var(--text-muted);
-  }
+  color: var(--text - muted);
+}
 
   &:focus {
-    outline: none;
-    border-bottom: 2px solid var(--info-color);
-  }
+  outline: none;
+  border - bottom: 2px solid var(--info - color);
+}
 
-  @media (max-width: 480px) {
-    font-size: 16px;
-  }
+@media(max - width: 480px) {
+  font - size: 16px;
+}
 `;
 
 const ImageUploadContainer = styled.div`
-  width: 100%;
-  margin-bottom: 20px;
+width: 100 %;
+margin - bottom: 20px;
 `;
 
 const ImageInput = styled.input`
-  padding: 10px;
-  border: none;
-  border-bottom: 2px solid var(--border-color);
-  margin-bottom: 10px;
-  background: transparent;
-  width: 100%;
+padding: 10px;
+border: none;
+border - bottom: 2px solid var(--border - color);
+margin - bottom: 10px;
+background: transparent;
+width: 100 %;
 `;
 
 const UploadStatus = styled.p`
-  font-size: 14px;
-  color: var(--text-light);
-  margin: 5px 0;
+font - size: 14px;
+color: var(--text - light);
+margin: 5px 0;
 `;
 
 const PreviewImage = styled.img`
-  width: 100%;
-  max-width: 300px;
-  height: auto;
-  max-height: 200px;
-  object-fit: contain;
-  border-radius: 5px;
-  margin-top: 10px;
-  margin-bottom: 15px;
+width: 100 %;
+max - width: 300px;
+height: auto;
+max - height: 200px;
+object - fit: contain;
+border - radius: 5px;
+margin - top: 10px;
+margin - bottom: 15px;
 
-  @media (max-width: 768px) {
-    max-width: 250px;
-  }
+@media(max - width: 768px) {
+  max - width: 250px;
+}
 
-  @media (max-width: 480px) {
-    max-width: 200px;
-  }
+@media(max - width: 480px) {
+  max - width: 200px;
+}
 `;
 
 const ErrorMessage = styled.p`
-  color: var(--error-color);
-  font-size: 12px;
-  margin-top: -10px;
-  margin-bottom: 10px;
+color: var(--error - color);
+font - size: 12px;
+margin - top: -10px;
+margin - bottom: 10px;
 
-  @media (max-width: 480px) {
-    font-size: 10px;
-  }
+@media(max - width: 480px) {
+  font - size: 10px;
+}
 `;
 
 const ToggleContainer = styled.div`
-  width: 100%;
-  margin: 15px 0;
-  padding: 15px;
-  background: var(--background-alt);
-  border-radius: 8px;
+width: 100 %;
+margin: 15px 0;
+padding: 15px;
+background: var(--background - alt);
+border - radius: 8px;
 `;
 
 const ToggleLabel = styled.label`
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  position: relative;
+display: flex;
+align - items: center;
+cursor: pointer;
+position: relative;
 `;
 
 const ToggleInput = styled.input`
-  opacity: 0;
-  width: 0;
-  height: 0;
+opacity: 0;
+width: 0;
+height: 0;
 
-  &:checked + span {
-    background-color: var(--secondary-color);
-  }
+  &: checked + span {
+  background - color: var(--secondary - color);
+}
 
-  &:checked + span:before {
-    transform: translateX(20px);
-  }
+  &: checked + span:before {
+  transform: translateX(20px);
+}
 `;
 
 const ToggleSlider = styled.span`
-  position: relative;
-  display: inline-block;
-  width: 50px;
-  height: 24px;
-  background-color: var(--border-color);
-  border-radius: 24px;
-  transition: .4s;
-  margin-right: 10px;
+position: relative;
+display: inline - block;
+width: 50px;
+height: 24px;
+background - color: var(--border - color);
+border - radius: 24px;
+transition: .4s;
+margin - right: 10px;
 
   &:before {
-    position: absolute;
-    content: "";
-    height: 16px;
-    width: 16px;
-    left: 4px;
-    bottom: 4px;
-    background-color: white;
-    border-radius: 50%;
-    transition: .4s;
-  }
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 4px;
+  bottom: 4px;
+  background - color: white;
+  border - radius: 50 %;
+  transition: .4s;
+}
 `;
 
 const ToggleText = styled.span`
-  font-size: 14px;
-  font-weight: 500;
+font - size: 14px;
+font - weight: 500;
 `;
 
 const AnonymousNote = styled.p`
-  margin-top: 10px;
-  font-size: 13px;
-  color: var(--text-light);
+margin - top: 10px;
+font - size: 13px;
+color: var(--text - light);
 `;
 
 const SubmitButton = styled.button`
-  padding: 12px 20px;
-  background-color: ${({ disabled }) => disabled ? 'var(--border-color)' : 'var(--secondary-color)'};
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: ${({ disabled }) => disabled ? 'not-allowed' : 'pointer'};
-  font-size: 16px;
-  width: 100%;
-  max-width: 200px;
-  transition: background-color 0.2s;
-  margin-top: 20px;
+padding: 12px 20px;
+background - color: ${({ disabled }) => disabled ? 'var(--border-color)' : 'var(--secondary-color)'};
+color: white;
+border: none;
+border - radius: 5px;
+cursor: ${({ disabled }) => disabled ? 'not-allowed' : 'pointer'};
+font - size: 16px;
+width: 100 %;
+max - width: 200px;
+transition: background - color 0.2s;
+margin - top: 20px;
 
   &:hover {
-    background-color: ${({ disabled }) => disabled ? 'var(--border-color)' : 'var(--secondary-color-dark)'};
-  }
+  background - color: ${({ disabled }) => disabled ? 'var(--border-color)' : 'var(--secondary-color-dark)'};
+}
 `;
 
 const BackButton = styled.button`
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  background: none;
-  border: none;
-  color: var(--secondary-color);
-  cursor: pointer;
-  font-size: 18px;
-  text-decoration: none;
+position: absolute;
+top: 20px;
+left: 20px;
+background: none;
+border: none;
+color: var(--secondary - color);
+cursor: pointer;
+font - size: 18px;
+text - decoration: none;
 
   &:hover {
-    color: var(--secondary-color-dark);
-  }
+  color: var(--secondary - color - dark);
+}
 `;
 
 const DialogOverlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
+position: fixed;
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
+background - color: rgba(0, 0, 0, 0.5);
+display: flex;
+justify - content: center;
+align - items: center;
+z - index: 1000;
 `;
 
 const Dialog = styled.div`
-  background: white;
-  border-radius: 8px;
-  padding: 20px;
-  width: 90%;
-  max-width: 500px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+background: white;
+border - radius: 8px;
+padding: 20px;
+width: 90 %;
+max - width: 500px;
+box - shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 `;
 
 const DialogTitle = styled.h3`
-  margin-top: 0;
+margin - top: 0;
 `;
 
 const DialogContent = styled.div`
-  margin: 20px 0;
+margin: 20px 0;
 `;
 
 const DialogActions = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
+display: flex;
+justify - content: flex - end;
+gap: 10px;
 `;
 
 const DialogButton = styled.button`
-  padding: 8px 16px;
-  border: none;
-  border-radius: 4px;
-  background-color: ${({ $primary }) => $primary ? 'var(--info-color)' : '#f0f0f0'};
-  color: ${({ $primary }) => $primary ? 'white' : '#333'};
-  cursor: pointer;
+padding: 8px 16px;
+border: none;
+border - radius: 4px;
+background - color: ${({ $primary }) => $primary ? 'var(--info-color)' : '#f0f0f0'};
+color: ${({ $primary }) => $primary ? 'white' : '#333'};
+cursor: pointer;
   
   &:hover {
-    background-color: ${({ $primary }) => $primary ? '#0056b3' : '#e0e0e0'};
-  }
+  background - color: ${({ $primary }) => $primary ? '#0056b3' : '#e0e0e0'};
+}
 `;
 
 const NameInput = styled.input`
-  padding: 10px;
-  width: 100%;
-  margin-top: 10px;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
+padding: 10px;
+width: 100 %;
+margin - top: 10px;
+border: 1px solid var(--border - color);
+border - radius: 4px;
 `;
 
 export default ArticleForm;

@@ -424,23 +424,7 @@ const BioSection = styled.div`
   padding: 1.5rem;
 `;
 
-const BioLabel = styled.label`
-  display: block;
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 15px;
-  position: relative;
-  
-  &:after {
-    content: '';
-    display: block;
-    width: 50px;
-    height: 3px;
-    background: #024a47;
-    margin-top: 5px;
-  }
-`;
+
 
 const BioTextarea = styled.textarea`
   width: 100%;
@@ -537,9 +521,6 @@ const CharacterCount = styled.div`
   margin-top: 5px;
 `;
 
-const Message = styled.p`
-  text-align: center;
-  font-size: 18px;
-`;
+
 
 export default Profile;

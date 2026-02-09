@@ -151,13 +151,7 @@ const Item = styled.li`
   animation: ${fadeIn} 0.3s ease forwards;
 `;
 
-const TopRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 1rem;
-  width: 100%;
-`;
+
 
 const ItemName = styled.span`
   font-weight: 700;

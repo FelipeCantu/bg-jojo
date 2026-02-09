@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom';
 import MyAccount from '../settings/MyAccount';
 import MyWallet from '../settings/MyWallet';
@@ -31,7 +31,7 @@ const pageTransition = {
 const tabs = ['account', 'wallet', 'address', 'settings'];
 
 const AccountSettings = () => {
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isMobile] = useState(window.innerWidth < 768);
   const navRef = useRef(null);
   const touchStartRef = useRef(0);
   const location = useLocation();
