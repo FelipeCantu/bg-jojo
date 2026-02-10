@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useCart } from '../CartContext';
-import { ArrowLeftIcon, CheckCircleIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, CheckCircleIcon, ExclamationCircleIcon, LockClosedIcon, CreditCardIcon } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { getFirestore, collection, addDoc, serverTimestamp, updateDoc, doc } from 'firebase/firestore';
@@ -289,19 +289,61 @@ const CheckoutPage = () => {
 
               <Section>
                 <SectionTitle>Payment Method</SectionTitle>
-                {['stripe_checkout', 'card'].map((method) => (
-                  <FormGroup key={method}>
-                    <Label>
+                <SecureBadge>
+                  <LockClosedIcon width={14} height={14} />
+                  All transactions are secure and encrypted
+                </SecureBadge>
+
+                <PaymentOptions>
+                  <PaymentOption
+                    $selected={formData.paymentMethod === 'stripe_checkout'}
+                    onClick={() => setFormData(prev => ({ ...prev, paymentMethod: 'stripe_checkout' }))}
+                  >
+                    <PaymentOptionRadio>
                       <input
                         type="radio"
                         name="paymentMethod"
-                        value={method}
-                        checked={formData.paymentMethod === method}
+                        value="stripe_checkout"
+                        checked={formData.paymentMethod === 'stripe_checkout'}
                         onChange={handleChange}
-                      /> {method === 'card' ? 'Credit Card' : 'Stripe Checkout'}
-                    </Label>
-                  </FormGroup>
-                ))}
+                      />
+                    </PaymentOptionRadio>
+                    <PaymentOptionContent>
+                      <PaymentOptionHeader>
+                        <LockClosedIcon width={18} height={18} />
+                        <PaymentOptionTitle>Secure Checkout</PaymentOptionTitle>
+                        <RecommendedBadge>Recommended</RecommendedBadge>
+                      </PaymentOptionHeader>
+                      <PaymentOptionDesc>
+                        Pay securely on a dedicated payment page. Supports credit cards, debit cards, Apple Pay, and Google Pay.
+                      </PaymentOptionDesc>
+                    </PaymentOptionContent>
+                  </PaymentOption>
+
+                  <PaymentOption
+                    $selected={formData.paymentMethod === 'card'}
+                    onClick={() => setFormData(prev => ({ ...prev, paymentMethod: 'card' }))}
+                  >
+                    <PaymentOptionRadio>
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value="card"
+                        checked={formData.paymentMethod === 'card'}
+                        onChange={handleChange}
+                      />
+                    </PaymentOptionRadio>
+                    <PaymentOptionContent>
+                      <PaymentOptionHeader>
+                        <CreditCardIcon width={18} height={18} />
+                        <PaymentOptionTitle>Credit / Debit Card</PaymentOptionTitle>
+                      </PaymentOptionHeader>
+                      <PaymentOptionDesc>
+                        Enter your card details directly on this page.
+                      </PaymentOptionDesc>
+                    </PaymentOptionContent>
+                  </PaymentOption>
+                </PaymentOptions>
 
                 {formData.paymentMethod === 'card' && (
                   <StripeCardForm
@@ -529,6 +571,86 @@ const ErrorMessage = styled.div`
   justify-content: center;
   gap: 0.5rem;
   color: #e53935;
+`;
+
+const SecureBadge = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: #4CAF50;
+  margin-bottom: 1rem;
+  font-weight: 500;
+`;
+
+const PaymentOptions = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+`;
+
+const PaymentOption = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 2px solid ${props => props.$selected ? '#044947' : '#e0e0e0'};
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: ${props => props.$selected ? '#f8fffe' : '#fff'};
+
+  &:hover {
+    border-color: ${props => props.$selected ? '#044947' : '#bbb'};
+  }
+`;
+
+const PaymentOptionRadio = styled.div`
+  padding-top: 2px;
+  flex-shrink: 0;
+
+  input[type="radio"] {
+    accent-color: #044947;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+  }
+`;
+
+const PaymentOptionContent = styled.div`
+  flex: 1;
+  min-width: 0;
+`;
+
+const PaymentOptionHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #333;
+`;
+
+const PaymentOptionTitle = styled.span`
+  font-weight: 600;
+  font-size: 0.95rem;
+`;
+
+const PaymentOptionDesc = styled.p`
+  font-size: 0.8rem;
+  color: #888;
+  margin: 0.35rem 0 0;
+  line-height: 1.4;
+`;
+
+const RecommendedBadge = styled.span`
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: #044947;
+  color: white;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
 `;
 
 const CardElementContainer = styled.div`

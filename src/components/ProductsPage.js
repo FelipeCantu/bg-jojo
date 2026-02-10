@@ -256,7 +256,7 @@ export default function ProductsPage() {
 
     sanityClient.fetch(query, { activeCategory })
       .then((data) => {
-        setProducts(data);
+        setProducts(data.filter(p => p.slug?.current));
         setLoading(false);
       })
       .catch(error => {

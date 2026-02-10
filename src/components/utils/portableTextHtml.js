@@ -45,6 +45,12 @@ export const portableTextToHtml = (portableText) => {
             if (markDef._type === 'link') {
               const target = markDef.blank ? ' target="_blank" rel="noopener noreferrer"' : '';
               spanText = `<a href="${markDef.href}"${target}>${spanText}</a>`;
+            } else if (markDef._type === 'strong') {
+              spanText = `<strong>${spanText}</strong>`;
+            } else if (markDef._type === 'em') {
+              spanText = `<em>${spanText}</em>`;
+            } else if (markDef._type === 'underline') {
+              spanText = `<u>${spanText}</u>`;
             }
           }
         }

@@ -44,22 +44,18 @@ export const convertHtmlToPortableText = async (html) => {
 
           const { children: innerChildren } = await processChildNodes(child);
           children.push(
-            ...innerChildren.map((span, index) => ({
+            ...innerChildren.map((span) => ({
               ...span,
-              text: (index === 0 ? ' ' : '') + span.text + ' ', // Ensure inline spacing
               marks: [...(span.marks || []), linkId],
             }))
           );
         } else if (markKey) {
-          const markId = `${markKey}-${Math.random().toString(36).substr(2, 9)}`;
-          localMarkDefs.push({ _key: markId, _type: markKey });
-
+          // Decorators (strong, em, underline) are simple strings in marks array
           const { children: innerChildren } = await processChildNodes(child);
           children.push(
-            ...innerChildren.map((span, index) => ({
+            ...innerChildren.map((span) => ({
               ...span,
-              text: (index === 0 ? ' ' : '') + span.text + ' ', // Ensure spacing
-              marks: [...(span.marks || []), markId],
+              marks: [...(span.marks || []), markKey],
             }))
           );
         } else {

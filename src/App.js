@@ -129,8 +129,8 @@ function App() {
           <Route path="/yourgift" element={<SlideUpRoute noPadding><YourGift /></SlideUpRoute>} />
           <Route path="/donate" element={<SlideUpRoute noPadding><Donate /></SlideUpRoute>} />
           <Route path="/SupportingGiveBackJojo" element={<SlideUpRoute><SupportingGiveBackJojo /></SlideUpRoute>} />
-          <Route path="/products/:slug" element={<SlideUpRoute><ProductPage /></SlideUpRoute>} />
-          <Route path="/products" element={<SlideUpRoute><ProductsPage /></SlideUpRoute>} />
+          <Route path="/products/:slug" element={<SlideUpRoute noPadding><ProductPage /></SlideUpRoute>} />
+          <Route path="/products" element={<SlideUpRoute noPadding><ProductsPage /></SlideUpRoute>} />
           <Route path="/checkout" element={<SlideUpRoute><CheckoutPage /></SlideUpRoute>} />
           <Route path="/success" element={<SlideUpRoute><SuccessPage /></SlideUpRoute>} />
           <Route path="/donation-success" element={<SlideUpRoute><DonationSuccess /></SlideUpRoute>} />

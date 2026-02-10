@@ -148,8 +148,13 @@ const EditArticle = () => {
           readingTime: updatedReadingTime,
           updatedAt: new Date().toISOString(),
           isAnonymous: isAnonymous,
-          ...(formMainImage && { mainImage: formMainImage }),
+          ...(formMainImage ? { mainImage: formMainImage } : {}),
         });
+
+      // If image was removed, unset it from the document
+      if (!formMainImage) {
+        patch.unset(['mainImage']);
+      }
 
       await patch.commit();
 
@@ -274,7 +279,7 @@ const EditArticle = () => {
               placeholder="Write your article content here..."
             />
             <p style={{ fontSize: '14px', color: '#555', marginTop: '5px' }}>
-              Word count: {htmlContent.split(/\s+/).length}
+              Word count: {htmlContent.replace(/<[^>]*>/g, ' ').trim().split(/\s+/).filter(Boolean).length}
             </p>
           </div>
         </FormGroup>

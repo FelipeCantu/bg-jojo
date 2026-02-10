@@ -288,110 +288,13 @@ const TextEditor = forwardRef(({
     }
   }, [editor, isSaving, onChange, hasUnsavedChanges]);
 
+  // ... imports remain the same, but remove `EditorStyles` and `EditorContentWrapper` usages in the render
+  // We will replace the styled components at the bottom of the file with the new implementation.
+
+  // ... (keep lines 1-290 as they are desirable logic)
+
   return (
     <EditorContainer>
-      <EditorStyles>
-        {`
-          .tiptap-editor {
-            min-height: 300px;
-            padding: 16px;
-            border: 1px solid #e2e8f0;
-            border-radius: 4px;
-            outline: none;
-          }
-
-          @media (max-width: 768px) {
-            .tiptap-editor {
-              border: none;
-              border-radius: 0;
-              padding: 10px;
-            }
-          }
-          
-          .tiptap-editor:focus {
-            border-color: #3182ce;
-            box-shadow: 0 0 0 1px #3182ce;
-          }
-          
-          .tiptap-editor.error {
-            border-color: #e53e3e;
-          }
-          
-          .tiptap-editor p {
-            margin: 1em 0;
-            line-height: 1.5;
-          }
-          
-          .tiptap-editor h1 {
-            font-size: 2em;
-            margin: 0.67em 0;
-            font-weight: bold;
-          }
-          
-          .tiptap-editor h2 {
-            font-size: 1.5em;
-            margin: 0.75em 0;
-            font-weight: bold;
-          }
-          
-          .tiptap-editor h3 {
-            font-size: 1.17em;
-            margin: 0.83em 0;
-            font-weight: bold;
-          }
-          
-          .tiptap-editor ul,
-          .tiptap-editor ol {
-            padding: 0 1rem;
-            margin: 1em 0;
-          }
-          
-          .tiptap-editor blockquote {
-            padding-left: 1rem;
-            border-left: 3px solid #ddd;
-            margin: 1em 0;
-          }
-          
-          .tiptap-editor a {
-            color: #3182ce;
-            text-decoration: underline;
-          }
-          
-          .tiptap-editor img.editor-image {
-            max-width: 100%;
-            height: auto;
-            display: block;
-            margin: 1em auto;
-            border-radius: 4px;
-          }
-          
-          .tiptap-editor img.editor-image.ProseMirror-selectednode {
-            outline: 2px solid #3182ce;
-          }
-          
-          .tiptap-editor .text-align-left {
-            text-align: left;
-          }
-          
-          .tiptap-editor .text-align-center {
-            text-align: center;
-          }
-          
-          .tiptap-editor .text-align-right {
-            text-align: right;
-          }
-          
-          .tiptap-editor p.is-empty:first-child::before {
-            content: attr(data-placeholder);
-            float: left;
-            color: #adb5bd;
-            pointer-events: none;
-            height: 0;
-            font-style: italic;
-          }
-        `}
-      </EditorStyles>
-
       <Toolbar>
         <ToolbarGroup>
           <ToolbarButton
@@ -403,6 +306,8 @@ const TextEditor = forwardRef(({
             <FaSave />
           </ToolbarButton>
         </ToolbarGroup>
+
+        {/* ... (keep other ToolbarGroups exactly as they are) */}
 
         <ToolbarGroup>
           <ToolbarButton
@@ -534,9 +439,7 @@ const TextEditor = forwardRef(({
         </ToolbarGroup>
       </Toolbar>
 
-      <EditorContentWrapper>
-        <EditorContent editor={editor} />
-      </EditorContentWrapper>
+      <StyledEditorContent editor={editor} $error={error} />
       {error && <ErrorMessage>{error}</ErrorMessage>}
     </EditorContainer>
   );
@@ -544,25 +447,28 @@ const TextEditor = forwardRef(({
 
 const EditorContainer = styled.div`
   width: 100%;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
-  background: white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: #ffffff;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+
+  &:focus-within {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(254, 165, 0, 0.1);
+  }
 
   @media (max-width: 768px) {
-    border-radius: 0;
-    box-shadow: none;
-    width: 100%;
+    border-radius: 8px;
   }
 `;
-
-const EditorStyles = styled.style``;
 
 const Toolbar = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: 2px;
-  padding: 8px;
+  gap: 4px;
+  padding: 10px;
   background: #f8fafc;
   border-bottom: 1px solid #e2e8f0;
 `;
@@ -570,8 +476,8 @@ const Toolbar = styled.div`
 const ToolbarGroup = styled.div`
   display: flex;
   gap: 2px;
-  margin-right: 8px;
-  padding-right: 8px;
+  margin-right: 12px;
+  padding-right: 12px;
   border-right: 1px solid #e2e8f0;
 
   &:last-child {
@@ -585,31 +491,114 @@ const ToolbarButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   padding: 0;
   border: none;
-  border-radius: 4px;
-  background: ${props => props['data-active'] === 'true' ? '#3182ce' : 'transparent'};
-  color: ${props => props['data-active'] === 'true' ? 'white' : '#4a5568'};
+  border-radius: 6px;
+  background: ${props => props['data-active'] === 'true' ? 'var(--primary-color)' : 'transparent'};
+  color: ${props => props['data-active'] === 'true' ? 'white' : 'var(--text-light)'};
   cursor: ${props => props.disabled === 'true' ? 'not-allowed' : 'pointer'};
   opacity: ${props => props.disabled === 'true' ? 0.5 : 1};
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:hover:not([disabled]) {
-    background: ${props => props['data-active'] === 'true' ? '#2c5282' : '#edf2f7'};
+    background: ${props => props['data-active'] === 'true' ? 'var(--primary-color)' : '#edf2f7'};
+    transform: translateY(-1px);
+  }
+
+  &:active:not([disabled]) {
+    transform: translateY(0);
   }
 `;
 
-const EditorContentWrapper = styled.div`
-  padding: 0;
-  min-height: 300px;
-  max-height: 600px;
-  overflow-y: auto;
+const StyledEditorContent = styled(EditorContent)`
+  .ProseMirror {
+    min-height: 300px;
+    max-height: 600px;
+    overflow-y: auto;
+    padding: 16px;
+    outline: none;
+    
+    &.error {
+      background-color: rgba(220, 38, 38, 0.05);
+    }
+
+    > * + * {
+      margin-top: 0.75em;
+    }
+  
+    ul, ol {
+      padding: 0 1rem;
+    }
+  
+    h1, h2, h3, h4, h5, h6 {
+      line-height: 1.1;
+    }
+  
+    code {
+      background-color: rgba(97, 97, 97, 0.1);
+      color: #616161;
+    }
+  
+    pre {
+      background: #0d0d0d;
+      color: #fff;
+      font-family: 'JetBrainsMono', monospace;
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+  
+      code {
+        color: inherit;
+        padding: 0;
+        background: none;
+        font-size: 0.8rem;
+      }
+    }
+  
+    img {
+      max-width: 100%;
+      height: auto;
+      
+      &.ProseMirror-selectednode {
+        outline: 3px solid #68CEF8;
+      }
+    }
+  
+    blockquote {
+      padding-left: 1rem;
+      border-left: 2px solid rgba(13, 13, 13, 0.1);
+    }
+  
+    hr {
+      border: none;
+      border-top: 2px solid rgba(13, 13, 13, 0.1);
+      margin: 2rem 0;
+    }
+
+    a {
+      color: var(--info-color);
+      cursor: pointer;
+      text-decoration: underline;
+
+      &:hover {
+        text-decoration: none;
+      }
+    }
+
+    /* Minimal placeholder styling */
+    p.is-editor-empty:first-child::before {
+      color: #adb5bd;
+      content: attr(data-placeholder);
+      float: left;
+      height: 0;
+      pointer-events: none;
+    }
+  }
 `;
 
 const ErrorMessage = styled.div`
-  color: #e53e3e;
+  color: var(--error-color);
   font-size: 0.875rem;
   margin-top: 0.5rem;
   padding: 0 1rem 1rem;

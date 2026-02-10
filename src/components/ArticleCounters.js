@@ -4,6 +4,7 @@ import { HeartIcon as HeartIconSolid } from "@heroicons/react/24/solid";
 import styled, { keyframes } from "styled-components";
 import { client, articleAPI } from "../sanityClient";
 import useCurrentUser from "../hook/useCurrentUser";
+import { toast } from 'react-toastify';
 
 const ArticleCounters = ({ articleId, isDetailView = false }) => {
   const { currentUser } = useCurrentUser();
@@ -46,10 +47,8 @@ const ArticleCounters = ({ articleId, isDetailView = false }) => {
 
     const incrementView = async () => {
       try {
-        console.log("Incrementing view count for article:", articleId);
         const updatedViewCount = await articleAPI.incrementViews(articleId);
         setViewCount(updatedViewCount);
-        console.log("View count incremented successfully:", updatedViewCount);
       } catch (err) {
         console.error("Failed to increment view count:", err);
       }
@@ -67,9 +66,12 @@ const ArticleCounters = ({ articleId, isDetailView = false }) => {
   // Handle like action
   const handleLike = async () => {
     if (!currentUser?.sanityId) {
-      alert("Please sign in to like articles");
+      toast.info("Please sign in to like articles");
       return;
     }
+
+    const prevLikeCount = likeCount;
+    const prevIsLiked = isLiked;
 
     setIsLoading(true);
     try {
@@ -96,8 +98,8 @@ const ArticleCounters = ({ articleId, isDetailView = false }) => {
       await fetchCounters();
     } catch (err) {
       // Rollback on error
-      setLikeCount(prev => prev);
-      setIsLiked(prev => prev);
+      setLikeCount(prevLikeCount);
+      setIsLiked(prevIsLiked);
       console.error("Like action failed:", err);
     } finally {
       setIsLoading(false);
