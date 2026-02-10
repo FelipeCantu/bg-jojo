@@ -2,7 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 
 const SupportingGiveBackJojo = () => {
-    const venmoLink = 'https://account.venmo.com/u/DelilahJoy-Gallegos'; 
+    const venmoLink = 'https://account.venmo.com/u/DelilahJoy-Gallegos';
     const zelleLink = 'https://www.zellepay.com/yourPhoneNumberOrEmail';
 
     return (
@@ -48,7 +48,11 @@ const BackgroundWrapper = styled.div`
     justify-content: center;
     padding: 1rem;
 
-    @media (min-width: 768px) {
+    @media (max-width: 768px) {
+        padding: 0;
+    }
+
+    @media (min-width: 769px) {
         padding: 2rem;
     }
 `;
@@ -65,6 +69,8 @@ const Container = styled.div`
     @media (max-width: 768px) {
         padding: 1.5rem;
         border-radius: 0;
+        width: 100%;
+        margin: 0;
     }
 `;
 

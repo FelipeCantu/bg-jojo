@@ -27,6 +27,11 @@ const TributeContainer = styled.div`
   text-align: center;
   padding: 20px;
   cursor: pointer;
+
+  @media (max-width: 768px) {
+    padding: 20px 0;
+    width: 100%;
+  }
 `;
 
 const ImageContainer = styled.div`
@@ -37,7 +42,8 @@ const ImageContainer = styled.div`
 `;
 
 const TributeImage = styled.img`
-  width: 300px;
+  width: 100%;
+  max-width: 300px;
   height: auto;
   display: block;
   transition: all 0.3s ease-in-out;

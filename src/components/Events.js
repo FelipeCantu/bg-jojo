@@ -59,12 +59,20 @@ const PageContainer = styled.div`
   background-position: center center;
   background-attachment: fixed;
   padding: 24px;
+
+  @media (max-width: 768px) {
+    padding: 0;
+  }
 `;
 
 const ContentWrapper = styled.div`
   width: 100%;
   max-width: 1200px;
   padding: 20px;
+
+  @media (max-width: 768px) {
+    padding: 10px;
+  }
 `;
 
 const EventList = styled.ul`

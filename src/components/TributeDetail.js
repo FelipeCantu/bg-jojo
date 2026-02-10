@@ -28,10 +28,10 @@ const TributeDetail = () => {
 
   const formattedDate = tribute.date
     ? new Date(tribute.date).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
     : "Date not available";
 
   return (
@@ -54,6 +54,14 @@ const DetailContainer = styled.div`
   margin: 0 auto;
   border-radius: 10px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+
+  @media (max-width: 768px) {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    border-radius: 0;
+    padding: 20px 10px;
+  }
 `;
 
 const Image = styled.img`

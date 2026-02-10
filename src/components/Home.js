@@ -38,20 +38,20 @@ function Home() {
           </HotLink>
         </Content>
       </VideoWrapper>
-      
+
       {/* Updated centered image section with external link and centered text */}
       <ImageSection>
         <ImageContainer>
           <ExternalImageLink href="https://www.atrainceu.com/content/1-suicide-washington-state-and-nation-0" target="_blank" rel="noopener noreferrer">
-            <CenteredImage 
-              src={require('../assets/ratemap.jpg')} 
+            <CenteredImage
+              src={require('../assets/ratemap.jpg')}
               alt="Suicide rates in Washington State and the nation"
             />
           </ExternalImageLink>
           <ImageCaption>The number of deaths by suicide per 100,000 total population in the year 2022.</ImageCaption>
         </ImageContainer>
       </ImageSection>
-      
+
       <Mission />
     </MainSection>
   );
@@ -73,6 +73,10 @@ const ImageContainer = styled.div`
   align-items: center;
   max-width: 1200px;
   width: 90%;
+  
+  @media (max-width: 768px) {
+    width: 100%;
+  }
 `;
 
 const ExternalImageLink = styled.a`
@@ -157,6 +161,10 @@ const Content = styled.div`
   color: pink;
   padding: 0;
   margin: 0;
+
+  @media (max-width: 768px) {
+    width: 100%;
+  }
 `;
 
 const HeroHeading = styled.h1`

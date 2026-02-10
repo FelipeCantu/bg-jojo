@@ -180,8 +180,9 @@ const MyAddresses = () => {
 
 // Styled Components with orange color scheme
 const Container = styled.div`
+  width: 100%;
   max-width: 100%;
-  margin: 0 auto 20px;
+  margin: 0 0 20px;
   padding: 15px;
   border-radius: 8px;
   min-height: 100vh;

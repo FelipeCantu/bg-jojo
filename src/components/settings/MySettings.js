@@ -168,7 +168,7 @@ const MySettings = () => {
         </SidebarTabs>
       )}
 
-      <ContentArea $isMobileView={isMobileView}>
+      <ContentArea>
         {activeTab === "account" && (
           <AccountSettings>
             <SectionTitle>Account Information</SectionTitle>
@@ -391,27 +391,28 @@ const SettingsContainer = styled.div`
   max-width: 100%;
   margin: 0 auto;
   background-color: #fff;
-  border-radius: 10px;
-  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
   overflow: hidden;
-  min-height: 500px;
+  min-height: 400px;
   position: relative;
 
   @media (min-width: 768px) {
     flex-direction: row;
     max-width: 1000px;
+    border-radius: 10px;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+    min-height: 500px;
   }
 `;
 
 const MobileHeader = styled.div`
   display: flex;
   align-items: center;
-  padding: 15px;
+  padding: 12px;
   background-color: var(--secondary-color);
   color: white;
   position: relative;
   z-index: 10;
-  
+
   @media (min-width: 768px) {
     display: none;
   }
@@ -566,9 +567,9 @@ const LogoutButton = styled(TabButton)`
 
 const ContentArea = styled.div`
   flex: 1;
-  padding: ${props => props.$isMobileView ? '20px 15px' : '30px'};
+  padding: 16px;
   overflow-y: auto;
-  
+
   @media (min-width: 768px) {
     padding: 30px;
     max-height: 600px;
@@ -583,8 +584,9 @@ const SectionTitle = styled.h2`
   border-bottom: 1px solid #eee;
 
   @media (max-width: 768px) {
-    font-size: 1.3rem;
-    margin-bottom: 20px;
+    font-size: 1.2rem;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
   }
 `;
 
@@ -596,6 +598,7 @@ const FormGroup = styled.div`
 
   @media (max-width: 768px) {
     margin-bottom: 15px;
+    max-width: 100%;
   }
 `;
 
@@ -757,7 +760,13 @@ const PrivacySection = styled(NotificationSection)``;
 
 const PrivacyTitle = styled(NotificationTitle)``;
 
-const SecurityOption = styled(ToggleOption)``;
+const SecurityOption = styled(ToggleOption)`
+  @media (max-width: 480px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+`;
 
 const ActionButton = styled.button`
   background-color: #f0f7f7;
@@ -807,6 +816,12 @@ const DangerTitle = styled.h3`
 
 const DangerOption = styled(ToggleOption)`
   border-bottom: 1px solid #ffebeb;
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
 `;
 
 const DangerButton = styled(ActionButton)`
@@ -934,9 +949,11 @@ const SupportButton = styled(ActionButton)`
   margin-right: 10px;
   margin-top: 10px;
 
-  @media (max-width: 768px) {
-    margin-right: 8px;
+  @media (max-width: 480px) {
+    width: 100%;
+    margin-right: 0;
     margin-top: 8px;
+    text-align: center;
   }
 `;
 

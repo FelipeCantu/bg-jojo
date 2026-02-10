@@ -12,6 +12,10 @@ const PageContainer = styled.div`
   justify-content: center;
   background-color: var(--background-alt);
   padding: 1rem;
+
+  @media (max-width: 480px) {
+    padding: 0;
+  }
 `;
 
 const SuccessCard = styled.div`
@@ -23,6 +27,12 @@ const SuccessCard = styled.div`
   width: 100%;
   text-align: center;
   word-break: break-word;
+
+  @media (max-width: 480px) {
+    max-width: 100%;
+    border-radius: 0;
+    box-shadow: none;
+  }
 `;
 
 const SuccessIcon = styled.svg`

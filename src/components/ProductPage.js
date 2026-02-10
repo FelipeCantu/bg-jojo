@@ -10,9 +10,14 @@ import LoadingContainer from './LoadingContainer';
 
 // Styled Components
 const Wrapper = styled.div`
-  max-width: 1200px;
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 2rem 1rem;
+  padding: 2rem 1.5rem;
+
+  @media (max-width: 768px) {
+    padding: 1rem 0;
+    width: 100%;
+  }
 `;
 
 const BackButton = styled.button`
@@ -22,13 +27,17 @@ const BackButton = styled.button`
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 1.5rem;
-  font-size: 1rem;
-  color: #333;
+  margin-bottom: 2rem;
+  font-size: 0.95rem;
+  color: #666;
   transition: color 0.2s ease;
 
   &:hover {
     color: #044947;
+  }
+
+  @media (max-width: 768px) {
+    margin: 0 1rem 1.5rem;
   }
 `;
 
@@ -36,9 +45,11 @@ const ProductLayout = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 3rem;
+  align-items: start;
 
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
+    gap: 1.5rem;
   }
 `;
 
@@ -54,15 +65,15 @@ const GallerySection = styled.div`
 
 const Thumbnails = styled.div`
   display: flex;
-  gap: 0.8rem;
+  gap: 0.6rem;
   overflow-x: auto;
-  padding: 0.5rem 0;
+  padding: 0.25rem 0;
 
   &::-webkit-scrollbar {
     height: 4px;
   }
   &::-webkit-scrollbar-thumb {
-    background: #ccc;
+    background: #ddd;
     border-radius: 2px;
   }
 
@@ -71,84 +82,112 @@ const Thumbnails = styled.div`
     overflow-x: visible;
     overflow-y: visible;
     max-height: none;
-    padding-right: 1rem;
     flex-wrap: wrap;
-    max-width: 80px;
+    max-width: 72px;
   }
 
   @media (max-width: 768px) {
-    gap: 0.5rem;
+    padding: 0 1rem;
   }
 `;
 
 const Thumbnail = styled.img`
-  width: 80px;
-  height: 80px;
+  width: 64px;
+  height: 64px;
   object-fit: cover;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
-  border: ${({ $selected }) => ($selected ? '2px solid #333' : '1px solid #ddd')};
+  border: 2px solid ${({ $selected }) => ($selected ? '#044947' : 'transparent')};
   transition: all 0.2s ease;
-
-  @media (max-width: 768px) {
-    width: 60px;
-    height: 60px;
-  }
+  flex-shrink: 0;
 
   @media (min-width: 1024px) {
-    width: 70px;
-    height: 70px;
-    margin-bottom: 0.8rem;
+    width: 64px;
+    height: 64px;
   }
 
   &:hover {
-    border-color: #999;
+    border-color: #044947;
+    opacity: 0.85;
   }
 `;
 
 const MainImageContainer = styled.div`
   position: relative;
-  margin-bottom: 1rem;
   flex-grow: 1;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #f5f5f5;
+
+  @media (max-width: 768px) {
+    border-radius: 0;
+  }
 `;
 
 const MainImage = styled.img`
   width: 100%;
-  max-height: 500px;
+  max-height: 520px;
   object-fit: contain;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 `;
 
-const ProductInfo = styled.div``;
-
-const Title = styled.h1`
-  font-size: 2rem;
-  margin-bottom: 0.5rem;
-  color: #2a2a2a;
+const ProductInfo = styled.div`
+  @media (max-width: 768px) {
+    padding: 0 1rem;
+  }
 `;
 
-const Price = styled.p`
-  font-size: 1.75rem;
+const TitleText = styled.h1`
+  font-size: 1.8rem;
+  margin-bottom: 0.25rem;
+  color: #1a1a1a;
+  font-weight: 700;
+  line-height: 1.2;
+
+  @media (max-width: 768px) {
+    font-size: 1.5rem;
+  }
+`;
+
+const PriceText = styled.p`
+  font-size: 1.5rem;
   color: #044947;
   font-weight: 700;
   margin-bottom: 1.5rem;
+
+  @media (max-width: 768px) {
+    font-size: 1.3rem;
+  }
 `;
 
 const Description = styled.p`
-  line-height: 1.6;
+  line-height: 1.7;
   margin-bottom: 1.5rem;
   color: #666;
+  font-size: 0.95rem;
 `;
 
 const MetaSection = styled.div`
   margin-bottom: 1.5rem;
+  display: flex;
+  gap: 2rem;
 `;
+
+const MetaItem = styled.div``;
 
 const MetaLabel = styled.p`
   font-weight: 600;
-  margin-bottom: 0.5rem;
-  color: #2a2a2a;
+  margin-bottom: 0.35rem;
+  color: #1a1a1a;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+`;
+
+const MetaValue = styled.p`
+  color: #666;
+  font-size: 0.95rem;
+  margin: 0;
+  text-transform: capitalize;
 `;
 
 const SizeOptions = styled.div`
@@ -159,87 +198,105 @@ const SizeOptions = styled.div`
 `;
 
 const SizeButton = styled.button`
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 1.25rem;
   background: ${({ $selected }) => ($selected ? '#044947' : '#fff')};
   color: ${({ $selected }) => ($selected ? 'white' : '#333')};
-  border: 1px solid ${({ $selected }) => ($selected ? '#044947' : '#ddd')};
-  border-radius: 4px;
+  border: 1.5px solid ${({ $selected }) => ($selected ? '#044947' : '#ddd')};
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
+  font-weight: 500;
+  font-size: 0.9rem;
 
-  &:hover {
+  &:hover:not(:disabled) {
     border-color: #044947;
   }
 
   &:disabled {
-    opacity: 0.5;
+    opacity: 0.4;
     cursor: not-allowed;
-    border-color: #ddd;
+    border-color: #eee;
   }
 `;
 
 const QuantitySelector = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
+  gap: 0;
+  margin-bottom: 2rem;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 10px;
+  overflow: hidden;
+  width: fit-content;
 `;
 
 const QuantityButton = styled.button`
-  background-color: #f0f0f0;
+  background: #fff;
   border: none;
-  font-size: 1.2rem;
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
+  font-size: 1.1rem;
+  width: 44px;
+  height: 44px;
   cursor: pointer;
   transition: all 0.2s ease;
+  color: #333;
 
   &:hover {
-    background-color: #e0e0e0;
+    background: #f5f5f5;
+  }
+
+  &:active {
+    background: #eee;
   }
 `;
 
 const QuantityInput = styled.input`
-  width: 50px;
-  height: 36px;
+  width: 48px;
+  height: 44px;
   text-align: center;
-  border: 1px solid #ccc;
-  border-radius: 8px;
+  border: none;
+  border-left: 1.5px solid #e0e0e0;
+  border-right: 1.5px solid #e0e0e0;
   font-size: 1rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  outline: none;
+
+  &::-webkit-inner-spin-button,
+  &::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
 `;
 
 const ButtonGroup = styled.div`
   display: flex;
-  gap: 1rem;
-  margin-top: 2rem;
+  gap: 0.75rem;
 
   @media (max-width: 480px) {
     flex-direction: column;
   }
 `;
 
-const ActionButton = styled.button`
+const AddToCartButton = styled.button`
   flex: 1;
-  padding: 0.75rem 1.5rem;
+  padding: 1rem 1.5rem;
   font-size: 1rem;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
   border: none;
-`;
-
-const AddToCartButton = styled(ActionButton)`
-  background-color: #044947;
+  background: #044947;
   color: white;
+  font-weight: 600;
 
-  &:hover {
-    background-color: #033634;
+  &:hover:not(:disabled) {
+    background: #033634;
     transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(4, 73, 71, 0.3);
   }
 
   &:active {
@@ -247,17 +304,29 @@ const AddToCartButton = styled(ActionButton)`
   }
 
   &:disabled {
-    background-color: #cccccc;
+    background: #ccc;
     cursor: not-allowed;
   }
 `;
 
-const ViewCartButton = styled(ActionButton)`
-  background-color: #333;
-  color: white;
+const ViewCartButton = styled.button`
+  padding: 1rem 1.5rem;
+  font-size: 1rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1.5px solid var(--primary-color);
+  background: transparent;
+  color: var(--primary-color);
+  font-weight: 600;
 
   &:hover {
-    background-color: #222;
+    background: var(--primary-color);
+    color: white;
     transform: translateY(-1px);
   }
 
@@ -267,20 +336,19 @@ const ViewCartButton = styled(ActionButton)`
 `;
 
 const CartBadge = styled.span`
-  background-color: #ff5a5f;
+  background: #ff5a5f;
   color: white;
   font-size: 0.7rem;
   font-weight: bold;
   border-radius: 50%;
-  padding: 0.2rem 0.5rem;
-  margin-left: 0.3rem;
+  padding: 0.15rem 0.45rem;
 `;
 
 const ErrorMessage = styled.div`
   text-align: center;
-  padding: 3rem;
-  font-size: 1.2rem;
-  color: #ff0000;
+  padding: 4rem 2rem;
+  font-size: 1.1rem;
+  color: #ff5a5f;
 `;
 
 export default function ProductPage() {
@@ -346,20 +414,20 @@ export default function ProductPage() {
 
   const handleAddToCart = () => {
     const isSizeRequired = product.category !== 'plushie' && product.category !== 'sticker';
-    
+
     if (isSizeRequired && !selectedSize) {
       alert("Please select a size before adding to cart.");
       return;
     }
 
-    const itemId = isSizeRequired 
+    const itemId = isSizeRequired
       ? `${product._id}-${selectedSize}`
       : product._id;
-    
-    const stripePriceId = isSizeRequired 
+
+    const stripePriceId = isSizeRequired
       ? product.stripePriceIds?.[selectedSize] || product.stripePriceId
       : product.stripePriceId;
-    
+
     if (!stripePriceId) {
       alert("This product is not available for purchase at the moment. Please try again later.");
       console.error("Missing Stripe price ID for product:", product.name);
@@ -381,8 +449,8 @@ export default function ProductPage() {
   };
 
   if (loading) {
-    return <LoadingContainer 
-      message="Loading product details..." 
+    return <LoadingContainer
+      message="Loading product details..."
       spinnerColor="#fea500"
       textColor="#555"
       size="large"
@@ -392,14 +460,14 @@ export default function ProductPage() {
   if (error) return <ErrorMessage>{error}</ErrorMessage>;
   if (!product) return <ErrorMessage>Product not found</ErrorMessage>;
 
-  const showSizeSelector = product.category !== 'plushie' && 
-                         product.category !== 'sticker' && 
-                         (product.sizeOptions?.length > 0 || product.sizes?.length > 0);
+  const showSizeSelector = product.category !== 'plushie' &&
+    product.category !== 'sticker' &&
+    (product.sizeOptions?.length > 0 || product.sizes?.length > 0);
 
   return (
     <Wrapper>
       <BackButton onClick={() => navigate(-1)}>
-        <ChevronLeftIcon width={20} height={20} />
+        <ChevronLeftIcon width={18} height={18} />
         Back to Products
       </BackButton>
 
@@ -407,8 +475,8 @@ export default function ProductPage() {
         <GallerySection>
           <MainImageContainer>
             <Zoom>
-              <MainImage 
-                src={product.images[selectedImage]?.asset?.url || 'https://via.placeholder.com/600x600?text=Product+Image'} 
+              <MainImage
+                src={product.images[selectedImage]?.asset?.url || 'https://via.placeholder.com/600x600?text=Product+Image'}
                 alt={product.name}
               />
             </Zoom>
@@ -430,27 +498,29 @@ export default function ProductPage() {
         </GallerySection>
 
         <ProductInfo>
-          <Title>{product.name}</Title>
-          <Price>${product.price?.toFixed(2)}</Price>
-          
+          <TitleText>{product.name}</TitleText>
+          <PriceText>${product.price?.toFixed(2)}</PriceText>
+
           <Description>
             {product.description || 'No description available.'}
           </Description>
 
-          <MetaSection>
-            {product.material && (
-              <>
-                <MetaLabel>Material</MetaLabel>
-                <p>{product.material}</p>
-              </>
-            )}
-            {product.category && (
-              <>
-                <MetaLabel>Category</MetaLabel>
-                <p>{product.category}</p>
-              </>
-            )}
-          </MetaSection>
+          {(product.material || product.category) && (
+            <MetaSection>
+              {product.material && (
+                <MetaItem>
+                  <MetaLabel>Material</MetaLabel>
+                  <MetaValue>{product.material}</MetaValue>
+                </MetaItem>
+              )}
+              {product.category && (
+                <MetaItem>
+                  <MetaLabel>Category</MetaLabel>
+                  <MetaValue>{product.category}</MetaValue>
+                </MetaItem>
+              )}
+            </MetaSection>
+          )}
 
           {showSizeSelector && (
             <div>
@@ -484,11 +554,11 @@ export default function ProductPage() {
 
           <MetaLabel>Quantity</MetaLabel>
           <QuantitySelector>
-            <QuantityButton 
+            <QuantityButton
               onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
               aria-label="Decrease quantity"
             >
-              –
+              -
             </QuantityButton>
             <QuantityInput
               type="number"
@@ -497,7 +567,7 @@ export default function ProductPage() {
               onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
               aria-label="Quantity"
             />
-            <QuantityButton 
+            <QuantityButton
               onClick={() => setQuantity(prev => prev + 1)}
               aria-label="Increase quantity"
             >
@@ -506,20 +576,20 @@ export default function ProductPage() {
           </QuantitySelector>
 
           <ButtonGroup>
-            <AddToCartButton 
+            <AddToCartButton
               onClick={handleAddToCart}
               disabled={
-                showSizeSelector && 
-                (!selectedSize || 
-                 (product.sizeOptions?.length > 0 && 
-                  product.sizeOptions.find(opt => opt.size === selectedSize)?.stock <= 0))
+                showSizeSelector &&
+                (!selectedSize ||
+                  (product.sizeOptions?.length > 0 &&
+                    product.sizeOptions.find(opt => opt.size === selectedSize)?.stock <= 0))
               }
             >
               Add to Cart
             </AddToCartButton>
             <ViewCartButton onClick={toggleCart}>
               <ShoppingBagIcon width={18} height={18} />
-              View Cart
+              Cart
               {totalItems > 0 && <CartBadge>{totalItems}</CartBadge>}
             </ViewCartButton>
           </ButtonGroup>

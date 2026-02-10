@@ -3,6 +3,7 @@ import styled, { keyframes, css } from 'styled-components';
 import { ShoppingBagIcon, XMarkIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useCart } from '../CartContext';
 import { useNavigate } from 'react-router-dom';
+
 // Animations
 const slideIn = keyframes`
   from { transform: translateX(100%); }
@@ -15,7 +16,7 @@ const slideOut = keyframes`
 `;
 
 const fadeIn = keyframes`
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 `;
 
@@ -26,7 +27,8 @@ const DrawerOverlay = styled.div`
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
   z-index: 999;
   opacity: ${({ isOpen }) => (isOpen ? 1 : 0)};
   pointer-events: ${({ isOpen }) => (isOpen ? 'auto' : 'none')};
@@ -41,9 +43,8 @@ const Drawer = styled.div`
   max-width: 420px;
   height: 100vh;
   background: #fff;
-  box-shadow: -5px 0 30px rgba(0, 0, 0, 0.15);
+  box-shadow: -8px 0 30px rgba(0, 0, 0, 0.1);
   z-index: 1000;
-  padding: 1.5rem;
   display: flex;
   flex-direction: column;
   transform: translateX(${({ isOpen }) => (isOpen ? '0' : '100%')});
@@ -51,26 +52,29 @@ const Drawer = styled.div`
     isOpen
       ? css`${slideIn} 0.3s ease forwards`
       : css`${slideOut} 0.3s ease forwards`};
+
+  @media (max-width: 480px) {
+    max-width: 100%;
+  }
 `;
 
 const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #eee;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #f0f0f0;
 `;
 
-const Title = styled.h2`
-  font-size: 1.5rem;
+const HeaderTitle = styled.h2`
+  font-size: 1.25rem;
   margin: 0;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.6rem;
   font-weight: 700;
   color: #1a1a1a;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.3px;
 `;
 
 const CartIconWrapper = styled.div`
@@ -81,15 +85,15 @@ const CartIconWrapper = styled.div`
 
 const CartBadge = styled.span`
   position: absolute;
-  top: -8px;
+  top: -6px;
   right: -8px;
-  background-color: #ff5a5f;
+  background: #ff5a5f;
   color: white;
-  font-size: 0.7rem;
-  font-weight: bold;
+  font-size: 0.65rem;
+  font-weight: 700;
   border-radius: 50%;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -108,9 +112,8 @@ const CloseBtn = styled.button`
   transition: all 0.2s ease;
 
   &:hover {
-    background: #f0f0f0;
+    background: #eee;
     transform: rotate(90deg);
-    color: #ff5a5f;
   }
 
   svg {
@@ -127,10 +130,10 @@ const ItemList = styled.ul`
   flex: 1;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: #ddd transparent;
+  scrollbar-color: #e0e0e0 transparent;
 
   &::-webkit-scrollbar {
-    width: 6px;
+    width: 4px;
   }
 
   &::-webkit-scrollbar-track {
@@ -138,67 +141,108 @@ const ItemList = styled.ul`
   }
 
   &::-webkit-scrollbar-thumb {
-    background-color: #ddd;
-    border-radius: 3px;
+    background: #e0e0e0;
+    border-radius: 2px;
   }
 `;
 
 const Item = styled.li`
-  padding: 1.25rem 0;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #f5f5f5;
   display: flex;
   gap: 1rem;
   animation: ${fadeIn} 0.3s ease forwards;
+
+  &:last-child {
+    border-bottom: none;
+  }
 `;
 
+const ItemImage = styled.img`
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 10px;
+  flex-shrink: 0;
+  background: #f5f5f5;
+`;
 
+const ItemDetails = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+`;
+
+const ItemTopRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+`;
+
+const ItemNameWrapper = styled.div`
+  flex: 1;
+  min-width: 0;
+`;
 
 const ItemName = styled.span`
-  font-weight: 700;
+  font-weight: 600;
   color: #1a1a1a;
-  font-size: 1rem;
+  font-size: 0.95rem;
   line-height: 1.3;
-  margin-right: 0.5rem;
+  display: block;
+`;
+
+const ItemSize = styled.span`
+  font-size: 0.8rem;
+  color: #999;
+  font-weight: 500;
+  margin-top: 0.15rem;
+  display: block;
 `;
 
 const ItemPrice = styled.span`
   font-weight: 700;
   color: #1a1a1a;
-  font-size: 1rem;
+  font-size: 0.95rem;
   white-space: nowrap;
+  flex-shrink: 0;
 `;
 
-const ItemSize = styled.span`
-  font-size: 0.85rem;
-  color: #777;
-  font-weight: 500;
+const ItemBottomRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 `;
 
 const QuantityControls = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  overflow: hidden;
 `;
 
 const QtyBtn = styled.button`
-  background: #f9f9f9;
-  border: 1px solid #eee;
+  background: #fff;
+  border: none;
   padding: 0;
-  font-size: 1.1rem;
+  font-size: 1rem;
   cursor: pointer;
-  border-radius: 6px;
-  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   color: #555;
+  transition: all 0.15s ease;
 
   &:hover {
-    background: #024a47;
+    background: #044947;
     color: white;
-    border-color: #024a47;
   }
 
   &:active {
@@ -207,25 +251,30 @@ const QtyBtn = styled.button`
 `;
 
 const QtyDisplay = styled.span`
-  width: 24px;
+  width: 28px;
   text-align: center;
   font-weight: 600;
-  color: #333;
+  font-size: 0.85rem;
+  color: #1a1a1a;
+  border-left: 1px solid #eee;
+  border-right: 1px solid #eee;
+  line-height: 30px;
 `;
 
 const DeleteBtn = styled.button`
-  background: #f5f5f5;
+  background: none;
   border: none;
-  border-radius: 4px;
-  padding: 0.5rem;
+  padding: 0.4rem;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 6px;
+  color: #bbb;
 
   &:hover {
-    background: #ffebee;
+    background: #fff1f1;
     color: #ff5a5f;
   }
 
@@ -236,33 +285,71 @@ const DeleteBtn = styled.button`
   }
 `;
 
-const Total = styled.div`
-  background: #f9f9f9;
-  border-top: 1px solid #eee;
-  padding: 1.5rem;
-  margin-top: auto;
+const Footer = styled.div`
+  border-top: 1px solid #f0f0f0;
+  padding: 1.25rem 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
+  background: #fafafa;
 `;
 
 const TotalRow = styled.div`
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
+  align-items: baseline;
 `;
 
 const TotalLabel = styled.span`
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #555;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #888;
 `;
 
 const TotalAmount = styled.span`
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   font-weight: 800;
   color: #1a1a1a;
-  line-height: 1;
+  letter-spacing: -0.5px;
+`;
+
+const CheckoutButton = styled.button`
+  background: #044947;
+  color: white;
+  border: none;
+  width: 100%;
+  padding: 1rem;
+  font-size: 1rem;
+  font-weight: 700;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  letter-spacing: 0.5px;
+
+  &:hover {
+    background: #033634;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(4, 73, 71, 0.25);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+`;
+
+const ContinueLink = styled.button`
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-align: center;
+  padding: 0.25rem;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: #044947;
+  }
 `;
 
 const EmptyMessage = styled.div`
@@ -277,8 +364,8 @@ const EmptyMessage = styled.div`
 `;
 
 const EmptyIcon = styled.div`
-  width: 60px;
-  height: 60px;
+  width: 64px;
+  height: 64px;
   background: #f5f5f5;
   border-radius: 50%;
   display: flex;
@@ -288,47 +375,31 @@ const EmptyIcon = styled.div`
   svg {
     width: 28px;
     height: 28px;
-    color: #999;
+    color: #ccc;
   }
 `;
 
 const EmptyText = styled.p`
-  color: #777;
-  font-size: 1.1rem;
+  color: #999;
+  font-size: 1rem;
   margin: 0;
 `;
 
-const CheckoutButton = styled.button`
-  background: #024a47;
-  color: white;
-  border: none;
-  width: 100%;
-  padding: 1.25rem;
-  font-size: 1.1rem;
-  font-weight: 700;
+const ShopLink = styled.button`
+  background: none;
+  border: 1.5px solid #1a1a1a;
+  color: #1a1a1a;
+  padding: 0.6rem 1.5rem;
   border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
-  letter-spacing: 0.5px;
-  box-shadow: 0 4px 15px rgba(2, 74, 71, 0.2);
+  transition: all 0.2s ease;
 
   &:hover {
-    background: #01332f;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(2, 74, 71, 0.3);
+    background: #1a1a1a;
+    color: white;
   }
-
-  &:active {
-    transform: translateY(0);
-  }
-`;
-
-const ItemImage = styled.img`
-  width: 80px;
-  height: 80px;
-  object-fit: cover;
-  border-radius: 8px;
-  margin-right: 1rem;
 `;
 
 export default function CartDrawer() {
@@ -342,19 +413,10 @@ export default function CartDrawer() {
 
   const totalQty = items.reduce((acc, item) => acc + item.quantity, 0);
 
-  // Helper function to get the image URL
   const getImageUrl = (item) => {
-    // Handle different image formats from Sanity or other sources
-    if (item.image) {
-      // If image is a direct URL string
-      return item.image;
-    } else if (item.images?.[0]?.asset?.url) {
-      // If image is from Sanity (array format)
-      return item.images[0].asset.url;
-    } else if (item.images?.[0]?.url) {
-      // If image is in a simpler array format
-      return item.images[0].url;
-    }
+    if (item.image) return item.image;
+    if (item.images?.[0]?.asset?.url) return item.images[0].asset.url;
+    if (item.images?.[0]?.url) return item.images[0].url;
     return 'https://via.placeholder.com/150?text=No+Image';
   };
 
@@ -363,13 +425,13 @@ export default function CartDrawer() {
       <DrawerOverlay isOpen={isOpen} onClick={toggleCart} />
       <Drawer isOpen={isOpen}>
         <Header>
-          <Title>
+          <HeaderTitle>
             Your Cart
             <CartIconWrapper>
-              <ShoppingBagIcon width={22} height={22} />
+              <ShoppingBagIcon width={20} height={20} />
               {totalQty > 0 && <CartBadge>{totalQty}</CartBadge>}
             </CartIconWrapper>
-          </Title>
+          </HeaderTitle>
           <CloseBtn onClick={toggleCart}>
             <XMarkIcon />
           </CloseBtn>
@@ -381,6 +443,9 @@ export default function CartDrawer() {
               <ShoppingBagIcon />
             </EmptyIcon>
             <EmptyText>Your cart is empty</EmptyText>
+            <ShopLink onClick={() => { toggleCart(); navigate('/products'); }}>
+              Browse Products
+            </ShopLink>
           </EmptyMessage>
         ) : (
           <>
@@ -394,20 +459,18 @@ export default function CartDrawer() {
                       e.target.src = 'https://via.placeholder.com/150?text=No+Image';
                     }}
                   />
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div style={{ flex: 1 }}>
+                  <ItemDetails>
+                    <ItemTopRow>
+                      <ItemNameWrapper>
                         <ItemName>{item.name}</ItemName>
                         {(item.size || item.selectedSize) && (
-                          <div style={{ marginTop: '0.25rem' }}>
-                            <ItemSize>Size: {item.size || item.selectedSize}</ItemSize>
-                          </div>
+                          <ItemSize>Size: {item.size || item.selectedSize}</ItemSize>
                         )}
-                      </div>
+                      </ItemNameWrapper>
                       <ItemPrice>${(item.price * item.quantity).toFixed(2)}</ItemPrice>
-                    </div>
+                    </ItemTopRow>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <ItemBottomRow>
                       <QuantityControls>
                         <QtyBtn
                           onClick={() =>
@@ -429,12 +492,12 @@ export default function CartDrawer() {
                       <DeleteBtn onClick={() => removeItem(item)} aria-label="Remove item">
                         <TrashIcon />
                       </DeleteBtn>
-                    </div>
-                  </div>
+                    </ItemBottomRow>
+                  </ItemDetails>
                 </Item>
               ))}
             </ItemList>
-            <Total>
+            <Footer>
               <TotalRow>
                 <TotalLabel>Subtotal</TotalLabel>
                 <TotalAmount>${total.toFixed(2)}</TotalAmount>
@@ -445,7 +508,10 @@ export default function CartDrawer() {
               }}>
                 CHECKOUT
               </CheckoutButton>
-            </Total>
+              <ContinueLink onClick={toggleCart}>
+                Continue Shopping
+              </ContinueLink>
+            </Footer>
           </>
         )}
       </Drawer>

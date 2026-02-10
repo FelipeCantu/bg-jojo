@@ -26,7 +26,8 @@ const StyledMenu = styled.div`
   height: 1.6rem;
   position: sticky;
   top: 15px;
-  left: calc(100% - 40px); /* Positions from left edge instead */
+  margin-left: auto;
+  margin-right: 0;
   z-index: 9999;
   display: flex;
   flex-direction: column;

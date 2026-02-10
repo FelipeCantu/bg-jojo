@@ -5,7 +5,7 @@ import MyWallet from '../settings/MyWallet';
 import MyAddress from '../settings/MyAddress';
 import MySettings from '../settings/MySettings';
 import styled, { css } from 'styled-components';
-import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const pageVariants = {
   initial: (direction) => ({
@@ -35,6 +35,9 @@ const AccountSettings = () => {
   const navRef = useRef(null);
   const touchStartRef = useRef(0);
   const location = useLocation();
+  const tabRefs = useRef({});
+  const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0, ready: false });
+  const activeTab = tabs.find(tab => location.pathname.endsWith(tab)) || 'account';
 
   useEffect(() => {
     if (navRef.current) {
@@ -50,6 +53,24 @@ const AccountSettings = () => {
       }
     }
   }, [location.pathname]);
+
+  useEffect(() => {
+    const updateIndicator = () => {
+      const activeEl = tabRefs.current[activeTab];
+      if (activeEl && navRef.current) {
+        const navRect = navRef.current.getBoundingClientRect();
+        const tabRect = activeEl.getBoundingClientRect();
+        setIndicatorStyle({
+          left: tabRect.left - navRect.left + navRef.current.scrollLeft,
+          width: tabRect.width,
+          ready: true,
+        });
+      }
+    };
+    updateIndicator();
+    window.addEventListener('resize', updateIndicator);
+    return () => window.removeEventListener('resize', updateIndicator);
+  }, [activeTab]);
 
   const getTabIndex = (path) => {
     const currentTab = tabs.find(tab => path.endsWith(tab));
@@ -103,7 +124,6 @@ const AccountSettings = () => {
               ‹
             </ScrollButton>
           )}
-          <LayoutGroup>
             <Navbar
               ref={navRef}
               isMobile={isMobile}
@@ -112,62 +132,40 @@ const AccountSettings = () => {
             >
               <NavItem
                 to="account"
+                ref={el => { tabRefs.current.account = el; }}
                 className={({ isActive }) => isActive ? "active" : ""}
               >
                 My Account
-                {location.pathname.endsWith('/account') && (
-                  <Underline
-                    layoutId="underline"
-                    initial={{ opacity: 1, y: 0 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  />
-                )}
               </NavItem>
               <NavItem
                 to="wallet"
+                ref={el => { tabRefs.current.wallet = el; }}
                 className={({ isActive }) => isActive ? "active" : ""}
               >
                 My Wallet
-                {location.pathname.endsWith('/wallet') && (
-                  <Underline
-                    layoutId="underline"
-                    initial={{ opacity: 1, y: 0 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  />
-                )}
               </NavItem>
               <NavItem
                 to="address"
+                ref={el => { tabRefs.current.address = el; }}
                 className={({ isActive }) => isActive ? "active" : ""}
               >
                 My Address
-                {location.pathname.endsWith('/address') && (
-                  <Underline
-                    layoutId="underline"
-                    initial={{ opacity: 1, y: 0 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  />
-                )}
               </NavItem>
               <NavItem
                 to="settings"
+                ref={el => { tabRefs.current.settings = el; }}
                 className={({ isActive }) => isActive ? "active" : ""}
               >
                 My Settings
-                {location.pathname.endsWith('/settings') && (
-                  <Underline
-                    layoutId="underline"
-                    initial={{ opacity: 1, y: 0 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  />
-                )}
               </NavItem>
+              <Underline
+                style={{
+                  left: indicatorStyle.left,
+                  width: indicatorStyle.width,
+                  opacity: indicatorStyle.ready ? 1 : 0,
+                }}
+              />
             </Navbar>
-          </LayoutGroup>
           {isMobile && (
             <ScrollButton
               onClick={() => handleScroll('right')}
@@ -308,7 +306,14 @@ const NavbarWrapper = styled.div`
   position: relative;
   width: 100%;
   margin-bottom: 0;
-  overflow: hidden; // Contain the indicator
+  overflow: hidden;
+
+  @media (max-width: 768px) {
+    margin-left: -1rem;
+    margin-right: -1rem;
+    width: calc(100% + 2rem);
+    border-bottom: 1px solid #eee;
+  }
 `;
 
 const Navbar = styled.nav`
@@ -332,20 +337,20 @@ const Navbar = styled.nav`
 
   @media (max-width: 768px) {
     justify-content: flex-start;
-    padding: 0 1rem 12px;
-    margin-bottom: 1.5rem;
+    padding: 0 1rem 10px;
+    margin-bottom: 0;
     gap: 1.5rem;
   }
 `;
 
-const Underline = styled(motion.div)`
+const Underline = styled.div`
   position: absolute;
   bottom: 0;
-  left: 0;
-  right: 0;
   height: 4px;
   background-color: var(--secondary-color);
   border-radius: 2px 2px 0 0;
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
+  pointer-events: none;
 `;
 
 const NavItem = styled(NavLink)`
@@ -406,7 +411,7 @@ const ContentArea = styled.div`
   flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 0 0.5rem;
+  padding: 1rem 0.5rem 0;
   scrollbar-width: none;
   
   &::-webkit-scrollbar {

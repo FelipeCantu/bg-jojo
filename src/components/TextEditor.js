@@ -246,28 +246,28 @@ const TextEditor = forwardRef(({
 
   const handleSaveClick = useCallback(async () => {
     if (!editor || isSaving) return;
-    
+
     const html = editor.getHTML();
-    
+
     if (html === lastContentRef.current && !hasUnsavedChanges) {
       toast.info('No changes to save');
       return;
     }
-  
+
     try {
       setIsSaving(true);
       toast.info('Saving changes...', { autoClose: false, toastId: 'saving-toast' });
-  
+
       const portableText = await convertHtmlToPortableText(html);
-      
+
       if (!portableText || portableText.length === 0) {
         throw new Error('Content conversion failed');
       }
-  
+
       await onChange(portableText);
       lastContentRef.current = html;
       setHasUnsavedChanges(false);
-      
+
       toast.update('saving-toast', {
         render: 'Changes saved successfully',
         type: toast.TYPE.SUCCESS,
@@ -275,13 +275,13 @@ const TextEditor = forwardRef(({
       });
     } catch (error) {
       console.error('Save error:', error);
-      
+
       toast.update('saving-toast', {
         render: error.message || 'Failed to save changes',
         type: toast.TYPE.ERROR,
         autoClose: 5000
       });
-      
+
       setHasUnsavedChanges(true);
     } finally {
       setIsSaving(false);
@@ -298,6 +298,14 @@ const TextEditor = forwardRef(({
             border: 1px solid #e2e8f0;
             border-radius: 4px;
             outline: none;
+          }
+
+          @media (max-width: 768px) {
+            .tiptap-editor {
+              border: none;
+              border-radius: 0;
+              padding: 10px;
+            }
           }
           
           .tiptap-editor:focus {
@@ -540,6 +548,12 @@ const EditorContainer = styled.div`
   overflow: hidden;
   background: white;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+  @media (max-width: 768px) {
+    border-radius: 0;
+    box-shadow: none;
+    width: 100%;
+  }
 `;
 
 const EditorStyles = styled.style``;

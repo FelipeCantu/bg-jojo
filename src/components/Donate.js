@@ -5,69 +5,69 @@ import { Link } from 'react-router-dom';
 import DonationCheckout from './DonationCheckout';
 
 const Donate = () => {
-    const [showCheckout, setShowCheckout] = useState(false);
-    const [selectedAmount, setSelectedAmount] = useState(null);
+  const [showCheckout, setShowCheckout] = useState(false);
+  const [selectedAmount, setSelectedAmount] = useState(null);
 
-    const donationOptions = [
-        { amount: "$10", value: 10, description: "1 free meal" },
-        { amount: "$50", value: 50, description: "5 educational and recreational books" },
-        { amount: "$100", value: 100, description: "900 pcs of educational stickers for suicide prevention" },
-        { amount: "$250", value: 250, description: "Will contribute to one case of essential oils for the aroma therapy program" },
-        { amount: "$500", value: 500, description: "Facilitate educational/recreational mental health and suicide prevention events" },
-        { amount: "$1,000", value: 1000, description: "Supply art supplies (paint, canvases, brushes, etc.) for our art therapy program" },
-        { amount: "$2,000", value: 2000, description: "20 hours of free therapy for the community" },
-        { amount: "$5,000", value: 5000, description: "Will contribute to holding a dedicated mental health clinic for suicide prevention in Saratoga Springs, Utah" },
-    ];
+  const donationOptions = [
+    { amount: "$10", value: 10, description: "1 free meal" },
+    { amount: "$50", value: 50, description: "5 educational and recreational books" },
+    { amount: "$100", value: 100, description: "900 pcs of educational stickers for suicide prevention" },
+    { amount: "$250", value: 250, description: "Will contribute to one case of essential oils for the aroma therapy program" },
+    { amount: "$500", value: 500, description: "Facilitate educational/recreational mental health and suicide prevention events" },
+    { amount: "$1,000", value: 1000, description: "Supply art supplies (paint, canvases, brushes, etc.) for our art therapy program" },
+    { amount: "$2,000", value: 2000, description: "20 hours of free therapy for the community" },
+    { amount: "$5,000", value: 5000, description: "Will contribute to holding a dedicated mental health clinic for suicide prevention in Saratoga Springs, Utah" },
+  ];
 
-    const handleStartDonation = (amount = null) => {
-        setSelectedAmount(amount);
-        setShowCheckout(true);
-    };
+  const handleStartDonation = (amount = null) => {
+    setSelectedAmount(amount);
+    setShowCheckout(true);
+  };
 
-    const handleCloseCheckout = () => {
-        setShowCheckout(false);
-        setSelectedAmount(null);
-    };
+  const handleCloseCheckout = () => {
+    setShowCheckout(false);
+    setSelectedAmount(null);
+  };
 
-    return (
-        <BackgroundWrapper>
-            <Container>
-                <Title>Donate</Title>
-                <Subtitle>Empowering Jojo to Prevent Suicide and Elevate Mental Health Awareness</Subtitle>
-                <StartButton as="button" onClick={() => handleStartDonation()}>
-                    Start Today
-                </StartButton>
+  return (
+    <BackgroundWrapper>
+      <Container>
+        <Title>Donate</Title>
+        <Subtitle>Empowering Jojo to Prevent Suicide and Elevate Mental Health Awareness</Subtitle>
+        <StartButton as="button" onClick={() => handleStartDonation()}>
+          Start Today
+        </StartButton>
 
-                <DonationList>
-                    {donationOptions.map((option, index) => (
-                        <DonationItem
-                            key={index}
-                            onClick={() => handleStartDonation(option.value)}
-                            $clickable
-                        >
-                            <Amount>{option.amount}</Amount>
-                            <Description>{option.description}</Description>
-                        </DonationItem>
-                    ))}
-                </DonationList>
+        <DonationList>
+          {donationOptions.map((option, index) => (
+            <DonationItem
+              key={index}
+              onClick={() => handleStartDonation(option.value)}
+              $clickable
+            >
+              <Amount>{option.amount}</Amount>
+              <Description>{option.description}</Description>
+            </DonationItem>
+          ))}
+        </DonationList>
 
-                <AltPaymentLink to="/SupportingGiveBackJojo">
-                    Prefer Venmo or Zelle?
-                </AltPaymentLink>
+        <AltPaymentLink to="/SupportingGiveBackJojo">
+          Prefer Venmo or Zelle?
+        </AltPaymentLink>
 
-                <LearnMore to="/YourGift">Learn More</LearnMore>
-                <Divider />
-                <Sponsorship />
-            </Container>
+        <LearnMore to="/YourGift">Learn More</LearnMore>
+        <Divider />
+        <Sponsorship />
+      </Container>
 
-            {showCheckout && (
-                <DonationCheckout
-                    preselectedAmount={selectedAmount}
-                    onClose={handleCloseCheckout}
-                />
-            )}
-        </BackgroundWrapper>
-    );
+      {showCheckout && (
+        <DonationCheckout
+          preselectedAmount={selectedAmount}
+          onClose={handleCloseCheckout}
+        />
+      )}
+    </BackgroundWrapper>
+  );
 };
 
 // Styled Components
@@ -78,6 +78,10 @@ const BackgroundWrapper = styled.div`
   
   @media (min-width: 768px) {
     padding: 3rem 2rem;
+  }
+
+  @media (max-width: 768px) {
+    padding: 0;
   }
 `;
 
@@ -92,6 +96,14 @@ const Container = styled.div`
   
   @media (min-width: 768px) {
     padding: 3rem;
+  }
+
+  @media (max-width: 768px) {
+    width: 100%;
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 1.5rem;
   }
 `;
 

@@ -447,7 +447,7 @@ const Container = styled.div`
   @media (max-width: 480px) {
     padding: 15px;
     width: 100%;
-    margin: 0 10px;
+    margin: 0;
   }
 `;
 

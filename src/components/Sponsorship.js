@@ -6,7 +6,7 @@ const Sponsorship = () => {
 
   const navigate = useNavigate();
   const handleStartToday = () => {
-    navigate('/getinvolved'); 
+    navigate('/getinvolved');
   };
 
   const sponsorshipLevels = [
@@ -122,6 +122,13 @@ const Container = styled.div`
   max-width: 1100px;
   margin: auto;
   box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+
+  @media (max-width: 768px) {
+    padding: 20px 10px;
+    border-radius: 0;
+    max-width: 100%;
+    box-shadow: none;
+  }
 `;
 
 const Title = styled.h2`
@@ -156,7 +163,7 @@ const Image = styled.img`
   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
 
   @media (max-width: 768px) {
-    width: 90%;
+    width: 100%;
   }
 `;
 

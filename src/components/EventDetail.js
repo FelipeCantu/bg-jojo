@@ -72,9 +72,9 @@ const EventDetail = () => {
   // Function to toggle attending status
   const handleToggleAttend = async () => {
     if (!user) return alert('Please log in to join the event.');
-  
+
     const eventRef = doc(db, 'events', id);
-  
+
     try {
       if (isUserAttending) {
         // Remove user from the attendees list
@@ -85,19 +85,19 @@ const EventDetail = () => {
         // Add user to the attendees list using addAttendeeToEvent
         await addAttendeeToEvent(id, user.uid);  // Call your existing function here
       }
-  
+
       // Fetch updated attendees list
       const eventSnap = await getDoc(eventRef);
       if (eventSnap.exists()) {
         setAttendees(eventSnap.data().attendees || []);
       }
-  
+
       console.log('Attendee updated successfully!');
     } catch (error) {
       console.error('Error updating attendees:', error);
     }
   };
-  
+
   if (error) return <ErrorMessage>{error}</ErrorMessage>;
   if (!event) return <div>Loading...</div>;
 
@@ -159,6 +159,10 @@ const PageContainer = styled.div`
   background-position: center center;
   background-attachment: fixed;
   padding: 24px;
+
+  @media (max-width: 768px) {
+    padding: 0;
+  }
 `;
 
 const ContentWrapper = styled.div`
@@ -168,6 +172,11 @@ const ContentWrapper = styled.div`
   background: rgba(255, 255, 255, 0.8);
   border-radius: 12px;
   box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+
+  @media (max-width: 768px) {
+    border-radius: 0;
+    padding: 15px;
+  }
 `;
 
 const EventTitle = styled.h2`

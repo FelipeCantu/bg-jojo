@@ -404,6 +404,15 @@ const FormContainer = styled.div`
   margin: -50px auto 0;
   position: relative;
   z-index: 1;
+
+  @media (max-width: 768px) {
+    width: 100%;
+    margin: -50px 0 0;
+    border-radius: 0;
+    padding: 1.5rem;
+    box-sizing: border-box;
+    max-width: 100vw;
+  }
 `;
 
 const BottomSection = styled.div`

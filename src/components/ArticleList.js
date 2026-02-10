@@ -36,7 +36,7 @@ const ArticleList = () => {
   useEffect(() => {
     const query = searchQuery.toLowerCase();
     setFilteredArticles(
-      articles.filter(article => 
+      articles.filter(article =>
         article.title?.toLowerCase().includes(query)
       )
     );
@@ -67,8 +67,8 @@ const ArticleList = () => {
           {filteredArticles.map((article) => {
             // Handle anonymous vs. regular author display
             const authorName = article.isAnonymous ? 'Anonymous' : article.author?.name || 'Unknown author';
-            const authorImageSrc = article.isAnonymous 
-              ? DEFAULT_ANONYMOUS_AVATAR 
+            const authorImageSrc = article.isAnonymous
+              ? DEFAULT_ANONYMOUS_AVATAR
               : article.author?.photoURL || DEFAULT_ANONYMOUS_AVATAR;
             const mainImageSrc = article.mainImage?.url || 'https://via.placeholder.com/350x250';
 
@@ -134,6 +134,11 @@ const ArticleContainer = styled.div`
   overflow: hidden;
   background: #feedfd;
   padding: 30px;
+
+  @media (max-width: 768px) {
+    padding: 15px 0;
+    width: 100%;
+  }
 `;
 
 const SearchContainer = styled.div`
@@ -199,6 +204,8 @@ const ArticleGrid = styled.div`
 
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
+    width: 100%;
+    gap: 20px;
   }
 `;
 
@@ -288,8 +295,10 @@ const ArticleCard = styled.div`
     box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.2);
   }
 
-  @media (max-width: 400px) {
-    width: 95vw;
+  @media (max-width: 768px) {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 0;
   }
 `;
 

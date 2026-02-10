@@ -15,6 +15,15 @@
   text-decoration: none;
 }
 
+/* Prevent horizontal overflow on route containers only */
+.App>.route-container {
+  overflow-x: hidden;
+}
+
+.App>.route-container.no-padding {
+  padding: 0;
+}
+
 /* App.css additions */
 body.loading {
   overflow: hidden;
@@ -92,19 +101,20 @@ body.loading {
   text-decoration: none;
 }
 
-/* Links - Completely remove all text decoration */
+/* Links - Completely remove all text decoration and normalize visited color */
 a,
 a:hover,
 a:focus,
 a:active,
 a:visited {
   text-decoration: none !important;
+  color: inherit;
 }
 
 /* Responsive Adjustments */
 @media (max-width: 768px) {
   .App>*:not(.Nav):not(.Footer) {
-    padding: var(--space-lg) 0;
+    padding: 0;
   }
 
   .DropdownMenu-content {
@@ -130,10 +140,10 @@ a:visited {
 /* Small mobile devices */
 @media (max-width: 480px) {
   .App>*:not(.Nav):not(.Footer) {
-    padding: var(--space-md) 0;
+    padding: 0;
   }
 
   .Footer {
-    padding: var(--space-lg) 0;
+    padding: 0;
   }
 }

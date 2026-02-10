@@ -55,6 +55,10 @@ const Container = styled.div`
   padding: 40px 20px;
   background-color: #f9f9f9;
   min-height: 100vh;
+
+  @media (max-width: 768px) {
+    padding: 20px 0;
+  }
 `;
 
 const Header = styled.div`
@@ -82,6 +86,10 @@ const GalleryContainer = styled.div`
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 30px;
   padding: 0 20px;
+
+  @media (max-width: 768px) {
+    padding: 0;
+  }
 `;
 
 const NoTributesText = styled.p`
