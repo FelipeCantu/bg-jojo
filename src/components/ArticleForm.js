@@ -734,11 +734,6 @@ const ChangeOverlay = styled.div`
   font-weight: 600;
 `;
 
-const UploadStatus = styled.p`
-  font-size: 14px;
-  color: var(--text-light);
-  margin: 5px 0;
-`;
 
 const PreviewImage = styled.img`
   width: 100%;
