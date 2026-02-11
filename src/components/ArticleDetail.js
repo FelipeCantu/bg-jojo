@@ -7,8 +7,7 @@ import CommentSection from "./CommentSection";
 import { auth, onAuthStateChanged } from "../firestore";
 import { PortableText } from "@portabletext/react";
 import { Link } from 'react-router-dom';
-
-const DEFAULT_ANONYMOUS_AVATAR = 'https://www.shutterstock.com/image-vector/vector-flat-illustration-grayscale-avatar-600nw-2281862025.jpg';
+import { DEFAULT_ANONYMOUS_AVATAR } from '../constants';
 
 const ArticleDetail = () => {
   const { id } = useParams();

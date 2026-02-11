@@ -5,8 +5,7 @@ import { client, urlFor } from "../../sanityClient";
 import useCurrentUser from "../../hook/useCurrentUser";
 import ArticleCounters from "../ArticleCounters";
 import { HiDotsVertical } from 'react-icons/hi';
-
-const DEFAULT_ANONYMOUS_AVATAR = 'https://www.shutterstock.com/image-vector/vector-flat-illustration-grayscale-avatar-600nw-2281862025.jpg';
+import { DEFAULT_ANONYMOUS_AVATAR } from '../../constants';
 
 const UserArticles = () => {
   const { currentUser, loading, error } = useCurrentUser();
@@ -212,7 +211,7 @@ const UserArticles = () => {
             <HorizontalScrollContainer>
               {articles.map((article) => (
                 <ArticleItem key={article._id}>
-                  <LinkWrapper to={`/article/${article.slug?.current || article._id}`}>
+                  <LinkWrapper to={`/article/${article._id}`}>
                     <ArticleCard>
                       <TopLeftSection>
                         <UserInfo>

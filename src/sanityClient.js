@@ -1,7 +1,6 @@
 import { createClient } from "@sanity/client";
 import imageUrlBuilder from "@sanity/image-url";
-
-const DEFAULT_ANONYMOUS_AVATAR = 'https://www.shutterstock.com/image-vector/vector-flat-illustration-grayscale-avatar-600nw-2281862025.jpg';
+import { DEFAULT_ANONYMOUS_AVATAR } from "./constants";
 
 // Initialize Sanity client
 export const client = createClient({
@@ -140,7 +139,14 @@ export const articleAPI = {
     const doc = {
       _type: 'article',
       title: articleData.title,
-      slug: { current: articleData.slug || articleData.title.toLowerCase().replace(/\s+/g, '-') },
+      slug: { current: articleData.slug || articleData.title
+        .toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // strip accents
+        .replace(/[^a-z0-9\s-]/g, '')  // remove special characters
+        .trim()
+        .replace(/\s+/g, '-')          // spaces to hyphens
+        .replace(/-+/g, '-')           // collapse consecutive hyphens
+      },
       content: articleData.content,
       mainImage: articleData.mainImage,
       author: { _type: 'reference', _ref: userId },

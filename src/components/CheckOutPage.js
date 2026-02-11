@@ -93,6 +93,7 @@ const CheckoutPage = () => {
   const [orderId, setOrderId] = useState(null);
 
   const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const isBelowMinimum = total < 0.50;
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -270,7 +271,7 @@ const CheckoutPage = () => {
                       >
                         <option value="US">United States</option>
                         <option value="CA">Canada</option>
-                        <option value="UK">United Kingdom</option>
+                        <option value="GB">United Kingdom</option>
                       </Select>
                     ) : (
                       <Input
@@ -373,10 +374,14 @@ const CheckoutPage = () => {
                   <div>${total.toFixed(2)}</div>
                 </OrderTotal>
 
+                {isBelowMinimum && (
+                  <ErrorText>Minimum order amount is $0.50</ErrorText>
+                )}
+
                 {formData.paymentMethod === 'stripe_checkout' && (
                   <SubmitButton
                     onClick={handleStripeCheckout}
-                    disabled={paymentLoading || items.length === 0}
+                    disabled={paymentLoading || items.length === 0 || isBelowMinimum}
                   >
                     {paymentLoading ? (
                       <>

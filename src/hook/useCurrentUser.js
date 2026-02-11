@@ -28,8 +28,9 @@ const useCurrentUser = () => {
             );
 
             if (!sanityUser) {
-              // Create a new user document if it doesn't exist
+              // Create a new user document with _id matching Firebase UID for consistency
               const newUser = {
+                _id: firebaseUser.uid,
                 _type: 'user',
                 uid: firebaseUser.uid,
                 name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'New User',
@@ -42,7 +43,7 @@ const useCurrentUser = () => {
                 emailVerified: firebaseUser.emailVerified || false
               };
 
-              const createdUser = await client.create(newUser);
+              const createdUser = await client.createOrReplace(newUser);
               setCurrentUser({
                 ...firebaseUser,
                 ...createdUser,

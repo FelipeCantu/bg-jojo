@@ -33,23 +33,24 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
-export { 
-  db, 
-  auth, 
-  provider, 
-  collection, 
-  doc, 
-  setDoc, 
-  getDocs, 
-  addDoc, 
-  getDoc, 
-  updateDoc, 
-  increment, 
-  arrayUnion, 
-  arrayRemove, 
-  signInWithPopup, 
-  onAuthStateChanged, 
+export {
+  app,
+  db,
+  auth,
+  provider,
+  collection,
+  doc,
+  setDoc,
+  getDocs,
+  addDoc,
+  getDoc,
+  updateDoc,
+  increment,
+  arrayUnion,
+  arrayRemove,
+  signInWithPopup,
+  onAuthStateChanged,
   deleteDoc,
   where,
-  query 
+  query
 };

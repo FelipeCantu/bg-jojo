@@ -1,48 +1,71 @@
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Articles
     match /articles/{articleId} {
-      // Allow anyone to read articles
       allow read: if true;
 
-      // Allow article creation only if authenticated
-      allow create: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.authorId == request.auth.uid;
 
-      // Allow updating likes and likedBy (including transform operations)
+      // Allow authors to update their own articles, or anyone authenticated to like
       allow update: if request.auth != null
         && (
-          (request.resource.data.keys().hasOnly(['likes', 'likedBy'])
-            && request.resource.data.keys().size() == 0
-            && request.resource.data.fieldTransforms.size() > 0)
+          // Like/unlike: only allow likes and likedBy field changes
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'likedBy'])
+          // Author can update their own article
           || request.auth.uid == resource.data.authorId
         );
 
-      // Allow the author to update their own article (except likes or likedBy)
-      allow update: if request.auth.uid == resource.data.authorId
-        && !request.resource.data.keys().hasAny(['likes', 'likedBy']);
-
-      // Allow delete only if the user is the author
       allow delete: if request.auth != null && request.auth.uid == resource.data.authorId;
+
+      // Comments subcollection
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if request.auth != null
+          && request.resource.data.userId == request.auth.uid;
+        allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      }
     }
 
-    // 🔹 Comments
-    match /articles/{articleId}/comments/{commentId} {
-      allow read: if true;
-      allow create: if request.auth != null;
-      allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
+    // Orders
+    match /orders/{orderId} {
+      allow read: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == 'pending';
+      allow update: if request.auth != null && request.auth.uid == resource.data.userId;
     }
 
-    // 🔹 Donations
+    // Donations
     match /donations/{donationId} {
-      allow create: if true;  // Guest one-time donations allowed
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == 'pending';
       allow read: if request.auth != null && request.auth.uid == resource.data.userId;
       allow update: if request.auth != null
         && request.auth.uid == resource.data.userId
-        && request.resource.data.status in ['paid'];
+        && request.resource.data.status in ['paid', 'active', 'cancelled'];
     }
 
-    // 🔹 User Profiles
+    // Notifications
+    match /notifications/{notificationId} {
+      allow read: if request.auth != null && request.auth.uid == resource.data.receiverId;
+      allow create: if request.auth != null
+        && request.resource.data.senderId == request.auth.uid;
+      allow update: if request.auth != null
+        && request.auth.uid == resource.data.receiverId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      allow delete: if request.auth != null && request.auth.uid == resource.data.receiverId;
+    }
+
+    // User Profiles
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      // Payment Methods subcollection
+      match /paymentMethods/{methodId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
     }
   }
 }

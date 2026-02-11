@@ -5,7 +5,12 @@ import { loadStripe } from '@stripe/stripe-js';
 let stripePromise;
 export const getStripePromise = () => {
   if (!stripePromise) {
-    stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
+    const key = process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY;
+    if (!key) {
+      console.error('REACT_APP_STRIPE_PUBLISHABLE_KEY is not configured');
+      return Promise.resolve(null);
+    }
+    stripePromise = loadStripe(key);
   }
   return stripePromise;
 };

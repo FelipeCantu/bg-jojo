@@ -23,9 +23,9 @@ const CommentSection = ({ articleId }) => {
         const result = await client.fetch(
           `*[_type == "comment" && article._ref == $articleId] | order(_createdAt desc){
             _id,
-            text,
+            content,
             _createdAt,
-            "user": user->{
+            "author": author->{
               _id,
               name,
               photoURL
@@ -66,7 +66,7 @@ const CommentSection = ({ articleId }) => {
       return;
     }
 
-    if (!currentUser?._id) {
+    if (!currentUser?.sanityId) {
       setError("Please log in to comment");
       return;
     }
@@ -77,14 +77,14 @@ const CommentSection = ({ articleId }) => {
 
       const newCommentData = {
         _type: "comment",
-        text: newComment,
+        content: newComment,
         article: {
           _type: "reference",
           _ref: articleId,
         },
-        user: {
+        author: {
           _type: "reference",
-          _ref: currentUser._id,
+          _ref: currentUser.sanityId,
         },
       };
 
@@ -99,7 +99,7 @@ const CommentSection = ({ articleId }) => {
 
       // Create notification if needed
       const article = await client.getDocument(articleId);
-      if (article?.author?._ref && article.author._ref !== currentUser._id) {
+      if (article?.author?._ref && article.author._ref !== currentUser.sanityId) {
         await client.create({
           _type: "notification",
           user: { _type: "reference", _ref: article.author._ref },
@@ -107,7 +107,7 @@ const CommentSection = ({ articleId }) => {
           message: `${currentUser.name} commented on your article "${article.title || ''}"`,
           link: `/article/${articleId}`,
           seen: false,
-          sender: { _type: "reference", _ref: currentUser._id },
+          sender: { _type: "reference", _ref: currentUser.sanityId },
           relatedContent: { _type: "reference", _ref: articleId }
         });
       }
@@ -116,8 +116,8 @@ const CommentSection = ({ articleId }) => {
       setIsCommentBoxExpanded(false);
       setComments(prev => [{
         ...createdComment,
-        user: {
-          _id: currentUser._id,
+        author: {
+          _id: currentUser.sanityId,
           name: currentUser.name,
           photoURL: currentUser.photoURL
         }
@@ -132,7 +132,7 @@ const CommentSection = ({ articleId }) => {
   };
 
   const handleDeleteComment = async (commentId) => {
-    if (!currentUser?._id) {
+    if (!currentUser?.sanityId) {
       setError("Please log in to delete comments");
       return;
     }
@@ -141,7 +141,7 @@ const CommentSection = ({ articleId }) => {
       setDeletingCommentId(commentId);
       const commentToDelete = comments.find(c => c._id === commentId);
 
-      if (!commentToDelete || commentToDelete.user?._id !== currentUser._id) {
+      if (!commentToDelete || commentToDelete.author?._id !== currentUser.sanityId) {
         throw new Error("Unauthorized deletion attempt");
       }
 
@@ -174,7 +174,7 @@ const CommentSection = ({ articleId }) => {
 
       {error && <ErrorMessage>{error}</ErrorMessage>}
 
-      {currentUser?._id ? (
+      {currentUser?.sanityId ? (
         <CommentForm onSubmit={handleCommentSubmit}>
           <CommentBox
             placeholder="Add a comment..."
@@ -228,18 +228,18 @@ const CommentSection = ({ articleId }) => {
           {comments.map((comment) => (
             <Comment key={comment._id}>
               <UserPhoto
-                src={comment.user?.photoURL || '/default-avatar.png'}
-                alt={comment.user?.name || 'User'}
+                src={comment.author?.photoURL || '/default-avatar.png'}
+                alt={comment.author?.name || 'User'}
                 onError={(e) => e.target.src = '/default-avatar.png'}
               />
               <CommentContent>
                 <CommentHeader>
-                  <UserName>{comment.user?.name || 'Anonymous'}</UserName>
+                  <UserName>{comment.author?.name || 'Anonymous'}</UserName>
                   <CommentDate>{formatDate(comment._createdAt)}</CommentDate>
                 </CommentHeader>
-                <CommentText>{comment.text}</CommentText>
+                <CommentText>{comment.content}</CommentText>
               </CommentContent>
-              {currentUser?._id === comment.user?._id && (
+              {currentUser?.sanityId === comment.author?._id && (
                 <DeleteButton
                   onClick={() => handleDeleteComment(comment._id)}
                   disabled={deletingCommentId === comment._id}

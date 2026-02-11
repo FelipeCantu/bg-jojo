@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const CartContext = createContext({
   items: [],
@@ -10,9 +10,28 @@ const CartContext = createContext({
   clearCart: () => {}, 
 });
 
+const CART_STORAGE_KEY = 'bg-jojo-cart';
+
+const loadCartFromStorage = () => {
+  try {
+    const stored = localStorage.getItem(CART_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+};
+
 export const CartProvider = ({ children }) => {
-  const [items, setItems] = useState([]);
+  const [items, setItems] = useState(loadCartFromStorage);
   const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+    } catch {
+      // Storage full or unavailable — silently ignore
+    }
+  }, [items]);
 
   const addToCart = (newItem) => {
     const { name, selectedSize, quantity = 1 } = newItem;
@@ -60,9 +79,9 @@ export const CartProvider = ({ children }) => {
     );
   };
 
-  // Add the clearCart implementation
   const clearCart = () => {
     setItems([]);
+    try { localStorage.removeItem(CART_STORAGE_KEY); } catch {}
   };
 
   const toggleCart = () => setIsOpen((prev) => !prev);

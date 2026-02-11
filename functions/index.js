@@ -277,18 +277,23 @@ app.post("/createPaymentIntent", async (req, res) => {
     if (!stripe) stripe = initializeStripe();
     if (!stripe) throw new Error("Payment service unavailable");
 
-    const { amount, currency = "usd", metadata = {} } = req.body;
+    const { amount, currency = "usd", metadata = {}, receipt_email } = req.body;
 
     if (!amount || isNaN(amount) || amount < 50) {
       return res.status(400).json({ error: "Invalid amount" });
     }
 
-    const paymentIntent = await stripe.paymentIntents.create({
+    const intentParams = {
       amount: Math.round(amount),
       currency,
       metadata,
       automatic_payment_methods: { enabled: true },
-    });
+    };
+    if (receipt_email) {
+      intentParams.receipt_email = receipt_email;
+    }
+
+    const paymentIntent = await stripe.paymentIntents.create(intentParams);
 
     res.json({
       clientSecret: paymentIntent.client_secret,
@@ -297,8 +302,11 @@ app.post("/createPaymentIntent", async (req, res) => {
     });
   } catch (error) {
     console.error("Payment error:", error);
+    const userMessage = error.type === 'StripeCardError'
+      ? error.message
+      : "Payment processing failed. Please try again.";
     res.status(500).json({
-      error: error.message,
+      error: userMessage,
       code: error.code || "payment_error",
     });
   }
@@ -318,11 +326,20 @@ app.post("/createCheckoutSession", async (req, res) => {
 
     // Validate URLs are from allowed domains
     const allowedDomains = ["bg-jojo.web.app", "bg-jojo.firebaseapp.com", "localhost", "givebackjojo.org"];
-    const isValidUrl = url => allowedDomains.some(domain => url.includes(domain));
+    const isValidRedirectUrl = (url) => {
+      try {
+        const parsed = new URL(url);
+        return allowedDomains.some(domain => parsed.hostname === domain || parsed.hostname.endsWith(`.${domain}`));
+      } catch {
+        return false;
+      }
+    };
 
-    if (!isValidUrl(successUrl) || !isValidUrl(cancelUrl)) {
+    if (!isValidRedirectUrl(successUrl) || !isValidRedirectUrl(cancelUrl)) {
       return res.status(400).json({ error: "Invalid URL domain" });
     }
+
+    const { metadata = {} } = req.body;
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
@@ -331,6 +348,7 @@ app.post("/createCheckoutSession", async (req, res) => {
       success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: cancelUrl,
       customer_email: customerEmail,
+      metadata,
       expires_at: Math.floor(Date.now() / 1000) + 1800, // 30 minutes
     });
 
@@ -342,7 +360,7 @@ app.post("/createCheckoutSession", async (req, res) => {
   } catch (error) {
     console.error("Checkout error:", error);
     res.status(500).json({
-      error: error.message,
+      error: "Checkout session creation failed. Please try again.",
       code: error.code || "checkout_error",
     });
   }
@@ -380,18 +398,23 @@ exports.api = onCall({
 
   // Create Payment Intent
   if (endpoint === "createPaymentIntent") {
-    const { amount, currency = "usd", metadata = {} } = data;
+    const { amount, currency = "usd", metadata = {}, receipt_email } = data;
 
     if (!amount || isNaN(amount) || amount < 50) {
       throw new Error("Invalid amount");
     }
 
-    const paymentIntent = await stripe.paymentIntents.create({
+    const intentParams = {
       amount: Math.round(amount),
       currency,
       metadata,
       automatic_payment_methods: { enabled: true },
-    });
+    };
+    if (receipt_email) {
+      intentParams.receipt_email = receipt_email;
+    }
+
+    const paymentIntent = await stripe.paymentIntents.create(intentParams);
 
     return {
       clientSecret: paymentIntent.client_secret,
@@ -402,13 +425,20 @@ exports.api = onCall({
 
   // Create Checkout Session
   if (endpoint === "createCheckoutSession") {
-    const { lineItems, successUrl, cancelUrl, customerEmail } = data;
+    const { lineItems, successUrl, cancelUrl, customerEmail, metadata = {} } = data;
 
     // Validate URLs are from allowed domains
     const allowedDomains = ["bg-jojo.web.app", "bg-jojo.firebaseapp.com", "localhost", "givebackjojo.org"];
-    const isValidUrl = url => allowedDomains.some(domain => url.includes(domain));
+    const isValidRedirectUrl = (url) => {
+      try {
+        const parsed = new URL(url);
+        return allowedDomains.some(domain => parsed.hostname === domain || parsed.hostname.endsWith(`.${domain}`));
+      } catch {
+        return false;
+      }
+    };
 
-    if (!isValidUrl(successUrl) || !isValidUrl(cancelUrl)) {
+    if (!isValidRedirectUrl(successUrl) || !isValidRedirectUrl(cancelUrl)) {
       throw new Error("Invalid URL domain");
     }
 
@@ -419,6 +449,7 @@ exports.api = onCall({
       success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: cancelUrl,
       customer_email: customerEmail,
+      metadata,
       expires_at: Math.floor(Date.now() / 1000) + 1800, // 30 minutes
     });
 
@@ -496,9 +527,16 @@ exports.api = onCall({
     }
 
     const allowedDomains = ["bg-jojo.web.app", "bg-jojo.firebaseapp.com", "localhost", "givebackjojo.org"];
-    const isValidUrl = url => allowedDomains.some(domain => url.includes(domain));
+    const isValidRedirectUrl = (url) => {
+      try {
+        const parsed = new URL(url);
+        return allowedDomains.some(domain => parsed.hostname === domain || parsed.hostname.endsWith(`.${domain}`));
+      } catch {
+        return false;
+      }
+    };
 
-    if (!isValidUrl(successUrl) || !isValidUrl(cancelUrl)) {
+    if (!isValidRedirectUrl(successUrl) || !isValidRedirectUrl(cancelUrl)) {
       throw new Error("Invalid URL domain");
     }
 

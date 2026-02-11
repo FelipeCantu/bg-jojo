@@ -4,6 +4,7 @@ import MyAccount from '../settings/MyAccount';
 import MyWallet from '../settings/MyWallet';
 import MyAddress from '../settings/MyAddress';
 import MySettings from '../settings/MySettings';
+import MyOrderHistory from '../settings/MyOrderHistory';
 import styled, { css } from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -28,7 +29,7 @@ const pageTransition = {
   duration: 0.3
 };
 
-const tabs = ['account', 'wallet', 'address', 'settings'];
+const tabs = ['account', 'wallet', 'orders', 'address', 'settings'];
 
 const AccountSettings = () => {
   const [isMobile] = useState(window.innerWidth < 768);
@@ -145,6 +146,13 @@ const AccountSettings = () => {
                 My Wallet
               </NavItem>
               <NavItem
+                to="orders"
+                ref={el => { tabRefs.current.orders = el; }}
+                className={({ isActive }) => isActive ? "active" : ""}
+              >
+                My Orders
+              </NavItem>
+              <NavItem
                 to="address"
                 ref={el => { tabRefs.current.address = el; }}
                 className={({ isActive }) => isActive ? "active" : ""}
@@ -202,6 +210,18 @@ const AccountSettings = () => {
                   transition={pageTransition}
                 >
                   <MyWallet />
+                </PageWrapper>
+              } />
+              <Route path="orders" element={
+                <PageWrapper
+                  custom={visualDirection}
+                  initial="initial"
+                  animate="in"
+                  exit="out"
+                  variants={pageVariants}
+                  transition={pageTransition}
+                >
+                  <MyOrderHistory />
                 </PageWrapper>
               } />
               <Route path="address" element={

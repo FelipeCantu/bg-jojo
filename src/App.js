@@ -35,6 +35,7 @@ import {
   EmailVerification,
   PrivacyPolicy,
 } from './components';
+import ProtectedRoute from './components/ProtectedRoute';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const ScrollToTop = () => {
@@ -123,12 +124,13 @@ function App() {
           <Route path="/events/:id" element={<SlideUpRoute><EventDetail /></SlideUpRoute>} />
           <Route path="/articles" element={<SlideUpRoute noPadding><ArticleList /></SlideUpRoute>} />
           <Route path="/article/:id" element={<SlideUpRoute><ArticleDetail /></SlideUpRoute>} />
-          <Route path="/edit-article/:articleId" element={<SlideUpRoute><EditArticle /></SlideUpRoute>} />
+          <Route path="/edit-article/:articleId" element={<ProtectedRoute><SlideUpRoute><EditArticle /></SlideUpRoute></ProtectedRoute>} />
           <Route path="/tributes" element={<SlideUpRoute noPadding><TributeGallery /></SlideUpRoute>} />
           <Route path="/tribute/:slug" element={<SlideUpRoute><TributeDetail /></SlideUpRoute>} />
           <Route path="/yourgift" element={<SlideUpRoute noPadding><YourGift /></SlideUpRoute>} />
           <Route path="/donate" element={<SlideUpRoute noPadding><Donate /></SlideUpRoute>} />
-          <Route path="/SupportingGiveBackJojo" element={<SlideUpRoute><SupportingGiveBackJojo /></SlideUpRoute>} />
+          <Route path="/supporting-givebackjojo" element={<SlideUpRoute><SupportingGiveBackJojo /></SlideUpRoute>} />
+          <Route path="/SupportingGiveBackJojo" element={<Navigate to="/supporting-givebackjojo" replace />} />
           <Route path="/products/:slug" element={<SlideUpRoute noPadding><ProductPage /></SlideUpRoute>} />
           <Route path="/products" element={<SlideUpRoute noPadding><ProductsPage /></SlideUpRoute>} />
           <Route path="/checkout" element={<SlideUpRoute><CheckoutPage /></SlideUpRoute>} />
@@ -138,37 +140,45 @@ function App() {
           <Route
             path="/account-settings/*"
             element={
-              <SlideUpRoute disableAnimation noPadding>
-                <AccountSettings />
-              </SlideUpRoute>
+              <ProtectedRoute>
+                <SlideUpRoute disableAnimation noPadding>
+                  <AccountSettings />
+                </SlideUpRoute>
+              </ProtectedRoute>
             }
           />
           <Route
             path="/profile"
             element={
-              <SlideUpRoute disableAnimation noPadding>
-                <Profile />
-              </SlideUpRoute>
+              <ProtectedRoute>
+                <SlideUpRoute disableAnimation noPadding>
+                  <Profile />
+                </SlideUpRoute>
+              </ProtectedRoute>
             }
           />
           <Route
             path="/notifications"
             element={
-              <SlideUpRoute disableAnimation noPadding>
-                <Notifications />
-              </SlideUpRoute>
+              <ProtectedRoute>
+                <SlideUpRoute disableAnimation noPadding>
+                  <Notifications />
+                </SlideUpRoute>
+              </ProtectedRoute>
             }
           />
           <Route
             path="/subscriptions"
             element={
-              <SlideUpRoute disableAnimation noPadding>
-                <Subscriptions />
-              </SlideUpRoute>
+              <ProtectedRoute>
+                <SlideUpRoute disableAnimation noPadding>
+                  <Subscriptions />
+                </SlideUpRoute>
+              </ProtectedRoute>
             }
           />
 
-          <Route path="/create-article" element={<SlideUpRoute noPadding><ArticleForm /></SlideUpRoute>} />
+          <Route path="/create-article" element={<ProtectedRoute><SlideUpRoute noPadding><ArticleForm /></SlideUpRoute></ProtectedRoute>} />
           <Route path="*" element={<SlideUpRoute><NotFound /></SlideUpRoute>} />
         </Routes>
       </AnimatePresence>

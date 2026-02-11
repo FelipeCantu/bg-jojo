@@ -1,54 +1,39 @@
-import { initializeApp } from "firebase/app";
 import {
-  getAuth,
-  GoogleAuthProvider,
-  signInWithPopup,
-  signOut,
-} from "firebase/auth";
-import {
-  getFirestore,
+  app,
+  db as firestore,
+  auth,
+  addDoc,
+  collection,
   doc,
   setDoc,
   getDoc,
-  addDoc,
-  collection,
+  updateDoc,
   arrayUnion,
   arrayRemove,
-  runTransaction,
-  updateDoc,
-  serverTimestamp,
   query,
   where,
+} from "./firestore";
+import {
+  signInWithPopup,
+  signOut,
+  GoogleAuthProvider,
+} from "firebase/auth";
+import {
+  runTransaction,
+  serverTimestamp,
   onSnapshot,
-  orderBy
+  orderBy,
 } from "firebase/firestore";
 import { client } from "./sanityClient";
-
-// Firebase configuration
-const firebaseConfig = {
-  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
-  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.REACT_APP_FIREBASE_APP_ID,
-  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID,
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const firestore = getFirestore(app);
 
 // Google Sign-In
 const signInWithGoogle = async () => {
   const provider = new GoogleAuthProvider();
   try {
     const result = await signInWithPopup(auth, provider);
-    console.log("✅ User signed in: ", result.user);
     return result.user;
   } catch (error) {
-    console.error("❌ Error during sign-in: ", error.message);
+    console.error("Error during sign-in:", error.message);
     throw new Error(error.message);
   }
 };
@@ -57,9 +42,8 @@ const signInWithGoogle = async () => {
 const logOut = async () => {
   try {
     await signOut(auth);
-    console.log("✅ User logged out");
   } catch (error) {
-    console.error("❌ Error logging out:", error.message);
+    console.error("Error logging out:", error.message);
   }
 };
 
@@ -80,9 +64,8 @@ const updateUserProfile = async (user) => {
 
   try {
     await setDoc(doc(firestore, "users", uid), userData, { merge: true });
-    console.log("✅ User profile updated successfully!");
   } catch (error) {
-    console.error("❌ Error updating user profile:", error);
+    console.error("Error updating user profile:", error);
     throw new Error("Error updating user profile");
   }
 };
@@ -90,7 +73,7 @@ const updateUserProfile = async (user) => {
 // Get User Data
 const getUserData = async (userId) => {
   if (!userId) {
-    console.error("❌ Invalid user ID");
+    console.error("Invalid user ID");
     return null;
   }
 
@@ -99,14 +82,12 @@ const getUserData = async (userId) => {
     const userDoc = await getDoc(userRef);
 
     if (userDoc.exists()) {
-      console.log("✅ User data retrieved:", userDoc.data());
       return userDoc.data();
     } else {
-      console.warn("⚠️ User not found in Firestore");
       return null;
     }
   } catch (error) {
-    console.error("❌ Error fetching user data:", error);
+    console.error("Error fetching user data:", error);
     return null;
   }
 };
@@ -115,11 +96,9 @@ const getUserData = async (userId) => {
 const submitArticle = async (articleData, user) => {
   try {
     if (!user || !user.uid) {
-      console.error("❌ User UID is missing. Please sign in.");
       throw new Error("User UID is missing. Please sign in.");
     }
     if (!articleData.title || !articleData.content || !articleData.mainImage) {
-      console.error("❌ Missing article data: title, content, or mainImage.");
       throw new Error("Title, content, and mainImage are required.");
     }
 
@@ -127,7 +106,6 @@ const submitArticle = async (articleData, user) => {
     const articleDoc = await getDoc(articleRef);
 
     if (articleDoc.exists()) {
-      console.log("⚠️ Article already exists in Firestore. No update necessary.");
       return;
     }
 
@@ -149,8 +127,6 @@ const submitArticle = async (articleData, user) => {
       { merge: true }
     );
 
-    console.log("✅ Article submitted to Firestore successfully");
-
     const response = await client.createOrReplace({
       _type: "article",
       title: articleData.title,
@@ -166,10 +142,9 @@ const submitArticle = async (articleData, user) => {
       readingTime: articleData.readingTime || 0,
     });
 
-    console.log("✅ Article submitted to Sanity successfully", response);
     return response;
   } catch (error) {
-    console.error("❌ Error submitting article to Firestore and Sanity:", error);
+    console.error("Error submitting article:", error);
     throw new Error("Error submitting article to Firestore and Sanity");
   }
 };
@@ -178,18 +153,16 @@ const submitArticle = async (articleData, user) => {
 const handleLike = async (articleId) => {
   const user = auth.currentUser;
   if (!user) {
-    console.error("❌ User must be logged in to like.");
+    console.error("User must be logged in to like.");
     return;
   }
 
   const articleRef = doc(firestore, "articles", articleId);
-  console.log(`🔍 Attempting to like article: ${articleId} by user: ${user.uid}`);
 
   try {
     await runTransaction(firestore, async (transaction) => {
       const articleDoc = await transaction.get(articleRef);
       if (!articleDoc.exists()) {
-        console.error("❌ Article not found.");
         throw new Error("Article not found.");
       }
 
@@ -198,13 +171,11 @@ const handleLike = async (articleId) => {
       const alreadyLiked = likedBy.includes(user.uid);
       const newLikes = alreadyLiked ? articleData.likes - 1 : articleData.likes + 1;
 
-      // Update likes
       transaction.update(articleRef, {
         likes: newLikes,
         likedBy: alreadyLiked ? arrayRemove(user.uid) : arrayUnion(user.uid),
       });
 
-      // Create notification if it's a new like
       if (!alreadyLiked) {
         const notificationRef = collection(firestore, "notifications");
         await addDoc(notificationRef, {
@@ -217,11 +188,9 @@ const handleLike = async (articleId) => {
           createdAt: serverTimestamp()
         });
       }
-
-      console.log(`✅ Like updated successfully! New like count: ${newLikes}`);
     });
   } catch (error) {
-    console.error("❌ Error updating like count:", error);
+    console.error("Error updating like count:", error);
   }
 };
 
@@ -229,28 +198,26 @@ const handleLike = async (articleId) => {
 const handleAddComment = async (articleId, commentText) => {
   const user = auth.currentUser;
   if (!user) {
-    console.error("❌ User must be logged in to comment.");
+    console.error("User must be logged in to comment.");
     return;
   }
 
   if (!articleId || !commentText.trim()) {
-    console.error("❌ Invalid input: Missing articleId or comment text.");
+    console.error("Invalid input: Missing articleId or comment text.");
     return;
   }
 
   try {
-    // First get the article to find the author
     const articleRef = doc(firestore, "articles", articleId);
     const articleDoc = await getDoc(articleRef);
-    
+
     if (!articleDoc.exists()) {
-      console.error("❌ Article not found.");
+      console.error("Article not found.");
       return;
     }
 
     const articleData = articleDoc.data();
-    
-    // Add comment to subcollection
+
     const commentsRef = collection(firestore, `articles/${articleId}/comments`);
     const commentRef = await addDoc(commentsRef, {
       userId: user.uid,
@@ -258,11 +225,10 @@ const handleAddComment = async (articleId, commentText) => {
       userImage: user.photoURL || "https://via.placeholder.com/150",
       comment: commentText,
       timestamp: serverTimestamp(),
-      notificationCreated: false // Flag for notification tracking
+      notificationCreated: false
     });
 
-    // Create notification for the article author
-    if (articleData.authorId !== user.uid) { // Don't notify yourself
+    if (articleData.authorId !== user.uid) {
       const notificationRef = collection(firestore, "notifications");
       await addDoc(notificationRef, {
         type: "comment",
@@ -276,10 +242,8 @@ const handleAddComment = async (articleId, commentText) => {
         createdAt: serverTimestamp()
       });
     }
-
-    console.log("✅ Comment added and notification created successfully.");
   } catch (error) {
-    console.error("❌ Error posting comment:", error);
+    console.error("Error posting comment:", error);
   }
 };
 
@@ -290,26 +254,22 @@ const incrementViews = async (articleId) => {
     await runTransaction(firestore, async (transaction) => {
       const articleDoc = await transaction.get(articleRef);
       if (!articleDoc.exists()) {
-        console.log("❌ Article not found.");
         throw new Error("Article not found.");
       }
 
       const articleData = articleDoc.data();
       const views = articleData.views ?? 0;
-      const newViews = views + 1;
-
-      transaction.update(articleRef, { views: newViews });
-      console.log(`✅ Views incremented successfully!`);
+      transaction.update(articleRef, { views: views + 1 });
     });
   } catch (error) {
-    console.error("❌ Error updating views count:", error);
+    console.error("Error updating views count:", error);
   }
 };
 
 // Get real-time notifications
 const getNotifications = (userId, callback) => {
   if (!userId) {
-    console.error("❌ User ID is required to fetch notifications");
+    console.error("User ID is required to fetch notifications");
     return () => {};
   }
 
@@ -327,7 +287,7 @@ const getNotifications = (userId, callback) => {
     }));
     callback(notifications);
   }, (error) => {
-    console.error("❌ Error fetching notifications:", error);
+    console.error("Error fetching notifications:", error);
   });
 
   return unsubscribe;
@@ -350,7 +310,7 @@ const markNotificationsRead = async (notificationIds) => {
     await Promise.all(batch);
     return { success: true };
   } catch (error) {
-    console.error("❌ Error marking notifications as read:", error);
+    console.error("Error marking notifications as read:", error);
     throw error;
   }
 };
@@ -361,10 +321,9 @@ const updateNotificationPrefs = async (userId, prefs) => {
     await updateDoc(doc(firestore, "users", userId), {
       notificationPrefs: prefs
     });
-    console.log("✅ Notification preferences updated");
     return true;
   } catch (error) {
-    console.error("❌ Error updating notification preferences:", error);
+    console.error("Error updating notification preferences:", error);
     throw error;
   }
 };

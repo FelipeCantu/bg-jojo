@@ -6,8 +6,7 @@ import CreateArticleButton from './CreateArticleButton';
 import styled from 'styled-components';
 import { FaSearch } from 'react-icons/fa';
 import LoadingContainer from './LoadingContainer';
-
-const DEFAULT_ANONYMOUS_AVATAR = 'https://www.shutterstock.com/image-vector/vector-flat-illustration-grayscale-avatar-600nw-2281862025.jpg';
+import { DEFAULT_ANONYMOUS_AVATAR } from '../constants';
 
 const ArticleList = () => {
   const [articles, setArticles] = useState([]);

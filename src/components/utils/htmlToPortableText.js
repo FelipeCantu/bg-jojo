@@ -1,5 +1,7 @@
 import { client } from '../../sanityClient';
 
+const generateKey = () => Math.random().toString(36).substr(2, 9);
+
 export const convertHtmlToPortableText = async (html) => {
   const doc = new DOMParser().parseFromString(html, 'text/html');
   const portableText = [];
@@ -27,9 +29,14 @@ export const convertHtmlToPortableText = async (html) => {
       if (child.nodeType === Node.TEXT_NODE) {
         const text = child.textContent.replace(/\s+/g, ' '); // Preserve spaces
         if (text) {
-          children.push({ _type: 'span', text });
+          children.push({ _type: 'span', _key: generateKey(), text, marks: [] });
         }
       } else if (child.nodeType === Node.ELEMENT_NODE) {
+        if (child.tagName === 'BR') {
+          children.push({ _type: 'span', _key: generateKey(), text: '\n', marks: [] });
+          continue;
+        }
+
         let markKey;
 
         if (child.tagName === 'STRONG' || child.tagName === 'B') markKey = 'strong';
@@ -96,6 +103,7 @@ export const convertHtmlToPortableText = async (html) => {
 
         const block = {
           _type: 'block',
+          _key: generateKey(),
           style,
           children,
           markDefs: markDefs.filter((def) => children.some((child) => child.marks?.includes(def._key))),
@@ -118,6 +126,7 @@ export const convertHtmlToPortableText = async (html) => {
             const { children } = await processChildNodes(child);
             listItems.push({
               _type: 'block',
+              _key: generateKey(),
               style: 'normal',
               listItem: listType,
               children,
@@ -129,30 +138,38 @@ export const convertHtmlToPortableText = async (html) => {
         portableText.push(...listItems);
       }
 
-      if (node.tagName === 'IMG') {
-        const src = node.getAttribute('src') || '';
-        const alt = node.getAttribute('alt') || '';
+      if (node.tagName === 'IMG' || node.tagName === 'FIGURE') {
+        let imgElement = node;
+        if (node.tagName === 'FIGURE') {
+          imgElement = node.querySelector('img');
+          if (!imgElement) continue;
+        }
+
+        const src = imgElement.getAttribute('src') || '';
+        const alt = imgElement.getAttribute('alt') || '';
         const imageRef = await uploadImage(src);
 
         const imageBlock = {
           _type: 'image',
+          _key: generateKey(),
           asset: { _type: 'reference', _ref: imageRef },
           alt,
         };
 
-        // Handle image alignment
+        // Handle image alignment — check the figure wrapper first, then the img
+        const alignSource = node.tagName === 'FIGURE' ? node : imgElement;
         let alignment = null;
-        if (node.hasAttribute('style')) {
-          const styleText = node.getAttribute('style');
+        if (alignSource.hasAttribute('style')) {
+          const styleText = alignSource.getAttribute('style');
           const match = styleText.match(/float:\s*(left|right)/);
           if (match) {
             alignment = match[1];
           }
         }
-        
+
         // Check for alignment classes if not found in style
-        if (!alignment && node.hasAttribute('class')) {
-          const classes = node.getAttribute('class').split(' ');
+        if (!alignment && alignSource.hasAttribute('class')) {
+          const classes = alignSource.getAttribute('class').split(' ');
           if (classes.includes('float-left') || classes.includes('align-left')) alignment = 'left';
           else if (classes.includes('float-right') || classes.includes('align-right')) alignment = 'right';
           else if (classes.includes('align-center') || classes.includes('align-middle')) alignment = 'center';

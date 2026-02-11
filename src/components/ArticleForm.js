@@ -11,8 +11,7 @@ import { FaArrowLeft, FaCloudUploadAlt, FaImage, FaTimes } from 'react-icons/fa'
 import { toast } from 'react-toastify';
 import { auth, onAuthStateChanged } from '../firestore';
 import AuthForm from './AuthForm';
-
-const DEFAULT_ANONYMOUS_AVATAR = 'https://www.shutterstock.com/image-vector/vector-flat-illustration-grayscale-avatar-600nw-2281862025.jpg';
+import { DEFAULT_ANONYMOUS_AVATAR } from '../constants';
 const TITLE_MAX_LENGTH = 150;
 
 const ArticleForm = ({ onArticleSubmitted }) => {

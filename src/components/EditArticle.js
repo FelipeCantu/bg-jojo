@@ -7,10 +7,12 @@ import { FaArrowLeft, FaSave, FaTimes } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { portableTextToHtml } from './utils/portableTextHtml';
 import { convertHtmlToPortableText } from './utils/htmlToPortableText';
+import useCurrentUser from '../hook/useCurrentUser';
 
 const EditArticle = () => {
   const { articleId } = useParams();
   const navigate = useNavigate();
+  const { currentUser, loading: userLoading } = useCurrentUser();
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -22,6 +24,8 @@ const EditArticle = () => {
   const [isAnonymous, setIsAnonymous] = useState(false);
 
   const fetchArticle = useCallback(async () => {
+    if (!currentUser?.uid) return;
+
     try {
       setLoading(true);
       const query = `*[_type == "article" && _id == $articleId][0]{
@@ -32,6 +36,12 @@ const EditArticle = () => {
 
       if (!result) {
         throw new Error('Article not found');
+      }
+
+      if (result.author?._id !== currentUser.uid) {
+        toast.error('You are not authorized to edit this article');
+        navigate('/my-articles', { replace: true });
+        return;
       }
 
       setArticle(result);
@@ -46,11 +56,13 @@ const EditArticle = () => {
     } finally {
       setLoading(false);
     }
-  }, [articleId]);
+  }, [articleId, currentUser, navigate]);
 
   useEffect(() => {
-    fetchArticle();
-  }, [fetchArticle]);
+    if (!userLoading) {
+      fetchArticle();
+    }
+  }, [fetchArticle, userLoading]);
 
   useEffect(() => {
     const handleBeforeUnload = (e) => {
@@ -179,7 +191,8 @@ const EditArticle = () => {
     setHasUnsavedChanges(true);
   };
 
-  if (loading) return <LoadingMessage>Loading article data...</LoadingMessage>;
+  if (loading || userLoading) return <LoadingMessage>Loading article data...</LoadingMessage>;
+  if (!currentUser?.uid) return <ErrorMessage>You must be logged in to edit articles.</ErrorMessage>;
   if (error) return <ErrorMessage>{error}</ErrorMessage>;
   if (!article) return <ErrorMessage>Article not found</ErrorMessage>;
 

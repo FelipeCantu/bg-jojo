@@ -46,9 +46,8 @@ const Wallet = () => {
 
       const newMethod = {
         cardholderName: data.cardholderName,
-        cardNumber: data.cardNumber.replace(/\s/g, ''),
+        cardLast4: data.cardNumber.replace(/\s/g, '').slice(-4),
         expiry: data.expiry,
-        cvc: data.cvc,
         isDefault: paymentMethods.length === 0
       };
 
@@ -109,7 +108,7 @@ const Wallet = () => {
             <CardItem key={method.id} isDefault={method.id === defaultCardId}>
               <CardPreview>
                 <Cards
-                  number={`•••• •••• •••• ${method.cardNumber.slice(-4)}`}
+                  number={`•••• •••• •••• ${method.cardLast4}`}
                   name={method.cardholderName}
                   expiry={method.expiry}
                   cvc="•••"
@@ -122,7 +121,7 @@ const Wallet = () => {
                   {method.cardholderName}
                   {method.id === defaultCardId && <DefaultBadge>Default</DefaultBadge>}
                 </CardHolder>
-                <CardNumber>•••• •••• •••• {method.cardNumber.slice(-4)}</CardNumber>
+                <CardNumber>•••• •••• •••• {method.cardLast4}</CardNumber>
                 <Expiry>Expires: {method.expiry}</Expiry>
 
                 <CardActions>
