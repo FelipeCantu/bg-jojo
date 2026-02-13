@@ -124,7 +124,7 @@ Callable functions (Firebase SDK): `createDonationPaymentIntent`, `createDonatio
 ### Install
 
 ```bash
-git clone https://github.com/your-username/bg-jojo.git
+git clone https://github.com/FelipeCantu/bg-jojo.git
 cd bg-jojo
 npm install
 cd functions && npm install && cd ..

@@ -239,6 +239,8 @@ const StatusBadge = styled.span`
     switch (p.$status) {
       case 'paid':
         return 'background: #e8f5e9; color: #2e7d32;';
+      case 'shipped':
+        return 'background: #e3f2fd; color: #1565c0;';
       case 'failed':
         return 'background: #fce4ec; color: #c62828;';
       case 'pending':

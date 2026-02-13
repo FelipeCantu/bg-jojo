@@ -54,6 +54,28 @@ const StripeCardForm = ({ onSubmit, isSubmitting, total, error, setError }) => {
   );
 };
 
+const US_STATES = [
+  ['AL','Alabama'],['AK','Alaska'],['AZ','Arizona'],['AR','Arkansas'],['CA','California'],
+  ['CO','Colorado'],['CT','Connecticut'],['DE','Delaware'],['FL','Florida'],['GA','Georgia'],
+  ['HI','Hawaii'],['ID','Idaho'],['IL','Illinois'],['IN','Indiana'],['IA','Iowa'],
+  ['KS','Kansas'],['KY','Kentucky'],['LA','Louisiana'],['ME','Maine'],['MD','Maryland'],
+  ['MA','Massachusetts'],['MI','Michigan'],['MN','Minnesota'],['MS','Mississippi'],['MO','Missouri'],
+  ['MT','Montana'],['NE','Nebraska'],['NV','Nevada'],['NH','New Hampshire'],['NJ','New Jersey'],
+  ['NM','New Mexico'],['NY','New York'],['NC','North Carolina'],['ND','North Dakota'],['OH','Ohio'],
+  ['OK','Oklahoma'],['OR','Oregon'],['PA','Pennsylvania'],['RI','Rhode Island'],['SC','South Carolina'],
+  ['SD','South Dakota'],['TN','Tennessee'],['TX','Texas'],['UT','Utah'],['VT','Vermont'],
+  ['VA','Virginia'],['WA','Washington'],['WV','West Virginia'],['WI','Wisconsin'],['WY','Wyoming'],
+  ['DC','District of Columbia'],['PR','Puerto Rico'],['VI','Virgin Islands'],['GU','Guam'],
+  ['AS','American Samoa'],['MP','Northern Mariana Islands']
+];
+
+const CA_PROVINCES = [
+  ['AB','Alberta'],['BC','British Columbia'],['MB','Manitoba'],['NB','New Brunswick'],
+  ['NL','Newfoundland and Labrador'],['NS','Nova Scotia'],['NT','Northwest Territories'],
+  ['NU','Nunavut'],['ON','Ontario'],['PE','Prince Edward Island'],['QC','Quebec'],
+  ['SK','Saskatchewan'],['YT','Yukon']
+];
+
 const validateForm = (formData) => {
   const errors = {};
   if (!formData.firstName.trim()) errors.firstName = 'First name is required';
@@ -65,6 +87,7 @@ const validateForm = (formData) => {
   }
   if (!formData.address.trim()) errors.address = 'Address is required';
   if (!formData.city.trim()) errors.city = 'City is required';
+  if (!formData.state.trim()) errors.state = 'State/Province is required';
   if (!formData.zipCode.trim()) errors.zipCode = 'ZIP code is required';
   if (!formData.country.trim()) errors.country = 'Country is required';
   return errors;
@@ -81,8 +104,11 @@ const CheckoutPage = () => {
     firstName: '',
     lastName: '',
     email: '',
+    phone: '',
     address: '',
+    addressLine2: '',
     city: '',
+    state: '',
     zipCode: '',
     country: 'US',
     paymentMethod: 'stripe_checkout'
@@ -134,8 +160,11 @@ const CheckoutPage = () => {
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
+        phone: formData.phone,
         address: formData.address,
+        addressLine2: formData.addressLine2,
         city: formData.city,
+        state: formData.state,
         zipCode: formData.zipCode,
         country: formData.country
       },
@@ -259,33 +288,67 @@ const CheckoutPage = () => {
             <div>
               <Section>
                 <SectionTitle>Shipping Information</SectionTitle>
-                {['firstName', 'lastName', 'email', 'address', 'city', 'zipCode', 'country'].map((field) => (
-                  <FormGroup key={field}>
-                    <Label>{field.split(/(?=[A-Z])/).join(' ')}</Label>
-                    {field === 'country' ? (
-                      <Select
-                        name="country"
-                        value={formData.country}
-                        onChange={handleChange}
-                        error={formErrors.country}
-                      >
-                        <option value="US">United States</option>
-                        <option value="CA">Canada</option>
-                        <option value="GB">United Kingdom</option>
-                      </Select>
-                    ) : (
-                      <Input
-                        type={field === 'email' ? 'email' : 'text'}
-                        name={field}
-                        value={formData[field]}
-                        onChange={handleChange}
-                        error={formErrors[field]}
-                        required
-                      />
-                    )}
-                    {formErrors[field] && <ErrorText>{formErrors[field]}</ErrorText>}
-                  </FormGroup>
-                ))}
+                <FormGroup>
+                  <Label>First Name</Label>
+                  <Input name="firstName" value={formData.firstName} onChange={handleChange} error={formErrors.firstName} required />
+                  {formErrors.firstName && <ErrorText>{formErrors.firstName}</ErrorText>}
+                </FormGroup>
+                <FormGroup>
+                  <Label>Last Name</Label>
+                  <Input name="lastName" value={formData.lastName} onChange={handleChange} error={formErrors.lastName} required />
+                  {formErrors.lastName && <ErrorText>{formErrors.lastName}</ErrorText>}
+                </FormGroup>
+                <FormGroup>
+                  <Label>Email</Label>
+                  <Input type="email" name="email" value={formData.email} onChange={handleChange} error={formErrors.email} required />
+                  {formErrors.email && <ErrorText>{formErrors.email}</ErrorText>}
+                </FormGroup>
+                <FormGroup>
+                  <Label>Phone</Label>
+                  <Input type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="(555) 123-4567" />
+                </FormGroup>
+                <FormGroup>
+                  <Label>Address</Label>
+                  <Input name="address" value={formData.address} onChange={handleChange} error={formErrors.address} required />
+                  {formErrors.address && <ErrorText>{formErrors.address}</ErrorText>}
+                </FormGroup>
+                <FormGroup>
+                  <Label>Address Line 2</Label>
+                  <Input name="addressLine2" value={formData.addressLine2} onChange={handleChange} placeholder="Apt, suite, unit, etc. (optional)" />
+                </FormGroup>
+                <FormGroup>
+                  <Label>City</Label>
+                  <Input name="city" value={formData.city} onChange={handleChange} error={formErrors.city} required />
+                  {formErrors.city && <ErrorText>{formErrors.city}</ErrorText>}
+                </FormGroup>
+                <FormGroup>
+                  <Label>State / Province</Label>
+                  {(formData.country === 'US' || formData.country === 'CA') ? (
+                    <Select name="state" value={formData.state} onChange={handleChange} error={formErrors.state}>
+                      <option value="">Select...</option>
+                      {(formData.country === 'US' ? US_STATES : CA_PROVINCES).map(([code, name]) => (
+                        <option key={code} value={code}>{name}</option>
+                      ))}
+                    </Select>
+                  ) : (
+                    <Input name="state" value={formData.state} onChange={handleChange} error={formErrors.state} required />
+                  )}
+                  {formErrors.state && <ErrorText>{formErrors.state}</ErrorText>}
+                </FormGroup>
+                <FormGroup>
+                  <Label>ZIP Code</Label>
+                  <Input name="zipCode" value={formData.zipCode} onChange={handleChange} error={formErrors.zipCode} required />
+                  {formErrors.zipCode && <ErrorText>{formErrors.zipCode}</ErrorText>}
+                </FormGroup>
+                <FormGroup>
+                  <Label>Country</Label>
+                  <Select name="country" value={formData.country} onChange={handleChange} error={formErrors.country}>
+                    <option value="US">United States</option>
+                    <option value="CA">Canada</option>
+                    <option value="GB">United Kingdom</option>
+                  </Select>
+                  {formErrors.country && <ErrorText>{formErrors.country}</ErrorText>}
+                </FormGroup>
               </Section>
 
               <Section>

@@ -36,6 +36,8 @@ import {
   PrivacyPolicy,
 } from './components';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
+import AdminOrders from './components/admin/AdminOrders';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const ScrollToTop = () => {
@@ -178,6 +180,16 @@ function App() {
             }
           />
 
+          <Route
+            path="/admin/orders"
+            element={
+              <AdminRoute>
+                <SlideUpRoute disableAnimation noPadding>
+                  <AdminOrders />
+                </SlideUpRoute>
+              </AdminRoute>
+            }
+          />
           <Route path="/create-article" element={<ProtectedRoute><SlideUpRoute noPadding><ArticleForm /></SlideUpRoute></ProtectedRoute>} />
           <Route path="*" element={<SlideUpRoute><NotFound /></SlideUpRoute>} />
         </Routes>
