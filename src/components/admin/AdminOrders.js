@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
-import { getFirestore, collection, query, orderBy, where, getDocs, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { getFirestore, collection, query, orderBy, getDocs, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 
 const STATUS_TABS = ['all', 'pending', 'paid', 'shipped', 'failed'];
 
 const AdminOrders = () => {
-  const [orders, setOrders] = useState([]);
+  const [allOrders, setAllOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
   const [selectedIds, setSelectedIds] = useState(new Set());
@@ -15,30 +15,25 @@ const AdminOrders = () => {
     setLoading(true);
     try {
       const db = getFirestore();
-      let q;
-      if (activeTab === 'all') {
-        q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
-      } else {
-        q = query(
-          collection(db, 'orders'),
-          where('status', '==', activeTab),
-          orderBy('createdAt', 'desc')
-        );
-      }
+      const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
       const snapshot = await getDocs(q);
       const results = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
-      setOrders(results);
+      setAllOrders(results);
       setSelectedIds(new Set());
     } catch (error) {
       console.error('Error fetching orders:', error);
     } finally {
       setLoading(false);
     }
-  }, [activeTab]);
+  }, []);
 
   useEffect(() => {
     fetchOrders();
   }, [fetchOrders]);
+
+  const orders = activeTab === 'all'
+    ? allOrders
+    : allOrders.filter((o) => o.status === activeTab);
 
   const formatDate = (timestamp) => {
     if (!timestamp) return '-';
@@ -58,7 +53,7 @@ const AdminOrders = () => {
         updateData.shippedAt = serverTimestamp();
       }
       await updateDoc(doc(db, 'orders', orderId), updateData);
-      setOrders((prev) =>
+      setAllOrders((prev) =>
         prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
       );
     } catch (error) {
