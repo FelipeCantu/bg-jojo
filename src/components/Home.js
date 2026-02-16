@@ -4,6 +4,7 @@ import { ChevronRightIcon } from '@heroicons/react/24/solid';
 import Mission from './Mission';
 import { Link } from 'react-router-dom';
 import LoadingContainer from './LoadingContainer';
+import SEO from './SEO';
 
 function Home() {
   const [isLoading, setIsLoading] = useState(true);
@@ -22,6 +23,11 @@ function Home() {
 
   return (
     <MainSection>
+      <SEO
+        title="Mental Health Awareness & Suicide Prevention"
+        description="Find mental health support and suicide prevention resources. Give Back Jojo provides free access to therapy, hotlines, and community support."
+        path="/home"
+      />
       <VideoWrapper>
         <VideoBackground autoPlay loop muted playsInline disablePictureInPicture controlsList='nodownload nofullscreen noremoteplayback'>
           <source src={require('../assets/cloud.mp4')} type='video/mp4' alt='clouds' />

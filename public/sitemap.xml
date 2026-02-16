@@ -6,6 +6,11 @@
     <changefreq>weekly</changefreq>
   </url>
   <url>
+    <loc>https://givebackjojo.org/home</loc>
+    <priority>1.0</priority>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
     <loc>https://givebackjojo.org/about</loc>
     <priority>0.9</priority>
     <changefreq>monthly</changefreq>
@@ -23,6 +28,16 @@
   <url>
     <loc>https://givebackjojo.org/donate</loc>
     <priority>0.9</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
+    <loc>https://givebackjojo.org/yourgift</loc>
+    <priority>0.7</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
+    <loc>https://givebackjojo.org/supporting-givebackjojo</loc>
+    <priority>0.6</priority>
     <changefreq>monthly</changefreq>
   </url>
   <url>

@@ -1,5 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
+import SEO from './SEO';
 
 // Styled Components
 const PrivacyContainer = styled.div`
@@ -85,6 +86,11 @@ const NestedList = styled.ul`
 const PrivacyPolicy = () => {
   return (
     <PrivacyContainer>
+      <SEO
+        title="Privacy Policy"
+        description="Read our privacy policy to understand how we collect, use, and protect your personal information on givebackjojo.org."
+        path="/privacy"
+      />
       <Heading1>Privacy Policy</Heading1>
       <LastUpdated>Last updated: May 16, 2025</LastUpdated>
 

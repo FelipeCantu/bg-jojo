@@ -3,6 +3,7 @@ import { client, urlFor } from "../sanityClient";
 import Remembering from "./Remembering";
 import LoadingContainer from "./LoadingContainer";
 import styled from "styled-components";
+import SEO from './SEO';
 
 const TributeGallery = () => {
   const [tributes, setTributes] = useState([]);
@@ -28,6 +29,11 @@ const TributeGallery = () => {
 
   return (
     <Container>
+      <SEO
+        title="Tributes — In Memory"
+        description="Honor and remember those we've lost. View our tribute gallery celebrating lives and raising awareness for suicide prevention."
+        path="/tributes"
+      />
       <Header>
         <Title>In Memory Of</Title>
         <Description>

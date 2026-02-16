@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { client, urlFor } from "../sanityClient";
 import LoadingContainer from "./LoadingContainer";
 import styled from "styled-components";
+import SEO from './SEO';
 
 const TributeDetail = () => {
   const { slug } = useParams();
@@ -37,6 +38,12 @@ const TributeDetail = () => {
 
   return (
     <DetailContainer>
+      <SEO
+        title={`In Memory of ${tribute.name}`}
+        description={tribute.bio ? tribute.bio.substring(0, 160) : `Remembering ${tribute.name} — a tribute by Give Back Jojo`}
+        path={`/tribute/${slug}`}
+        image={tribute.image ? urlFor(tribute.image).url() : undefined}
+      />
       <Image src={urlFor(tribute.image).url()} alt={tribute.name} />
       <Name>{tribute.name}</Name>
       <TributeDate>{formattedDate}</TributeDate>
@@ -92,12 +99,6 @@ const Bio = styled.p`
   color: #34495e;
   max-width: 700px;
   margin: 20px auto;
-`;
-
-const LoadingText = styled.div`
-  text-align: center;
-  font-size: 20px;
-  color: #34495e;
 `;
 
 const ErrorText = styled.div`

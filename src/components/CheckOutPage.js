@@ -7,6 +7,7 @@ import { Elements, CardElement, useStripe, useElements } from '@stripe/react-str
 import { getFirestore, collection, addDoc, serverTimestamp, updateDoc, doc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import useStripePayment from './useStripePayment';
+import SEO from './SEO';
 
 // DO NOT initialize Stripe here - we'll use the instance from useStripePayment
 
@@ -270,6 +271,7 @@ const CheckoutPage = () => {
 
   return (
     <Elements stripe={stripePromise}>
+      <SEO title="Checkout" noindex path="/checkout" />
       <CheckoutContainer>
         <BackButton onClick={() => navigate(-1)}>
           <ArrowLeftIcon width={20} height={20} />

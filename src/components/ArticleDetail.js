@@ -8,6 +8,8 @@ import { auth, onAuthStateChanged } from "../firestore";
 import { PortableText } from "@portabletext/react";
 import { Link } from 'react-router-dom';
 import { DEFAULT_ANONYMOUS_AVATAR } from '../constants';
+import SEO from './SEO';
+import { getArticleSchema } from '../utils/structuredData';
 
 const ArticleDetail = () => {
   const { id } = useParams();
@@ -133,6 +135,27 @@ const ArticleDetail = () => {
 
   return (
     <ArticleDetailContainer>
+      {article && (
+        <SEO
+          title={article.title}
+          description={article.subtitle || `Read ${article.title} on Give Back Jojo`}
+          path={`/article/${id}`}
+          image={article.mainImage?.url}
+          type="article"
+          article={{
+            publishedDate: article.publishedDate,
+            author: article.isAnonymous ? 'Anonymous' : article.author?.name,
+          }}
+          jsonLd={getArticleSchema({
+            title: article.title,
+            description: article.subtitle || `Read ${article.title} on Give Back Jojo`,
+            image: article.mainImage?.url,
+            author: article.isAnonymous ? 'Anonymous' : article.author?.name,
+            publishedDate: article.publishedDate,
+            url: `https://givebackjojo.org/article/${id}`,
+          })}
+        />
+      )}
       <MetaInfoContainer>
         <AuthorInfo>
           <AuthorImage

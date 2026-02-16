@@ -8,6 +8,7 @@ import { ReactComponent as StickerIcon } from '../assets/stickers.svg';
 import { ReactComponent as OilIcon } from '../assets/oils.svg';
 import { ReactComponent as EventIcon } from '../assets/events.svg';
 import { ReactComponent as ArtIcon } from '../assets/art.svg';
+import SEO from './SEO';
 
 const YourGift = () => {
   const giftOptions = [
@@ -23,6 +24,11 @@ const YourGift = () => {
 
   return (
     <BackgroundWrapper>
+      <SEO
+        title="Your Gift — How Donations Help"
+        description="See how your donation saves lives. From $10 meals to $5,000 mental health clinics, every contribution makes a difference in suicide prevention."
+        path="/yourgift"
+      />
       <Container>
         <Title>Your Gift</Title>
         <Subtitle>Learn more about how your donation helps Give Back Jojo prevent suicide and raise awareness for mental health.</Subtitle>

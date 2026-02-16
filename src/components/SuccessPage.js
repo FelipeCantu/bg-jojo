@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getApp } from 'firebase/app';
 import styled from 'styled-components';
+import SEO from './SEO';
 
 // Styled Components
 const PageContainer = styled.div`
@@ -125,6 +126,7 @@ export default function SuccessPage() {
 
   return (
     <PageContainer>
+      <SEO title="Order Successful" noindex path="/success" />
       <SuccessCard>
         <SuccessIcon
           xmlns="http://www.w3.org/2000/svg"

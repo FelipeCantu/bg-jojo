@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import Sponsorship from './Sponsorship';
 import { Link } from 'react-router-dom';
 import DonationCheckout from './DonationCheckout';
+import SEO from './SEO';
 
 const Donate = () => {
   const [showCheckout, setShowCheckout] = useState(false);
@@ -31,6 +32,11 @@ const Donate = () => {
 
   return (
     <BackgroundWrapper>
+      <SEO
+        title="Donate"
+        description="Your donation provides free therapy, art supplies, essential oils, and educational resources. 100% goes to suicide prevention and mental health awareness."
+        path="/donate"
+      />
       <Container>
         <Title>Donate</Title>
         <Subtitle>Empowering Jojo to Prevent Suicide and Elevate Mental Health Awareness</Subtitle>

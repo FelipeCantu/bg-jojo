@@ -7,6 +7,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider, studioTheme } from '@sanity/ui';
 import { BrowserRouter } from 'react-router-dom';
 import { CartProvider } from './CartContext';
+import { HelmetProvider } from 'react-helmet-async';
 
 
 // Enhanced Error Boundary with hydration error support
@@ -115,15 +116,17 @@ function renderApp() {
     root.render(
       <React.StrictMode>
         <ErrorBoundary>
-          <BrowserRouter>
-            <AuthProvider>
-              <ThemeProvider theme={studioTheme}>
-                <CartProvider>
-                  <App />
-                </CartProvider>
-              </ThemeProvider>
-            </AuthProvider>
-          </BrowserRouter>
+          <HelmetProvider>
+            <BrowserRouter>
+              <AuthProvider>
+                <ThemeProvider theme={studioTheme}>
+                  <CartProvider>
+                    <App />
+                  </CartProvider>
+                </ThemeProvider>
+              </AuthProvider>
+            </BrowserRouter>
+          </HelmetProvider>
         </ErrorBoundary>
       </React.StrictMode>
     );

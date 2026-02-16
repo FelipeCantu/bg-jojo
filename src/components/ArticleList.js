@@ -7,6 +7,7 @@ import styled from 'styled-components';
 import { FaSearch } from 'react-icons/fa';
 import LoadingContainer from './LoadingContainer';
 import { DEFAULT_ANONYMOUS_AVATAR } from '../constants';
+import SEO from './SEO';
 
 const ArticleList = () => {
   const [articles, setArticles] = useState([]);
@@ -46,6 +47,11 @@ const ArticleList = () => {
 
   return (
     <ArticleContainer>
+      <SEO
+        title="Articles"
+        description="Read personal stories, mental health resources, and suicide prevention articles from our community. Share your journey and inspire others."
+        path="/articles"
+      />
       <SearchContainer>
         <SearchIcon onClick={() => setShowSearch(!showSearch)} />
         <SearchBar

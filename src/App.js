@@ -39,6 +39,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import AdminOrders from './components/admin/AdminOrders';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Helmet } from 'react-helmet-async';
+import { getOrganizationSchema } from './utils/structuredData';
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -107,6 +109,11 @@ function App() {
 
   return (
     <div className="App">
+      <Helmet>
+        <script type="application/ld+json">
+          {JSON.stringify(getOrganizationSchema())}
+        </script>
+      </Helmet>
       <Navbar />
       <ScrollToTop />
 

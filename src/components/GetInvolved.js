@@ -6,6 +6,7 @@ import withReactContent from "sweetalert2-react-content";
 import CustomSelect from "./CustomSelect";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFacebookF, faInstagram } from '@fortawesome/free-brands-svg-icons';
+import SEO from './SEO';
 
 const MySwal = withReactContent(Swal);
 
@@ -217,6 +218,11 @@ const VolunteerForm = () => {
 
   return (
     <PageContainer>
+      <SEO
+        title="Get Involved — Volunteer"
+        description="Volunteer as a therapist, art therapy facilitator, or event support to help prevent suicide and support mental health in your community."
+        path="/getinvolved"
+      />
       {/* Header Image at the very top */}
       <HeaderImage />
 

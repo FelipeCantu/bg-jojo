@@ -4,6 +4,7 @@ import { getFirestore, doc, getDoc } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getApp } from 'firebase/app';
 import styled from 'styled-components';
+import SEO from './SEO';
 
 export default function DonationSuccess() {
   const { search } = useLocation();
@@ -54,6 +55,7 @@ export default function DonationSuccess() {
 
   return (
     <PageContainer>
+      <SEO title="Donation Received — Thank You" noindex path="/donation-success" />
       <SuccessCard>
         <SuccessIcon
           xmlns="http://www.w3.org/2000/svg"

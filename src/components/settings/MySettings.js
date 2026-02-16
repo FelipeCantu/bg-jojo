@@ -1266,20 +1266,6 @@ const HelpLink = styled.a`
   }
 `;
 
-const EmergencyContact = styled.div`
-  background-color: #f0f7f7;
-  padding: 12px;
-  border-radius: 5px;
-  margin: 12px 0;
-  color: var(--secondary-color);
-  font-weight: 500;
-  font-size: 0.9rem;
-
-  @media (max-width: 768px) {
-    padding: 10px;
-    font-size: 0.85rem;
-  }
-`;
 
 const SupportButton = styled(ActionButton)`
   margin-right: 10px;

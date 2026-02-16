@@ -4,6 +4,8 @@ import styled from 'styled-components';
 import client from '../sanityClient';
 import { auth, db } from '../firestore'; // Import Firestore
 import { doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import SEO from './SEO';
+import { getEventSchema } from '../utils/structuredData';
 
 const EventDetail = () => {
   const [event, setEvent] = useState(null);
@@ -103,6 +105,22 @@ const EventDetail = () => {
 
   return (
     <PageContainer>
+      <SEO
+        title={event.title}
+        description={event.description || `${event.title} at ${event.venue || 'TBA'}`}
+        path={`/events/${id}`}
+        image={event.image?.asset?.url}
+        type="article"
+        jsonLd={getEventSchema({
+          title: event.title,
+          description: event.description || `${event.title} at ${event.venue || 'TBA'}`,
+          image: event.image?.asset?.url,
+          date: event.date,
+          venue: event.venue,
+          city: event.location?.city,
+          state: event.location?.state,
+        })}
+      />
       <ContentWrapper>
         <EventTitle>{event.title}</EventTitle>
         <EventVenue>{event.venue}</EventVenue>

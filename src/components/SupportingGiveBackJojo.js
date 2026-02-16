@@ -1,5 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
+import SEO from './SEO';
 
 const SupportingGiveBackJojo = () => {
     const venmoLink = 'https://account.venmo.com/u/DelilahJoy-Gallegos';
@@ -7,6 +8,11 @@ const SupportingGiveBackJojo = () => {
 
     return (
         <BackgroundWrapper>
+            <SEO
+              title="Supporting Give Back Jojo"
+              description="Donate via Venmo or Zelle to avoid transaction fees. 100% of your contribution goes directly to mental health and suicide prevention programs."
+              path="/supporting-givebackjojo"
+            />
             <Container>
                 <ContentWrapper>
                     <Image

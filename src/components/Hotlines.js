@@ -1,9 +1,15 @@
 import React from "react";
 import styled from "styled-components";
+import SEO from './SEO';
 
 const Hotlines = () => {
   return (
     <PageContainer>
+      <SEO
+        title="Crisis Hotlines & Support"
+        description="24/7 crisis support hotlines including 988 Suicide & Crisis Lifeline, Crisis Text Line, and Utah Crisis Line. You are not alone."
+        path="/hotlines"
+      />
       <VideoBackground>
         <video autoPlay loop muted playsInline disablePictureInPicture controlsList='nodownload nofullscreen noremoteplayback'>
         <source src={require('../assets/cloud.mp4')} type='video/mp4' alt='clouds' />

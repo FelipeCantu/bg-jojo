@@ -7,6 +7,8 @@ import 'react-medium-image-zoom/dist/styles.css';
 import { useCart } from '../CartContext';
 import { ShoppingBagIcon, ChevronLeftIcon } from '@heroicons/react/24/outline';
 import LoadingContainer from './LoadingContainer';
+import SEO from './SEO';
+import { getProductSchema } from '../utils/structuredData';
 
 // Styled Components
 const Wrapper = styled.div`
@@ -519,6 +521,19 @@ export default function ProductPage() {
 
   return (
     <Wrapper>
+      <SEO
+        title={product.name}
+        description={product.description || `${product.name} — Shop for a cause at Give Back Jojo`}
+        path={`/products/${product.slug?.current || slug}`}
+        image={product.images?.[0]?.asset?.url}
+        jsonLd={getProductSchema({
+          name: product.name,
+          description: product.description || `${product.name} — Shop for a cause`,
+          price: product.price,
+          image: product.images?.[0]?.asset?.url,
+          url: `https://givebackjojo.org/products/${product.slug?.current || slug}`,
+        })}
+      />
       <BackButton onClick={() => navigate(-1)}>
         <ChevronLeftIcon width={18} height={18} />
         Back to Products

@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import sanityClient from '../sanityClient';
 import { Link, useSearchParams } from 'react-router-dom';
 import LoadingContainer from './LoadingContainer';
+import SEO from './SEO';
 
 // Styled Components
 const PageContainer = styled.div`
@@ -288,6 +289,11 @@ export default function ProductsPage() {
 
   return (
     <PageContainer>
+      <SEO
+        title="Shop"
+        description="Shop t-shirts, hoodies, sweaters, stickers, and plushies. 100% of proceeds support mental health awareness and suicide prevention."
+        path="/products"
+      />
       <PageHeader>
         <Title>Giveback Swag</Title>
         <Subtitle>100% of proceeds goes towards our cause</Subtitle>

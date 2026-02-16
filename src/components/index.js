@@ -38,3 +38,4 @@ export { default as AuthForm } from './AuthForm';
 export { default as EmailVerification } from './EmailVerification';
 export { default as Dashboard } from './Dashboard';
 export { default as PrivacyPolicy } from './PrivacyPolicy';
+export { default as SEO } from './SEO';

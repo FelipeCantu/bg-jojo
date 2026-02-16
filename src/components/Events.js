@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';  // Importing React Router for navigation
 import styled from 'styled-components';
 import client from '../sanityClient';  // Import your Sanity client
+import SEO from './SEO';
 
 const Events = () => {
   const [events, setEvents] = useState([]);
@@ -20,6 +21,11 @@ const Events = () => {
 
   return (
     <PageContainer>
+      <SEO
+        title="Events"
+        description="Join our community events focused on mental health awareness, suicide prevention, and support. Find upcoming events near you."
+        path="/events"
+      />
       <ContentWrapper>
         {events.length > 0 ? (
           <EventList>

@@ -1,10 +1,16 @@
 import React from "react";
 import styled from "styled-components";
-import Carousel from './Carousel'
+import Carousel from './Carousel';
+import SEO from './SEO';
 
 const AboutSection = () => {
   return (
     <SectionContainer>
+      <SEO
+        title="About Us"
+        description="Give Back Jojo is a non-profit providing free therapy for ages 12+, art therapy, group therapy, and mental health resources to prevent suicide."
+        path="/about"
+      />
       <HeroSection>
         <BackgroundVideo autoPlay loop muted playsInline disablePictureInPicture controlsList='nodownload nofullscreen noremoteplayback'>
           <source src={require('../assets/flamingos.mp4')} type='video/mp4' alt='clouds' />

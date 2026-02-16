@@ -1,5 +1,18 @@
 # https://www.robotstxt.org/robotstxt.html
 User-agent: *
-Disallow:
+Disallow: /checkout
+Disallow: /success
+Disallow: /donation-success
+Disallow: /auth
+Disallow: /login
+Disallow: /signup
+Disallow: /email-verification
+Disallow: /profile
+Disallow: /account-settings
+Disallow: /notifications
+Disallow: /subscriptions
+Disallow: /admin
+Disallow: /create-article
+Disallow: /edit-article
 
 Sitemap: https://givebackjojo.org/sitemap.xml
