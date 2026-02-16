@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { getFirestore, doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { getApp } from 'firebase/app';
 import styled from 'styled-components';
 
 export default function DonationSuccess() {
@@ -12,7 +14,7 @@ export default function DonationSuccess() {
   const [donation, setDonation] = useState(null);
 
   useEffect(() => {
-    const updateDonationStatus = async () => {
+    const confirmDonation = async () => {
       if (!donationId) return;
 
       try {
@@ -24,22 +26,28 @@ export default function DonationSuccess() {
           const data = donationSnap.data();
           setDonation(data);
 
-          // Update status if still pending (webhook may have already updated it)
-          if (data.status === 'pending' && sessionId) {
-            await updateDoc(donationRef, {
-              status: data.frequency === 'monthly' ? 'active' : 'paid',
-              stripeSessionId: sessionId,
-              paidAt: serverTimestamp(),
-              updatedAt: serverTimestamp(),
+          // Confirm payment via Cloud Function (verifies with Stripe)
+          if (data.status === 'pending') {
+            const functions = getFunctions(getApp(), 'us-central1');
+            const api = httpsCallable(functions, 'api');
+            await api({
+              endpoint: 'confirmDonationCheckout',
+              donationId,
+              sessionId: sessionId || null,
             });
+            // Update local state
+            setDonation(prev => ({
+              ...prev,
+              status: data.frequency === 'monthly' ? 'active' : 'paid',
+            }));
           }
         }
       } catch (error) {
-        console.error('Error updating donation status:', error);
+        console.error('Error confirming donation:', error);
       }
     };
 
-    updateDonationStatus();
+    confirmDonation();
   }, [sessionId, donationId]);
 
   const isSubscription = donation?.frequency === 'monthly';
@@ -95,13 +103,11 @@ export default function DonationSuccess() {
 }
 
 const PageContainer = styled.div`
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   background: #fb9e8a;
-  padding: 1rem;
+  padding: 3rem 1rem;
 `;
 
 const SuccessCard = styled.div`

@@ -35,7 +35,7 @@ const MyAccount = () => {
           const formData = new FormData();
           formData.append("image", selectedImage);
 
-          const response = await fetch("https://api.imgbb.com/1/upload?key=6e5b0f17c571cd2f53589d0b3c8c869f", {
+          const response = await fetch(`https://api.imgbb.com/1/upload?key=${process.env.REACT_APP_IMGBB_API_KEY}`, {
             method: "POST",
             body: formData,
           });

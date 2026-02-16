@@ -10,6 +10,9 @@ export const getStripePromise = () => {
       console.error('REACT_APP_STRIPE_PUBLISHABLE_KEY is not configured');
       return Promise.resolve(null);
     }
+    if (key.startsWith('pk_test_')) {
+      console.warn('Stripe is in TEST MODE. No real charges will be processed.');
+    }
     stripePromise = loadStripe(key);
   }
   return stripePromise;

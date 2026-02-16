@@ -463,8 +463,8 @@ export default function CartDrawer() {
                     <ItemTopRow>
                       <ItemNameWrapper>
                         <ItemName>{item.name}</ItemName>
-                        {(item.size || item.selectedSize) && (
-                          <ItemSize>Size: {item.size || item.selectedSize}</ItemSize>
+                        {item.selectedSize && (
+                          <ItemSize>Size: {item.selectedSize}</ItemSize>
                         )}
                       </ItemNameWrapper>
                       <ItemPrice>${(item.price * item.quantity).toFixed(2)}</ItemPrice>

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { getFirestore, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { getApp } from 'firebase/app';
 import styled from 'styled-components';
 
 // Styled Components
@@ -95,31 +96,29 @@ export default function SuccessPage() {
   const sessionId = searchParams.get('session_id');
   const orderId = searchParams.get('order_id');
 
-  // Update order status in Firestore
+  // Confirm order payment via Cloud Function
   useEffect(() => {
-    const updateOrderStatus = async () => {
+    const confirmOrder = async () => {
       if (!sessionId || !orderId) return;
 
       try {
-        const db = getFirestore();
-        const orderRef = doc(db, 'orders', orderId);
-
-        await updateDoc(orderRef, {
-          status: 'paid',
-          paymentId: sessionId,
-          paidAt: serverTimestamp(),
+        const functions = getFunctions(getApp(), 'us-central1');
+        const api = httpsCallable(functions, 'api');
+        await api({
+          endpoint: 'confirmOrderPayment',
+          orderId,
+          paymentIntentId: sessionId,
         });
-
-        console.log('Order status updated successfully!');
       } catch (error) {
-        console.error('Error updating order status:', error);
+        console.error('Error confirming order:', error);
       }
     };
 
-    updateOrderStatus();
+    confirmOrder();
   }, [sessionId, orderId]);
 
   const handleCopyOrderId = () => {
+    if (!orderId) return;
     navigator.clipboard.writeText(orderId);
     alert('Order ID copied to clipboard!');
   };
@@ -153,7 +152,7 @@ export default function SuccessPage() {
           <p>
             Order ID:{' '}
             <OrderId onClick={handleCopyOrderId} title="Click to copy">
-              {orderId}
+              {orderId || 'Processing...'}
             </OrderId>
           </p>
         </OrderInfo>

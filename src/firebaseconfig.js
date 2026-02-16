@@ -328,6 +328,32 @@ const updateNotificationPrefs = async (userId, prefs) => {
   }
 };
 
+// Update user settings (notifications, privacy, appearance, account info)
+const updateUserSettings = async (userId, settings) => {
+  try {
+    await setDoc(doc(firestore, "users", userId), settings, { merge: true });
+    return true;
+  } catch (error) {
+    console.error("Error updating user settings:", error);
+    throw error;
+  }
+};
+
+// Get user settings from Firestore
+const getUserSettings = async (userId) => {
+  if (!userId) return null;
+  try {
+    const userDoc = await getDoc(doc(firestore, "users", userId));
+    if (userDoc.exists()) {
+      return userDoc.data();
+    }
+    return null;
+  } catch (error) {
+    console.error("Error fetching user settings:", error);
+    return null;
+  }
+};
+
 export {
   app,
   signInWithGoogle,
@@ -342,5 +368,7 @@ export {
   incrementViews,
   getNotifications,
   markNotificationsRead,
-  updateNotificationPrefs
+  updateNotificationPrefs,
+  updateUserSettings,
+  getUserSettings
 };

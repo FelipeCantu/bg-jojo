@@ -86,9 +86,22 @@ const useStripePayment = () => {
 
       if (stripeError) throw stripeError;
       if (!paymentIntent) throw new Error('Payment failed - no intent returned');
-      
-      return { 
-        success: true, 
+
+      // Confirm order status in Firestore (don't rely solely on webhook)
+      if (paymentIntent.status === 'succeeded') {
+        try {
+          await api({
+            endpoint: 'confirmOrderPayment',
+            orderId,
+            paymentIntentId: paymentIntent.id,
+          });
+        } catch (confirmErr) {
+          console.warn('Order confirmation will be handled by webhook:', confirmErr.message);
+        }
+      }
+
+      return {
+        success: true,
         paymentId: paymentIntent.id,
         paymentStatus: paymentIntent.status,
         paymentMethod: paymentIntent.payment_method

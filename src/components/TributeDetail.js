@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { client, urlFor } from "../sanityClient";
+import LoadingContainer from "./LoadingContainer";
 import styled from "styled-components";
 
 const TributeDetail = () => {
@@ -22,7 +23,7 @@ const TributeDetail = () => {
       });
   }, [slug]);
 
-  if (loading) return <LoadingText>Loading tribute details...</LoadingText>;
+  if (loading) return <LoadingContainer message="In Memory Of..." />;
 
   if (!tribute) return <ErrorText>Oops! Tribute not found.</ErrorText>;
 

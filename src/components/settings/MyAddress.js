@@ -182,18 +182,15 @@ const MyAddresses = () => {
 const Container = styled.div`
   width: 100%;
   max-width: 100%;
-  margin: 0 0 20px;
-  padding: 15px;
-  border-radius: 8px;
-  min-height: 100vh;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  margin: 0 auto;
+  padding: 1.5rem;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
   background-color: #fff;
   font-family: 'Roboto', sans-serif;
 
   @media (min-width: 768px) {
-    max-width: 90%;
-    padding: 20px;
-    margin: 0 auto 30px; 
+    padding: 2rem;
   }
 `;
 

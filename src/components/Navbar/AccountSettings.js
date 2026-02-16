@@ -369,7 +369,7 @@ const Underline = styled.div`
   height: 4px;
   background-color: var(--secondary-color);
   border-radius: 2px 2px 0 0;
-  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
+  transition: opacity 0.2s ease;
   pointer-events: none;
 `;
 
@@ -433,11 +433,12 @@ const ContentArea = styled.div`
   -webkit-overflow-scrolling: touch;
   padding: 1rem 0.5rem 0;
   scrollbar-width: none;
-  
+  min-height: 0;
+
   &::-webkit-scrollbar {
     display: none;
   }
-  
+
   @media (min-width: 768px) {
     padding: 0;
     overflow-y: visible;
@@ -446,13 +447,13 @@ const ContentArea = styled.div`
     display: grid;
     grid-template-columns: 100%;
     grid-template-rows: 1fr;
-    align-items: start;
+    align-items: stretch;
   }
 `;
 
 const PageWrapper = styled(motion.div)`
   width: 100%;
-  height: auto;
+  min-height: 500px;
   grid-column: 1;
   grid-row: 1;
 `;

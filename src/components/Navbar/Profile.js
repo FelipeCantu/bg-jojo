@@ -3,7 +3,7 @@ import { auth, db } from '../../firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import styled from 'styled-components';
-import { FaCamera, FaHeart, FaShoppingCart, FaBell } from 'react-icons/fa';
+import { FaCamera, FaCog, FaShoppingCart, FaBell } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import UserArticles from './UserArticles';
 import { client } from '../../sanityClient'; // Assuming you've set up Sanity client
@@ -175,13 +175,7 @@ const Profile = () => {
             <RightColumn>
               <SectionTitle>Quick Actions</SectionTitle>
               <DashboardGrid>
-                <DashboardCard onClick={() => navigate('/tributes')}>
-                  <IconWrapper><FaHeart /></IconWrapper>
-                  <h3>Your Tributes</h3>
-                  <p>View memorials</p>
-                </DashboardCard>
-
-                <DashboardCard onClick={() => navigate('/orders')}>
+                <DashboardCard onClick={() => navigate('/account-settings/orders')}>
                   <IconWrapper><FaShoppingCart /></IconWrapper>
                   <h3>Orders</h3>
                   <p>Purchase history</p>
@@ -191,6 +185,12 @@ const Profile = () => {
                   <IconWrapper><FaBell /></IconWrapper>
                   <h3>Notifications</h3>
                   <p>View updates</p>
+                </DashboardCard>
+
+                <DashboardCard onClick={() => navigate('/account-settings')}>
+                  <IconWrapper><FaCog /></IconWrapper>
+                  <h3>Settings</h3>
+                  <p>Manage account</p>
                 </DashboardCard>
               </DashboardGrid>
             </RightColumn>

@@ -66,6 +66,19 @@ const useDonationPayment = () => {
       if (stripeError) throw stripeError;
       if (!paymentIntent) throw new Error('Payment failed - no intent returned');
 
+      // Confirm donation status in Firestore (don't rely solely on webhook)
+      if (paymentIntent.status === 'succeeded') {
+        try {
+          await api({
+            endpoint: 'confirmDonationPayment',
+            donationId,
+            paymentIntentId: paymentIntent.id,
+          });
+        } catch (confirmErr) {
+          console.warn('Donation confirmation will be handled by webhook:', confirmErr.message);
+        }
+      }
+
       return {
         success: true,
         paymentId: paymentIntent.id,

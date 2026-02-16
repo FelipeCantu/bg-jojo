@@ -492,7 +492,7 @@ export default function ProductPage() {
       name: product.name,
       price: product.price,
       quantity: quantity,
-      ...(isSizeRequired && { size: selectedSize }),
+      ...(isSizeRequired && { selectedSize }),
       image: product.images[0]?.asset?.url,
       stripePriceId: stripePriceId,
       colors: product.colors,

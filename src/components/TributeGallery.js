@@ -1,23 +1,30 @@
 import React, { useEffect, useState } from "react";
 import { client, urlFor } from "../sanityClient";
 import Remembering from "./Remembering";
+import LoadingContainer from "./LoadingContainer";
 import styled from "styled-components";
 
 const TributeGallery = () => {
   const [tributes, setTributes] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log("Fetching data from Sanity...");
     client
       .fetch('*[_type == "tribute"]{_id, name, image, slug}')
       .then((data) => {
-        console.log("✅ Fetched tributes:", data); // Log full response
         setTributes(data);
       })
       .catch((error) => {
-        console.error("❌ Sanity fetch error:", error);
+        console.error("Sanity fetch error:", error);
+      })
+      .finally(() => {
+        setLoading(false);
       });
   }, []);
+
+  if (loading) {
+    return <LoadingContainer message="In Memory Of..." />;
+  }
 
   return (
     <Container>
@@ -29,7 +36,7 @@ const TributeGallery = () => {
       </Header>
 
       <GalleryContainer>
-        {tributes.length === 0 && <NoTributesText>⚠️ No tributes found.</NoTributesText>}
+        {tributes.length === 0 && <NoTributesText>No tributes found.</NoTributesText>}
         {tributes.map((tribute) => {
           const imageUrl = tribute.image?.asset
             ? urlFor(tribute.image).url()

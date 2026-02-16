@@ -46,9 +46,11 @@ service cloud.firestore {
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.status == 'pending';
       allow read: if request.auth != null && request.auth.uid == resource.data.userId;
+      // Users can only cancel — paid/active/failed are set by Cloud Functions (admin SDK bypasses rules)
       allow update: if request.auth != null
         && request.auth.uid == resource.data.userId
-        && request.resource.data.status in ['paid', 'active', 'cancelled'];
+        && request.resource.data.status == 'cancelled'
+        && resource.data.status in ['active', 'pending'];
     }
 
     // Notifications

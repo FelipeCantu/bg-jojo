@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import { getFirestore, collection, query, orderBy, getDocs, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { getApp } from 'firebase/app';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 
-const STATUS_TABS = ['all', 'pending', 'paid', 'shipped', 'failed'];
+const STATUS_TABS = ['all', 'pending', 'paid', 'shipped', 'refund_requested', 'return_approved', 'refunded', 'failed'];
 
 const AdminOrders = () => {
   const [allOrders, setAllOrders] = useState([]);
@@ -10,6 +12,85 @@ const AdminOrders = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [updatingId, setUpdatingId] = useState(null);
+  const [processingRefund, setProcessingRefund] = useState(null);
+  const [archiving, setArchiving] = useState(false);
+
+  const handleApproveRefund = async (orderId) => {
+    if (!window.confirm('Approve this return? The customer will be asked to ship the item back.')) return;
+    setProcessingRefund(orderId);
+    try {
+      const functions = getFunctions(getApp(), 'us-central1');
+      const api = httpsCallable(functions, 'api');
+      await api({ endpoint: 'approveRefund', orderId });
+      setAllOrders((prev) =>
+        prev.map((o) => (o.id === orderId ? { ...o, status: 'return_approved' } : o))
+      );
+    } catch (error) {
+      console.error('Error approving return:', error);
+      const msg = error?.details?.message || error?.message || 'Failed to approve return';
+      alert(msg);
+    } finally {
+      setProcessingRefund(null);
+    }
+  };
+
+  const handleProcessRefund = async (orderId) => {
+    if (!window.confirm('Process the Stripe refund for this order? This will send money back to the customer.')) return;
+    setProcessingRefund(orderId);
+    try {
+      const functions = getFunctions(getApp(), 'us-central1');
+      const api = httpsCallable(functions, 'api');
+      await api({ endpoint: 'processRefund', orderId });
+      setAllOrders((prev) =>
+        prev.map((o) => (o.id === orderId ? { ...o, status: 'refunded' } : o))
+      );
+    } catch (error) {
+      console.error('Error processing refund:', error);
+      const msg = error?.details?.message || error?.message || 'Failed to process refund';
+      alert(msg);
+    } finally {
+      setProcessingRefund(null);
+    }
+  };
+
+  const handleDenyRefund = async (orderId) => {
+    const reason = window.prompt('Reason for denying this return (optional):');
+    if (reason === null) return; // user cancelled
+    setProcessingRefund(orderId);
+    try {
+      const functions = getFunctions(getApp(), 'us-central1');
+      const api = httpsCallable(functions, 'api');
+      await api({ endpoint: 'denyRefund', orderId, denyReason: reason });
+      setAllOrders((prev) =>
+        prev.map((o) => (o.id === orderId ? { ...o, status: 'paid' } : o))
+      );
+    } catch (error) {
+      console.error('Error denying refund:', error);
+      alert(error.message || 'Failed to deny refund');
+    } finally {
+      setProcessingRefund(null);
+    }
+  };
+
+  const handleArchiveSelected = async () => {
+    const count = selectedIds.size;
+    if (count === 0) return;
+    if (!window.confirm(`Archive ${count} order${count > 1 ? 's' : ''}? They will be moved to archivedOrders and removed from this list.`)) return;
+    setArchiving(true);
+    try {
+      const functions = getFunctions(getApp(), 'us-central1');
+      const api = httpsCallable(functions, 'api');
+      await api({ endpoint: 'archiveOrders', orderIds: Array.from(selectedIds) });
+      setAllOrders((prev) => prev.filter((o) => !selectedIds.has(o.id)));
+      setSelectedIds(new Set());
+    } catch (error) {
+      console.error('Error archiving orders:', error);
+      const msg = error?.details?.message || error?.message || 'Failed to archive orders';
+      alert(msg);
+    } finally {
+      setArchiving(false);
+    }
+  };
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -136,6 +217,11 @@ const AdminOrders = () => {
             <SmallButton onClick={selectAll}>Select All</SmallButton>
             <SmallButton onClick={deselectAll}>Deselect All</SmallButton>
           </BulkActions>
+          {selectedIds.size > 0 && (
+            <ArchiveButton onClick={handleArchiveSelected} disabled={archiving}>
+              {archiving ? 'Archiving...' : `Archive Selected (${selectedIds.size})`}
+            </ArchiveButton>
+          )}
           <ExportButton onClick={exportCSV} disabled={selectedIds.size === 0}>
             Export CSV ({selectedIds.size})
           </ExportButton>
@@ -143,11 +229,16 @@ const AdminOrders = () => {
       </Header>
 
       <Tabs>
-        {STATUS_TABS.map((tab) => (
-          <Tab key={tab} $active={activeTab === tab} onClick={() => setActiveTab(tab)}>
-            {tab.charAt(0).toUpperCase() + tab.slice(1)}
-          </Tab>
-        ))}
+        {STATUS_TABS.map((tab) => {
+          const tabLabels = { refund_requested: 'Returns', return_approved: 'Awaiting Item', refunded: 'Refunded' };
+          const label = tabLabels[tab] || (tab.charAt(0).toUpperCase() + tab.slice(1));
+          const count = tab === 'all' ? allOrders.length : allOrders.filter((o) => o.status === tab).length;
+          return (
+            <Tab key={tab} $active={activeTab === tab} onClick={() => setActiveTab(tab)} $highlight={tab === 'refund_requested' && count > 0}>
+              {label} {count > 0 && `(${count})`}
+            </Tab>
+          );
+        })}
       </Tabs>
 
       {loading ? (
@@ -172,7 +263,7 @@ const AdminOrders = () => {
                   <OrderDate>{formatDate(order.createdAt)}</OrderDate>
                 </OrderMeta>
                 <StatusBadge $status={order.status}>
-                  {order.status ? order.status.charAt(0).toUpperCase() + order.status.slice(1) : 'Pending'}
+                  {order.status === 'refund_requested' ? 'Return Requested' : order.status === 'return_approved' ? 'Awaiting Item' : order.status === 'refunded' ? 'Refunded' : order.status ? order.status.charAt(0).toUpperCase() + order.status.slice(1) : 'Pending'}
                 </StatusBadge>
               </CardTop>
 
@@ -214,15 +305,110 @@ const AdminOrders = () => {
                 </InfoRow>
               </CardBody>
 
+              {order.status === 'refund_requested' && (
+                <RefundSection>
+                  <RefundLabel>Return Requested</RefundLabel>
+                  <RefundReason>Reason: {order.refundReason || 'No reason provided'}</RefundReason>
+                  {order.returnItems && order.items && (
+                    <ReturnItemsList>
+                      <ReturnItemsHeader>
+                        Items to return ({order.returnItems.length} of {order.items.length}):
+                      </ReturnItemsHeader>
+                      {order.returnItems.map((idx) => {
+                        const item = order.items[idx];
+                        if (!item) return null;
+                        return (
+                          <ReturnItemRow key={idx}>
+                            <span>{item.name}</span>
+                            <ReturnItemMeta>
+                              {item.selectedSize && <span>{item.selectedSize}</span>}
+                              <span>Qty: {item.quantity || 1}</span>
+                              <span>${(item.price || 0).toFixed(2)}</span>
+                            </ReturnItemMeta>
+                          </ReturnItemRow>
+                        );
+                      })}
+                      <RefundAmountRow>
+                        Refund amount: <strong>
+                          {order.refundAmount != null && order.refundAmount < order.total
+                            ? `$${order.refundAmount.toFixed(2)} (partial)`
+                            : 'Full order'}
+                        </strong>
+                      </RefundAmountRow>
+                    </ReturnItemsList>
+                  )}
+                  <RefundActions>
+                    <ApproveButton
+                      onClick={() => handleApproveRefund(order.id)}
+                      disabled={processingRefund === order.id}
+                    >
+                      {processingRefund === order.id ? 'Processing...' : 'Approve Return'}
+                    </ApproveButton>
+                    <DenyButton
+                      onClick={() => handleDenyRefund(order.id)}
+                      disabled={processingRefund === order.id}
+                    >
+                      Deny
+                    </DenyButton>
+                  </RefundActions>
+                </RefundSection>
+              )}
+
+              {order.status === 'return_approved' && (
+                <RefundSection>
+                  <RefundLabel>Return Approved — Awaiting Item</RefundLabel>
+                  <RefundReason>Reason: {order.refundReason || 'No reason provided'}</RefundReason>
+                  {order.returnItems && order.items && (
+                    <ReturnItemsList>
+                      <ReturnItemsHeader>
+                        Items to return ({order.returnItems.length} of {order.items.length}):
+                      </ReturnItemsHeader>
+                      {order.returnItems.map((idx) => {
+                        const item = order.items[idx];
+                        if (!item) return null;
+                        return (
+                          <ReturnItemRow key={idx}>
+                            <span>{item.name}</span>
+                            <ReturnItemMeta>
+                              {item.selectedSize && <span>{item.selectedSize}</span>}
+                              <span>Qty: {item.quantity || 1}</span>
+                              <span>${(item.price || 0).toFixed(2)}</span>
+                            </ReturnItemMeta>
+                          </ReturnItemRow>
+                        );
+                      })}
+                      <RefundAmountRow>
+                        Refund amount: <strong>
+                          {order.refundAmount != null && order.refundAmount < order.total
+                            ? `$${order.refundAmount.toFixed(2)} (partial)`
+                            : 'Full order'}
+                        </strong>
+                      </RefundAmountRow>
+                    </ReturnItemsList>
+                  )}
+                  <RefundActions>
+                    <ApproveButton
+                      onClick={() => handleProcessRefund(order.id)}
+                      disabled={processingRefund === order.id}
+                    >
+                      {processingRefund === order.id ? 'Processing...' : 'Process Refund'}
+                    </ApproveButton>
+                  </RefundActions>
+                </RefundSection>
+              )}
+
               <CardFooter>
                 <StatusSelect
                   value={order.status || 'pending'}
                   onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                  disabled={updatingId === order.id}
+                  disabled={updatingId === order.id || order.status === 'refund_requested' || order.status === 'return_approved' || order.status === 'refunded'}
                 >
                   <option value="pending">Pending</option>
                   <option value="paid">Paid</option>
                   <option value="shipped">Shipped</option>
+                  <option value="refund_requested">Return Requested</option>
+                  <option value="return_approved">Awaiting Item</option>
+                  <option value="refunded">Refunded</option>
                   <option value="failed">Failed</option>
                 </StatusSelect>
                 {updatingId === order.id && <UpdatingText>Saving...</UpdatingText>}
@@ -341,6 +527,33 @@ const ExportButton = styled.button`
   }
 `;
 
+const ArchiveButton = styled.button`
+  background: #6d4c41;
+  color: white;
+  border: none;
+  padding: 0.5rem 1.25rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #4e342e;
+  }
+
+  &:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+  }
+
+  @media (max-width: 520px) {
+    width: 100%;
+    padding: 0.6rem;
+    text-align: center;
+  }
+`;
+
 const Tabs = styled.div`
   display: flex;
   gap: 0.25rem;
@@ -366,6 +579,11 @@ const Tab = styled.button`
   &:hover {
     color: #044947;
   }
+
+  ${(p) => p.$highlight && `
+    color: #e65100;
+    font-weight: 700;
+  `}
 
   @media (max-width: 520px) {
     padding: 0.5rem 0.75rem;
@@ -455,6 +673,12 @@ const StatusBadge = styled.span`
         return 'background: #e3f2fd; color: #1565c0;';
       case 'failed':
         return 'background: #fce4ec; color: #c62828;';
+      case 'refund_requested':
+        return 'background: #fff3e0; color: #e65100;';
+      case 'return_approved':
+        return 'background: #e3f2fd; color: #0d47a1;';
+      case 'refunded':
+        return 'background: #ede7f6; color: #4527a0;';
       case 'pending':
         return 'background: #fff3e0; color: #e65100;';
       default:
@@ -564,6 +788,120 @@ const LoadingSpinner = styled.div`
       transform: rotate(360deg);
     }
   }
+`;
+
+const RefundSection = styled.div`
+  padding: 0.75rem;
+  margin-top: 0.5rem;
+  background: #fff8e1;
+  border: 1px solid #ffe082;
+  border-radius: 8px;
+`;
+
+const RefundLabel = styled.div`
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #e65100;
+  margin-bottom: 0.25rem;
+`;
+
+const RefundReason = styled.div`
+  font-size: 0.85rem;
+  color: #555;
+  margin-bottom: 0.75rem;
+  font-style: italic;
+`;
+
+const RefundActions = styled.div`
+  display: flex;
+  gap: 0.5rem;
+`;
+
+const ApproveButton = styled.button`
+  padding: 0.4rem 1rem;
+  background: #2e7d32;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #1b5e20;
+  }
+
+  &:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+  }
+`;
+
+const DenyButton = styled.button`
+  padding: 0.4rem 1rem;
+  background: none;
+  border: 1px solid #c62828;
+  color: #c62828;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #c62828;
+    color: white;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
+const ReturnItemsList = styled.div`
+  margin: 0.5rem 0 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: #fffde7;
+  border-radius: 6px;
+  border: 1px solid #fff9c4;
+`;
+
+const ReturnItemsHeader = styled.div`
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 0.4rem;
+`;
+
+const ReturnItemRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.3rem 0;
+  font-size: 0.85rem;
+  color: #333;
+
+  & + & {
+    border-top: 1px solid #f0f0f0;
+  }
+`;
+
+const ReturnItemMeta = styled.div`
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.8rem;
+  color: #888;
+`;
+
+const RefundAmountRow = styled.div`
+  margin-top: 0.4rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid #e0e0e0;
+  font-size: 0.85rem;
+  color: #333;
+  text-align: right;
 `;
 
 export default AdminOrders;
