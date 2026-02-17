@@ -533,8 +533,13 @@ const Input = styled.input`
 const FormRow = styled.div`
   display: flex;
   gap: 1rem;
+  align-items: flex-start;
 
-  & > * {
+  & > *:first-child {
+    flex: 1.5;
+  }
+
+  & > *:last-child {
     flex: 1;
   }
 `;
