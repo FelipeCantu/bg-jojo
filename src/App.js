@@ -1,4 +1,4 @@
-import { useEffect, Suspense, lazy } from 'react';
+import { useEffect, useState, Suspense, lazy } from 'react';
 import './App.css';
 import { Route, Routes, Navigate, useLocation } from 'react-router-dom';
 import { Navbar, Footer, CartDrawer, LoadingContainer } from './components';
@@ -92,6 +92,23 @@ const SlideUpRoute = ({ children, disableAnimation = false, noPadding = false })
 
 function App() {
   const location = useLocation();
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+      document.body.classList.remove('loading');
+    }, 2000);
+    document.body.classList.add('loading');
+    return () => {
+      clearTimeout(timer);
+      document.body.classList.remove('loading');
+    };
+  }, []);
+
+  if (isLoading) {
+    return <LoadingContainer />;
+  }
 
   return (
     <div className="App">
