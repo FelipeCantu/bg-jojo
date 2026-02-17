@@ -3,8 +3,6 @@ import { Link } from "react-router-dom";
 import styled from "styled-components";
 
 const Remembering = ({ name, imageUrl, slug }) => {
-  console.log("Rendering tribute:", name, imageUrl); // Log props being passed
-
   return (
     <Link to={`/tribute/${slug}`}>
       <TributeContainer>

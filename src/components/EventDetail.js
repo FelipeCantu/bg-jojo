@@ -64,7 +64,6 @@ const EventDetail = () => {
         // If the event doesn't exist, create it with the attendee
         await setDoc(eventRef, { attendees: [userId] }, { merge: true });
       }
-      console.log('Attendee updated successfully!');
     } catch (error) {
       console.error('Error adding attendee:', error);
     }
@@ -94,7 +93,6 @@ const EventDetail = () => {
         setAttendees(eventSnap.data().attendees || []);
       }
 
-      console.log('Attendee updated successfully!');
     } catch (error) {
       console.error('Error updating attendees:', error);
     }

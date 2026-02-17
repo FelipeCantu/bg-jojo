@@ -13,7 +13,7 @@ const AboutSection = () => {
       />
       <HeroSection>
         <BackgroundVideo autoPlay loop muted playsInline disablePictureInPicture controlsList='nodownload nofullscreen noremoteplayback'>
-          <source src={require('../assets/flamingos.mp4')} type='video/mp4' alt='clouds' />
+          <source src={require('../assets/flamingos.mp4')} type='video/mp4' />
           Your browser does not support the video tag.
         </BackgroundVideo>
         <Title>ABOUT US</Title>

@@ -64,7 +64,8 @@
           { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
           { "key": "X-XSS-Protection", "value": "1; mode=block" },
           { "key": "Strict-Transport-Security", "value": "max-age=31536000; includeSubDomains" },
-          { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+          { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+          { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' https://js.stripe.com https://*.firebaseapp.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://*.imgbb.com https://i.ibb.co https://cdn.sanity.io https://*.googleapis.com https://www.googletagmanager.com; connect-src 'self' https://*.stripe.com https://*.firebaseio.com https://*.googleapis.com https://*.cloudfunctions.net https://cdn.sanity.io https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; frame-src https://js.stripe.com; object-src 'none'; base-uri 'self'" }
         ]
       }
     ],

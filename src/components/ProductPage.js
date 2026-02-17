@@ -9,6 +9,7 @@ import { ShoppingBagIcon, ChevronLeftIcon } from '@heroicons/react/24/outline';
 import LoadingContainer from './LoadingContainer';
 import SEO from './SEO';
 import { getProductSchema } from '../utils/structuredData';
+import { DEFAULT_PLACEHOLDER_IMAGE } from '../constants';
 
 // Styled Components
 const Wrapper = styled.div`
@@ -544,7 +545,7 @@ export default function ProductPage() {
           <MainImageContainer>
             <Zoom>
               <MainImage
-                src={product.images[selectedImage]?.asset?.url || 'https://via.placeholder.com/600x600?text=Product+Image'}
+                src={product.images[selectedImage]?.asset?.url || DEFAULT_PLACEHOLDER_IMAGE}
                 alt={product.name}
               />
             </Zoom>

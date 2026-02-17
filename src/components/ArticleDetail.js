@@ -7,7 +7,7 @@ import CommentSection from "./CommentSection";
 import { auth, onAuthStateChanged } from "../firestore";
 import { PortableText } from "@portabletext/react";
 import { Link } from 'react-router-dom';
-import { DEFAULT_ANONYMOUS_AVATAR } from '../constants';
+import { DEFAULT_ANONYMOUS_AVATAR, DEFAULT_PLACEHOLDER_IMAGE } from '../constants';
 import SEO from './SEO';
 import { getArticleSchema } from '../utils/structuredData';
 
@@ -61,7 +61,7 @@ const ArticleDetail = () => {
   const authorBio = article.isAnonymous ? '' : article.author?.bio;
 
   // Get main image URL
-  const mainImageSrc = article.mainImage?.url || 'https://via.placeholder.com/1200x600';
+  const mainImageSrc = article.mainImage?.url || DEFAULT_PLACEHOLDER_IMAGE;
 
   const components = {
     types: {

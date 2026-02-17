@@ -50,7 +50,7 @@ const logOut = async () => {
 // Update User Profile
 const updateUserProfile = async (user) => {
   const { displayName, photoURL, uid } = user;
-  const photo = photoURL || "https://via.placeholder.com/150";
+  const photo = photoURL || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Ccircle cx='64' cy='64' r='64' fill='%23e0e0e0'/%3E%3Ccircle cx='64' cy='50' r='22' fill='%23bdbdbd'/%3E%3Cellipse cx='64' cy='106' rx='36' ry='28' fill='%23bdbdbd'/%3E%3C/svg%3E";
   const userData = {
     name: displayName,
     photoURL: photo,
@@ -117,7 +117,7 @@ const submitArticle = async (articleData, user) => {
         mainImage: articleData.mainImage,
         authorId: user.uid,
         authorName: user.displayName || "Anonymous",
-        authorImage: user.photoURL || "https://via.placeholder.com/150",
+        authorImage: user.photoURL || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Ccircle cx='64' cy='64' r='64' fill='%23e0e0e0'/%3E%3Ccircle cx='64' cy='50' r='22' fill='%23bdbdbd'/%3E%3Cellipse cx='64' cy='106' rx='36' ry='28' fill='%23bdbdbd'/%3E%3C/svg%3E",
         publishedDate: articleData.publishedDate,
         readingTime: articleData.readingTime || 0,
         likes: 0,
@@ -137,7 +137,7 @@ const submitArticle = async (articleData, user) => {
         _ref: user.uid,
       },
       authorName: user.displayName || "Anonymous",
-      authorImage: user.photoURL || "https://via.placeholder.com/150",
+      authorImage: user.photoURL || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Ccircle cx='64' cy='64' r='64' fill='%23e0e0e0'/%3E%3Ccircle cx='64' cy='50' r='22' fill='%23bdbdbd'/%3E%3Cellipse cx='64' cy='106' rx='36' ry='28' fill='%23bdbdbd'/%3E%3C/svg%3E",
       publishedDate: articleData.publishedDate,
       readingTime: articleData.readingTime || 0,
     });
@@ -222,7 +222,7 @@ const handleAddComment = async (articleId, commentText) => {
     const commentRef = await addDoc(commentsRef, {
       userId: user.uid,
       userName: user.displayName || "Anonymous",
-      userImage: user.photoURL || "https://via.placeholder.com/150",
+      userImage: user.photoURL || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Ccircle cx='64' cy='64' r='64' fill='%23e0e0e0'/%3E%3Ccircle cx='64' cy='50' r='22' fill='%23bdbdbd'/%3E%3Cellipse cx='64' cy='106' rx='36' ry='28' fill='%23bdbdbd'/%3E%3C/svg%3E",
       comment: commentText,
       timestamp: serverTimestamp(),
       notificationCreated: false

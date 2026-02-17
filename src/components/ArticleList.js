@@ -6,7 +6,7 @@ import CreateArticleButton from './CreateArticleButton';
 import styled from 'styled-components';
 import { FaSearch } from 'react-icons/fa';
 import LoadingContainer from './LoadingContainer';
-import { DEFAULT_ANONYMOUS_AVATAR } from '../constants';
+import { DEFAULT_ANONYMOUS_AVATAR, DEFAULT_PLACEHOLDER_IMAGE } from '../constants';
 import SEO from './SEO';
 
 const ArticleList = () => {
@@ -75,7 +75,7 @@ const ArticleList = () => {
             const authorImageSrc = article.isAnonymous
               ? DEFAULT_ANONYMOUS_AVATAR
               : article.author?.photoURL || DEFAULT_ANONYMOUS_AVATAR;
-            const mainImageSrc = article.mainImage?.url || 'https://via.placeholder.com/350x250';
+            const mainImageSrc = article.mainImage?.url || DEFAULT_PLACEHOLDER_IMAGE;
 
             return (
               <LinkWrapper to={`/article/${article._id}`} key={article._id}>

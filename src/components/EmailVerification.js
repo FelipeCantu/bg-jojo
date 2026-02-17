@@ -125,7 +125,7 @@ const EmailVerification = () => {
 
     if (isEmailVerified) {
       toast.success("Email verified successfully!");
-      navigate("/dashboard");
+      navigate("/profile");
     }
 
     // Start countdown for resend button
@@ -144,7 +144,7 @@ const EmailVerification = () => {
         currentUser.reload().then(() => {
           if (currentUser.emailVerified) {
             toast.success("Email verified successfully!");
-            navigate("/dashboard");
+            navigate("/profile");
           }
         });
       }
@@ -220,8 +220,8 @@ const EmailVerification = () => {
             }
           </ResendButton>
           
-          <ContinueButton onClick={() => navigate("/dashboard")}>
-            Continue to Dashboard
+          <ContinueButton onClick={() => navigate("/profile")}>
+            Continue to Profile
           </ContinueButton>
         </VerificationActions>
       </EmailVerificationCard>

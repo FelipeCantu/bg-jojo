@@ -4,6 +4,7 @@ import sanityClient from '../sanityClient';
 import { Link, useSearchParams } from 'react-router-dom';
 import LoadingContainer from './LoadingContainer';
 import SEO from './SEO';
+import { DEFAULT_PLACEHOLDER_IMAGE } from '../constants';
 
 // Styled Components
 const PageContainer = styled.div`
@@ -330,7 +331,7 @@ export default function ProductsPage() {
                   src={product.imageUrl}
                   alt={product.name}
                   onError={(e) => {
-                    e.target.src = 'https://via.placeholder.com/300x300?text=Product+Image';
+                    e.target.src = DEFAULT_PLACEHOLDER_IMAGE;
                   }}
                 />
                 {product.category && (

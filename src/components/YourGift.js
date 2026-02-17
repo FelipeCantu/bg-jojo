@@ -1,7 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
 
-// Placeholder icon imports (replace these with actual SVG imports later)
 import { ReactComponent as Path } from '../assets/path.svg';
 import { ReactComponent as BookIcon } from '../assets/book.svg';
 import { ReactComponent as StickerIcon } from '../assets/stickers.svg';

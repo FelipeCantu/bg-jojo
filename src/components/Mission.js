@@ -36,7 +36,7 @@ function MissionSection() {
           disablePictureInPicture 
           controlsList='nodownload nofullscreen noremoteplayback'
         >
-          <source src={require('../assets/flamingo.mp4')} type='video/mp4' alt='clouds' />
+          <source src={require('../assets/flamingo.mp4')} type='video/mp4' />
         </VideoBackground>
       </VideoContainer>
     </SectionWrapper>

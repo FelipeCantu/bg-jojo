@@ -81,7 +81,6 @@ const Profile = () => {
       const userRef = doc(db, 'users', user.uid);
       await setDoc(userRef, { banner: imageUrl }, { merge: true });
 
-      console.log('Banner URL saved to Firestore');
     } catch (error) {
       console.error('Error uploading banner to Sanity:', error);
     }

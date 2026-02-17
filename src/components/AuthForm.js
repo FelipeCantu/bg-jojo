@@ -221,7 +221,7 @@ const AuthFormComponent = ({ mode = "login", title, subtitle, redirectTo, embedd
   const navigate = useNavigate();
 
   // Determine redirect path
-  const targetPath = redirectTo || (mode === "signup" ? "/profile" : "/dashboard");
+  const targetPath = redirectTo || "/profile";
 
   // Redirect if already logged in
   useEffect(() => {

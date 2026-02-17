@@ -5,7 +5,7 @@ import { client, urlFor } from "../../sanityClient";
 import useCurrentUser from "../../hook/useCurrentUser";
 import ArticleCounters from "../ArticleCounters";
 import { HiDotsVertical } from 'react-icons/hi';
-import { DEFAULT_ANONYMOUS_AVATAR } from '../../constants';
+import { DEFAULT_ANONYMOUS_AVATAR, DEFAULT_PLACEHOLDER_IMAGE } from '../../constants';
 
 const UserArticles = () => {
   const { currentUser, loading, error } = useCurrentUser();
@@ -89,8 +89,6 @@ const UserArticles = () => {
       { articleId }
     );
 
-    console.log(`Found ${referencingDocuments.length} referencing documents`);
-
     if (referencingDocuments.length > 0) {
       // Inform the user about referenced documents
       const confirmProceed = window.confirm(
@@ -107,7 +105,6 @@ const UserArticles = () => {
       // Step 2: Delete all referencing documents FIRST
       for (const doc of referencingDocuments) {
         try {
-          console.log(`Deleting reference document: ${doc._id} (${doc._type})`);
           await client.delete(doc._id);
         } catch (refDeleteError) {
           console.error(`Failed to delete reference ${doc._id}:`, refDeleteError);
@@ -117,7 +114,6 @@ const UserArticles = () => {
     }
 
     // Step 3: Now try to delete the article itself
-    console.log(`Deleting main article: ${articleId}`);
     await client.delete(articleId);
     
     // Update UI
@@ -237,7 +233,7 @@ const UserArticles = () => {
                       </TopLeftSection>
 
                       <ArticleImage
-                        src={article.mainImage ? urlFor(article.mainImage).url() : "https://via.placeholder.com/350x250"}
+                        src={article.mainImage ? urlFor(article.mainImage).url() : DEFAULT_PLACEHOLDER_IMAGE}
                         alt={article.title}
                       />
 

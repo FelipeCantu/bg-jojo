@@ -16,8 +16,8 @@ import {
   query
 } from "firebase/firestore"; 
 import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { getAnalytics, logEvent } from "firebase/analytics";
 
-// Your Firebase config here...
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
   authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
@@ -32,6 +32,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
+const analytics = typeof window !== "undefined" ? getAnalytics(app) : null;
 
 export {
   app,
@@ -52,5 +53,7 @@ export {
   onAuthStateChanged,
   deleteDoc,
   where,
-  query
+  query,
+  analytics,
+  logEvent
 };

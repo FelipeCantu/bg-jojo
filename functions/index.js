@@ -165,18 +165,26 @@ app.post("/webhook", express.raw({ type: "application/json" }), async (req, res)
       case "payment_intent.succeeded": {
         const pi = event.data.object;
         if (pi.metadata?.type === "donation" && pi.metadata?.donationId) {
-          await db.collection("donations").doc(pi.metadata.donationId).update({
-            status: "paid",
-            stripePaymentIntentId: pi.id,
-            paidAt: admin.firestore.FieldValue.serverTimestamp(),
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-          });
+          const donRef = db.collection("donations").doc(pi.metadata.donationId);
+          const donSnap = await donRef.get();
+          if (donSnap.exists && donSnap.data().status !== "paid") {
+            await donRef.update({
+              status: "paid",
+              stripePaymentIntentId: pi.id,
+              paidAt: admin.firestore.FieldValue.serverTimestamp(),
+              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+          }
         } else if (pi.metadata?.orderId) {
-          await db.collection("orders").doc(pi.metadata.orderId).update({
-            status: "paid",
-            paymentId: pi.id,
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-          });
+          const orderRef = db.collection("orders").doc(pi.metadata.orderId);
+          const orderSnap = await orderRef.get();
+          if (orderSnap.exists && orderSnap.data().status !== "paid") {
+            await orderRef.update({
+              status: "paid",
+              paymentId: pi.id,
+              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+          }
         }
         break;
       }
@@ -198,23 +206,32 @@ app.post("/webhook", express.raw({ type: "application/json" }), async (req, res)
       case "checkout.session.completed": {
         const session = event.data.object;
         if (session.metadata?.type === "donation" && session.metadata?.donationId) {
-          const updateData = {
-            status: session.mode === "subscription" ? "active" : "paid",
-            stripeSessionId: session.id,
-            stripeCustomerId: session.customer || null,
-            paidAt: admin.firestore.FieldValue.serverTimestamp(),
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-          };
-          if (session.subscription) {
-            updateData.stripeSubscriptionId = session.subscription;
+          const donRef = db.collection("donations").doc(session.metadata.donationId);
+          const donSnap = await donRef.get();
+          const targetStatus = session.mode === "subscription" ? "active" : "paid";
+          if (donSnap.exists && !["paid", "active"].includes(donSnap.data().status)) {
+            const updateData = {
+              status: targetStatus,
+              stripeSessionId: session.id,
+              stripeCustomerId: session.customer || null,
+              paidAt: admin.firestore.FieldValue.serverTimestamp(),
+              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            };
+            if (session.subscription) {
+              updateData.stripeSubscriptionId = session.subscription;
+            }
+            await donRef.update(updateData);
           }
-          await db.collection("donations").doc(session.metadata.donationId).update(updateData);
         } else if (session.metadata?.orderId) {
-          await db.collection("orders").doc(session.metadata.orderId).update({
-            status: "paid",
-            paymentId: session.id,
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-          });
+          const orderRef = db.collection("orders").doc(session.metadata.orderId);
+          const orderSnap = await orderRef.get();
+          if (orderSnap.exists && orderSnap.data().status !== "paid") {
+            await orderRef.update({
+              status: "paid",
+              paymentId: session.id,
+              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+          }
         }
         break;
       }
@@ -248,11 +265,15 @@ app.post("/webhook", express.raw({ type: "application/json" }), async (req, res)
       case "customer.subscription.deleted": {
         const subscription = event.data.object;
         if (subscription.metadata?.type === "donation" && subscription.metadata?.donationId) {
-          await db.collection("donations").doc(subscription.metadata.donationId).update({
-            status: "cancelled",
-            cancelledAt: admin.firestore.FieldValue.serverTimestamp(),
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-          });
+          const donRef = db.collection("donations").doc(subscription.metadata.donationId);
+          const donSnap = await donRef.get();
+          if (donSnap.exists && donSnap.data().status !== "cancelled") {
+            await donRef.update({
+              status: "cancelled",
+              cancelledAt: admin.firestore.FieldValue.serverTimestamp(),
+              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+          }
         }
         break;
       }
@@ -312,125 +333,10 @@ app.get("/", (req, res) => {
     stripe: stripe ? "ready" : "not configured",
     stripeMode,
     endpoints: {
-      payment: "POST /createPaymentIntent",
-      checkout: "POST /createCheckoutSession",
-      donationPayment: "POST /createDonationPaymentIntent (callable)",
-      donationCheckout: "POST /createDonationCheckoutSession (callable)",
+      api: "callable api function (all payment/checkout/donation operations)",
       webhook: "POST /webhook",
     },
   });
-});
-
-/**
- * Creates a Stripe Payment Intent
- * @param {object} req Express request object
- * @param {object} res Express response object
- */
-app.post("/createPaymentIntent", async (req, res) => {
-  try {
-    if (!stripe) stripe = initializeStripe();
-    if (!stripe) throw new Error("Payment service unavailable");
-
-    const { amount, currency = "usd", metadata = {}, receipt_email } = req.body;
-
-    if (!amount || isNaN(amount) || amount < 50) {
-      return res.status(400).json({ error: "Invalid amount" });
-    }
-
-    const intentParams = {
-      amount: Math.round(amount),
-      currency,
-      metadata,
-      automatic_payment_methods: { enabled: true },
-    };
-    if (receipt_email) {
-      intentParams.receipt_email = receipt_email;
-    }
-
-    const idempotencyKey = metadata.orderId ?
-      `pi_order_${metadata.orderId}` :
-      `pi_${crypto.randomUUID()}`;
-
-    const paymentIntent = await stripe.paymentIntents.create(
-      intentParams,
-      { idempotencyKey }
-    );
-
-    res.json({
-      clientSecret: paymentIntent.client_secret,
-      amount: paymentIntent.amount,
-      currency: paymentIntent.currency,
-    });
-  } catch (error) {
-    console.error("Payment error:", error);
-    const userMessage = error.type === "StripeCardError" ?
-      error.message :
-      "Payment processing failed. Please try again.";
-    res.status(500).json({
-      error: userMessage,
-      code: error.code || "payment_error",
-    });
-  }
-});
-
-/**
- * Creates a Stripe Checkout Session
- * @param {object} req Express request object
- * @param {object} res Express response object
- */
-app.post("/createCheckoutSession", async (req, res) => {
-  try {
-    if (!stripe) stripe = initializeStripe();
-    if (!stripe) throw new Error("Payment service unavailable");
-
-    const { lineItems, successUrl, cancelUrl, customerEmail } = req.body;
-
-    // Validate URLs are from allowed domains
-    const isValidRedirectUrl = url => {
-      try {
-        const parsed = new URL(url);
-        return ALLOWED_REDIRECT_DOMAINS.some(domain => parsed.hostname === domain || parsed.hostname.endsWith(`.${domain}`));
-      } catch {
-        return false;
-      }
-    };
-
-    if (!isValidRedirectUrl(successUrl) || !isValidRedirectUrl(cancelUrl)) {
-      return res.status(400).json({ error: "Invalid URL domain" });
-    }
-
-    const { metadata = {} } = req.body;
-
-    const idempotencyKey = metadata.orderId ?
-      `cs_order_${metadata.orderId}` :
-      `cs_${crypto.randomUUID()}`;
-
-    const session = await stripe.checkout.sessions.create(
-      {
-        payment_method_types: ["card"],
-        line_items: lineItems,
-        mode: "payment",
-        success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: cancelUrl,
-        customer_email: customerEmail,
-        metadata,
-        expires_at: Math.floor(Date.now() / 1000) + 1800, // 30 minutes
-      },
-      { idempotencyKey }
-    );
-
-    res.json({
-      sessionId: session.id,
-      url: session.url,
-      expires: session.expires_at,
-    });
-  } catch (error) {
-    console.error("Checkout error:", error);
-    res.status(500).json({
-      error: "Checkout session creation failed. Please try again.",
-      code: error.code || "checkout_error",
-    });
-  }
 });
 
 // Error handling for the Express app
@@ -471,8 +377,27 @@ exports.api = onCall({
       throw new Error("Invalid amount");
     }
 
+    let verifiedAmount = Math.round(amount);
+
+    // Server-side amount verification: when an orderId is provided,
+    // use the order's total from Firestore instead of trusting the client
+    if (metadata.orderId) {
+      const db = admin.firestore();
+      const orderSnap = await db.collection("orders").doc(metadata.orderId).get();
+      if (!orderSnap.exists) {
+        throw new HttpsError("not-found", "Order not found");
+      }
+      const order = orderSnap.data();
+      const expectedAmount = Math.round(order.total * 100); // total is in dollars, convert to cents
+      if (verifiedAmount !== expectedAmount) {
+        console.error(`Amount mismatch for order ${metadata.orderId}: client sent ${verifiedAmount}, expected ${expectedAmount}`);
+        throw new HttpsError("invalid-argument", "Payment amount does not match order total");
+      }
+      verifiedAmount = expectedAmount;
+    }
+
     const intentParams = {
-      amount: Math.round(amount),
+      amount: verifiedAmount,
       currency,
       metadata,
       automatic_payment_methods: { enabled: true },
@@ -1090,7 +1015,7 @@ exports.api = onCall({
     } catch (stripeError) {
       console.error("Stripe refund error:", stripeError);
       if (stripeError instanceof HttpsError) throw stripeError;
-      throw new HttpsError("internal", `Refund failed: ${stripeError.message}`);
+      throw new HttpsError("internal", "Refund could not be processed. Please try again or contact support.");
     }
 
     await orderRef.update({

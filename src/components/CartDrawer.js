@@ -2,6 +2,7 @@ import React from 'react';
 import styled, { keyframes, css } from 'styled-components';
 import { ShoppingBagIcon, XMarkIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useCart } from '../CartContext';
+import { DEFAULT_PLACEHOLDER_IMAGE } from '../constants';
 import { useNavigate } from 'react-router-dom';
 
 // Animations
@@ -417,7 +418,7 @@ export default function CartDrawer() {
     if (item.image) return item.image;
     if (item.images?.[0]?.asset?.url) return item.images[0].asset.url;
     if (item.images?.[0]?.url) return item.images[0].url;
-    return 'https://via.placeholder.com/150?text=No+Image';
+    return DEFAULT_PLACEHOLDER_IMAGE;
   };
 
   return (
@@ -456,7 +457,7 @@ export default function CartDrawer() {
                     src={getImageUrl(item)}
                     alt={item.name}
                     onError={(e) => {
-                      e.target.src = 'https://via.placeholder.com/150?text=No+Image';
+                      e.target.src = DEFAULT_PLACEHOLDER_IMAGE;
                     }}
                   />
                   <ItemDetails>

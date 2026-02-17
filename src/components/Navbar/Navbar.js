@@ -13,23 +13,23 @@ const Navbar = () => {
 
       <Nav>
         <NavContent>
-          <LogoLink to="/Home">
+          <LogoLink to="/home">
             <Logo src={require('../../assets/jojologo.png')} alt="Logo" />
           </LogoLink>
 
           <NavLinks>
-            <StyledLink to="/Home">Home</StyledLink>
-            <StyledLink to="/Donate">Donate</StyledLink>
-            <StyledLink to="/Hotlines">Hotlines</StyledLink>
+            <StyledLink to="/home">Home</StyledLink>
+            <StyledLink to="/donate">Donate</StyledLink>
+            <StyledLink to="/hotlines">Hotlines</StyledLink>
             <StyledLink to="/events">Events</StyledLink>
-            <StyledLink to="/About">About Us</StyledLink>
+            <StyledLink to="/about">About Us</StyledLink>
 
             <MoreLink>
               More
               <DropdownMenu>
-                <StyledLink to="/GetInvolved">Get Involved</StyledLink>
-                <StyledLink to="/Articles">Articles</StyledLink>
-                <StyledLink to="/Tributes">Remembering Loved Ones</StyledLink>
+                <StyledLink to="/getinvolved">Get Involved</StyledLink>
+                <StyledLink to="/articles">Articles</StyledLink>
+                <StyledLink to="/tributes">Remembering Loved Ones</StyledLink>
                 <StyledLink to="/products">Shop</StyledLink>
               </DropdownMenu>
             </MoreLink>

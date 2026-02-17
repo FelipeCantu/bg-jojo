@@ -30,7 +30,7 @@ function Home() {
       />
       <VideoWrapper>
         <VideoBackground autoPlay loop muted playsInline disablePictureInPicture controlsList='nodownload nofullscreen noremoteplayback'>
-          <source src={require('../assets/cloud.mp4')} type='video/mp4' alt='clouds' />
+          <source src={require('../assets/cloud.mp4')} type='video/mp4' />
           Your browser does not support the video tag.
         </VideoBackground>
         <Content>

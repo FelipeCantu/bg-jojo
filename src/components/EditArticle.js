@@ -8,6 +8,7 @@ import { toast } from 'react-toastify';
 import { portableTextToHtml } from './utils/portableTextHtml';
 import { convertHtmlToPortableText } from './utils/htmlToPortableText';
 import useCurrentUser from '../hook/useCurrentUser';
+import { DEFAULT_PLACEHOLDER_IMAGE } from '../constants';
 
 const EditArticle = () => {
   const { articleId } = useParams();
@@ -230,7 +231,7 @@ const EditArticle = () => {
                   src={urlFor(formMainImage).width(400).url()}
                   alt="Featured preview"
                   onError={(e) => {
-                    e.target.src = 'https://via.placeholder.com/400x225?text=Image+not+found';
+                    e.target.src = DEFAULT_PLACEHOLDER_IMAGE;
                   }}
                 />
                 <button

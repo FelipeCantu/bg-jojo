@@ -1,6 +1,8 @@
 import React from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
+import sponsorship1 from '../assets/sponsorship-1.png';
+import sponsorship2 from '../assets/sponsorship-2.png';
 
 const Sponsorship = () => {
 
@@ -90,8 +92,8 @@ const Sponsorship = () => {
 
       {/* Images Section */}
       <ImagesContainer>
-        <Image src="https://static.wixstatic.com/media/1db9c9_04d3b595327944f8a47f1c385f9180d3~mv2.png/v1/fill/w_603,h_340,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Untitled-1.png" alt="Donation Event" />
-        <Image src="https://static.wixstatic.com/media/1db9c9_fffbca1af6ec4bee8f085876fe68959f~mv2.png/v1/crop/x_2,y_232,w_1910,h_848/fill/w_691,h_307,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Untitled-2.png" alt="Mental Health Support" />
+        <Image src={sponsorship1} alt="Donation Event" />
+        <Image src={sponsorship2} alt="Mental Health Support" />
       </ImagesContainer>
 
       <Button onClick={handleStartToday}>Start Today</Button>

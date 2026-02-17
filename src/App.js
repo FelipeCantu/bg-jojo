@@ -41,12 +41,19 @@ import AdminOrders from './components/admin/AdminOrders';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 import { getOrganizationSchema } from './utils/structuredData';
+import { analytics, logEvent } from './firestore';
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
 
   useEffect(() => {
     window.scrollTo(0, 0);
+    if (analytics) {
+      logEvent(analytics, 'page_view', {
+        page_path: pathname,
+        page_title: document.title,
+      });
+    }
   }, [pathname]);
 
   return null;

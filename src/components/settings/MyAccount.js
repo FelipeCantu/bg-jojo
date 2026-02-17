@@ -3,6 +3,7 @@ import { auth } from '../../firebaseconfig';
 import { onAuthStateChanged, updateProfile } from 'firebase/auth';
 import styled from 'styled-components';
 import { FaCamera, FaUser, FaEnvelope } from 'react-icons/fa';
+import { DEFAULT_ANONYMOUS_AVATAR } from '../../constants';
 
 const MyAccount = () => {
   const [user, setUser] = useState(null);
@@ -77,7 +78,7 @@ const MyAccount = () => {
             <ProfileSection>
               <ImageWrapper onClick={triggerFileInput}>
                 <ProfileImagePreview
-                  src={selectedImage ? URL.createObjectURL(selectedImage) : photoURL || 'https://via.placeholder.com/150'}
+                  src={selectedImage ? URL.createObjectURL(selectedImage) : photoURL || DEFAULT_ANONYMOUS_AVATAR}
                   alt="Profile"
                 />
                 <Overlay>
