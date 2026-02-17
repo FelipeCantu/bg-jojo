@@ -4,8 +4,7 @@ import emailjs from "emailjs-com";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import CustomSelect from "./CustomSelect";
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFacebookF, faInstagram } from '@fortawesome/free-brands-svg-icons';
+import { FaFacebookF, FaInstagram } from 'react-icons/fa';
 import SEO from './SEO';
 
 const MySwal = withReactContent(Swal);
@@ -240,7 +239,7 @@ const VolunteerForm = () => {
               rel="noopener noreferrer"
               aria-label="Facebook"
             >
-              <FontAwesomeIcon icon={faFacebookF} />
+              <FaFacebookF />
             </SocialIcon>
             <SocialIcon
               href="https://www.instagram.com/givebackjojo/"
@@ -248,7 +247,7 @@ const VolunteerForm = () => {
               rel="noopener noreferrer"
               aria-label="Instagram"
             >
-              <FontAwesomeIcon icon={faInstagram} />
+              <FaInstagram />
             </SocialIcon>
           </SocialIconsContainer>
           <Form onSubmit={sendEmail}>

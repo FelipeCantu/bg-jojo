@@ -26,7 +26,7 @@ import {
   FaSave
 } from 'react-icons/fa';
 import styled from 'styled-components';
-import { toast } from 'react-toastify';
+import toast from 'react-hot-toast';
 
 const TextEditor = forwardRef(({
   value,
@@ -176,7 +176,7 @@ const TextEditor = forwardRef(({
         return null;
       }
 
-      toast.info('Uploading image...');
+      toast('Uploading image...');
       const result = await client.assets.upload('image', file);
       toast.success('Image uploaded successfully');
       return {
@@ -250,13 +250,14 @@ const TextEditor = forwardRef(({
     const html = editor.getHTML();
 
     if (html === lastContentRef.current && !hasUnsavedChanges) {
-      toast.info('No changes to save');
+      toast('No changes to save');
       return;
     }
 
+    const savingToast = toast.loading('Saving changes...');
+
     try {
       setIsSaving(true);
-      toast.info('Saving changes...', { autoClose: false, toastId: 'saving-toast' });
 
       const portableText = await convertHtmlToPortableText(html);
 
@@ -268,20 +269,10 @@ const TextEditor = forwardRef(({
       lastContentRef.current = html;
       setHasUnsavedChanges(false);
 
-      toast.update('saving-toast', {
-        render: 'Changes saved successfully',
-        type: toast.TYPE.SUCCESS,
-        autoClose: 3000
-      });
+      toast.success('Changes saved successfully', { id: savingToast });
     } catch (error) {
       console.error('Save error:', error);
-
-      toast.update('saving-toast', {
-        render: error.message || 'Failed to save changes',
-        type: toast.TYPE.ERROR,
-        autoClose: 5000
-      });
-
+      toast.error(error.message || 'Failed to save changes', { id: savingToast });
       setHasUnsavedChanges(true);
     } finally {
       setIsSaving(false);

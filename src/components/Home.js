@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
 import { ChevronRightIcon } from '@heroicons/react/24/solid';
 import Mission from './Mission';
@@ -7,18 +7,20 @@ import LoadingContainer from './LoadingContainer';
 import SEO from './SEO';
 
 function Home() {
-  const [isLoading, setIsLoading] = useState(true);
+  const [videoReady, setVideoReady] = useState(false);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (isLoading) {
-    return <LoadingContainer />;
+  if (!videoReady) {
+    return (
+      <>
+        <LoadingContainer />
+        <HiddenVideo
+          autoPlay loop muted playsInline
+          onCanPlay={() => setVideoReady(true)}
+        >
+          <source src={require('../assets/cloud.mp4')} type='video/mp4' />
+        </HiddenVideo>
+      </>
+    );
   }
 
   return (
@@ -52,6 +54,7 @@ function Home() {
             <CenteredImage
               src={require('../assets/ratemap.jpg')}
               alt="Suicide rates in Washington State and the nation"
+              loading="lazy"
             />
           </ExternalImageLink>
           <ImageCaption>The number of deaths by suicide per 100,000 total population in the year 2022.</ImageCaption>
@@ -141,6 +144,13 @@ const VideoWrapper = styled.div`
   @media (max-width: 768px) {
     height: 90vh;
   }
+`;
+
+const HiddenVideo = styled.video`
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
 `;
 
 const VideoBackground = styled.video`

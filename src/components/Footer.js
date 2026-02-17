@@ -1,7 +1,6 @@
 import React from "react";
 import styled from "styled-components";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faFacebookF, faInstagram, faYoutube } from "@fortawesome/free-brands-svg-icons";
+import { FaFacebookF, FaInstagram, FaYoutube } from "react-icons/fa";
 
 const Footer = () => {
   return (
@@ -23,7 +22,7 @@ const Footer = () => {
             rel="noopener noreferrer"
             aria-label="Facebook"
           >
-            <FontAwesomeIcon icon={faFacebookF} />
+            <FaFacebookF />
           </SocialLink>
           <SocialLink
             href="https://www.instagram.com/givebackjojo/"
@@ -31,7 +30,7 @@ const Footer = () => {
             rel="noopener noreferrer"
             aria-label="Instagram"
           >
-            <FontAwesomeIcon icon={faInstagram} />
+            <FaInstagram />
           </SocialLink>
           <SocialLink
             href="https://www.youtube.com/watch?v=bqnwdX3x_l0"
@@ -39,7 +38,7 @@ const Footer = () => {
             rel="noopener noreferrer"
             aria-label="YouTube"
           >
-            <FontAwesomeIcon icon={faYoutube} />
+            <FaYoutube />
           </SocialLink>
         </SocialMedia>
 

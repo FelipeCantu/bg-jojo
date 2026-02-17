@@ -4,7 +4,7 @@ import { client, urlFor } from '../sanityClient';
 import TextEditor from '../components/TextEditor';
 import styled from 'styled-components';
 import { FaArrowLeft, FaSave, FaTimes } from 'react-icons/fa';
-import { toast } from 'react-toastify';
+import toast from 'react-hot-toast';
 import { portableTextToHtml } from './utils/portableTextHtml';
 import { convertHtmlToPortableText } from './utils/htmlToPortableText';
 import useCurrentUser from '../hook/useCurrentUser';

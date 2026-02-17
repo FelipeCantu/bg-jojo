@@ -4,7 +4,7 @@ import { HeartIcon as HeartIconSolid } from "@heroicons/react/24/solid";
 import styled, { keyframes } from "styled-components";
 import { client, articleAPI } from "../sanityClient";
 import useCurrentUser from "../hook/useCurrentUser";
-import { toast } from 'react-toastify';
+import toast from 'react-hot-toast';
 
 const ArticleCounters = ({ articleId, isDetailView = false }) => {
   const { currentUser } = useCurrentUser();
@@ -66,7 +66,7 @@ const ArticleCounters = ({ articleId, isDetailView = false }) => {
   // Handle like action
   const handleLike = async () => {
     if (!currentUser?.sanityId) {
-      toast.info("Please sign in to like articles");
+      toast("Please sign in to like articles");
       return;
     }
 

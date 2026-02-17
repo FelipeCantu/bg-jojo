@@ -8,7 +8,7 @@ import TextEditor from './TextEditor';
 import { portableTextToHtml } from './utils/portableTextHtml';
 import { convertHtmlToPortableText } from './utils/htmlToPortableText';
 import { FaArrowLeft, FaCloudUploadAlt, FaImage, FaTimes } from 'react-icons/fa';
-import { toast } from 'react-toastify';
+import toast from 'react-hot-toast';
 import { auth, onAuthStateChanged } from '../firestore';
 import AuthForm from './AuthForm';
 import { DEFAULT_ANONYMOUS_AVATAR } from '../constants';
