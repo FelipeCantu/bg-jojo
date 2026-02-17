@@ -182,40 +182,38 @@ const Wallet = () => {
               {errors.cardNumber && <Error>{errors.cardNumber.message}</Error>}
             </FormGroup>
 
-            <FormRow>
-              <FormGroup>
-                <Label>Expiry Date</Label>
-                <InputMask
-                  mask="99/99"
-                  {...register("expiry", {
-                    required: "Expiry date is required",
-                    pattern: {
-                      value: /^(0[1-9]|1[0-2])\/\d{2}$/,
-                      message: "Invalid expiry date (MM/YY)"
-                    }
-                  })}
-                  onFocus={() => setFocused("expiry")}
-                >
-                  {(inputProps) => <Input {...inputProps} placeholder="MM/YY" />}
-                </InputMask>
-                {errors.expiry && <Error>{errors.expiry.message}</Error>}
-              </FormGroup>
+            <FormGroup>
+              <Label>Expiry Date</Label>
+              <InputMask
+                mask="99/99"
+                {...register("expiry", {
+                  required: "Expiry date is required",
+                  pattern: {
+                    value: /^(0[1-9]|1[0-2])\/\d{2}$/,
+                    message: "Invalid expiry date (MM/YY)"
+                  }
+                })}
+                onFocus={() => setFocused("expiry")}
+              >
+                {(inputProps) => <Input {...inputProps} placeholder="MM/YY" />}
+              </InputMask>
+              {errors.expiry && <Error>{errors.expiry.message}</Error>}
+            </FormGroup>
 
-              <FormGroup>
-                <Label>CVV</Label>
-                <Input
-                  type="text"
-                  {...register("cvc", {
-                    required: "CVV is required",
-                    minLength: { value: 3, message: "CVV must be 3 digits" },
-                    maxLength: { value: 4, message: "CVV must be 3-4 digits" }
-                  })}
-                  onFocus={() => setFocused("cvc")}
-                  placeholder="123"
-                />
-                {errors.cvc && <Error>{errors.cvc.message}</Error>}
-              </FormGroup>
-            </FormRow>
+            <FormGroup>
+              <Label>CVV</Label>
+              <Input
+                type="text"
+                {...register("cvc", {
+                  required: "CVV is required",
+                  minLength: { value: 3, message: "CVV must be 3 digits" },
+                  maxLength: { value: 4, message: "CVV must be 3-4 digits" }
+                })}
+                onFocus={() => setFocused("cvc")}
+                placeholder="123"
+              />
+              {errors.cvc && <Error>{errors.cvc.message}</Error>}
+            </FormGroup>
 
             <ButtonGroup>
               <CancelButton type="button" onClick={() => setIsModalOpen(false)}>
