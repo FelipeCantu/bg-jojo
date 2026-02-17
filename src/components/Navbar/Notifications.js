@@ -8,7 +8,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { HeartIcon } from '@heroicons/react/24/solid';
 import { auth } from '../../firebaseconfig';
-import { client } from '../../sanityClient';
+import { client, realtimeClient } from '../../sanityClient';
 import AuthForm from '../AuthForm';
 
 const Notifications = () => {
@@ -42,7 +42,7 @@ const Notifications = () => {
       }
 
       try {
-        const sanityUser = await client.fetch(
+        const sanityUser = await realtimeClient.fetch(
           `*[_type == "user" && _id == $firebaseUid][0]`,
           { firebaseUid: user.uid }
         );
@@ -66,7 +66,7 @@ const Notifications = () => {
     const fetchNotifications = async () => {
       try {
         setLoading(true);
-        const fetched = await client.fetch(
+        const fetched = await realtimeClient.fetch(
           `*[_type == "notification" && user._ref == $userId] | order(_createdAt desc) {
             _id,
             type,
@@ -80,7 +80,7 @@ const Notifications = () => {
               name,
               photoURL
             },
-            "relatedArticle": relatedArticle->{
+            "relatedArticle": article->{
               _id,
               title,
               "slug": slug.current

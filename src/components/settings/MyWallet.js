@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import ReactDOM from "react-dom";
 import styled from "styled-components";
 import { useForm } from "react-hook-form";
 import InputMask from "react-input-mask";
@@ -142,6 +143,7 @@ const Wallet = () => {
         <EmptyState>No payment methods saved yet</EmptyState>
       )}
 
+      {ReactDOM.createPortal(
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         <ModalContent>
           <ModalTitle>Add New Payment Method</ModalTitle>
@@ -182,38 +184,40 @@ const Wallet = () => {
               {errors.cardNumber && <Error>{errors.cardNumber.message}</Error>}
             </FormGroup>
 
-            <FormGroup>
-              <Label>Expiry Date</Label>
-              <InputMask
-                mask="99/99"
-                {...register("expiry", {
-                  required: "Expiry date is required",
-                  pattern: {
-                    value: /^(0[1-9]|1[0-2])\/\d{2}$/,
-                    message: "Invalid expiry date (MM/YY)"
-                  }
-                })}
-                onFocus={() => setFocused("expiry")}
-              >
-                {(inputProps) => <Input {...inputProps} placeholder="MM/YY" />}
-              </InputMask>
-              {errors.expiry && <Error>{errors.expiry.message}</Error>}
-            </FormGroup>
+            <FormRow>
+              <FormGroup>
+                <Label>Expiry Date</Label>
+                <InputMask
+                  mask="99/99"
+                  {...register("expiry", {
+                    required: "Expiry date is required",
+                    pattern: {
+                      value: /^(0[1-9]|1[0-2])\/\d{2}$/,
+                      message: "Invalid expiry date (MM/YY)"
+                    }
+                  })}
+                  onFocus={() => setFocused("expiry")}
+                >
+                  {(inputProps) => <Input {...inputProps} placeholder="MM/YY" />}
+                </InputMask>
+                {errors.expiry && <Error>{errors.expiry.message}</Error>}
+              </FormGroup>
 
-            <FormGroup>
-              <Label>CVV</Label>
-              <Input
-                type="text"
-                {...register("cvc", {
-                  required: "CVV is required",
-                  minLength: { value: 3, message: "CVV must be 3 digits" },
-                  maxLength: { value: 4, message: "CVV must be 3-4 digits" }
-                })}
-                onFocus={() => setFocused("cvc")}
-                placeholder="123"
-              />
-              {errors.cvc && <Error>{errors.cvc.message}</Error>}
-            </FormGroup>
+              <FormGroup>
+                <Label>CVV</Label>
+                <Input
+                  type="text"
+                  {...register("cvc", {
+                    required: "CVV is required",
+                    minLength: { value: 3, message: "CVV must be 3 digits" },
+                    maxLength: { value: 4, message: "CVV must be 3-4 digits" }
+                  })}
+                  onFocus={() => setFocused("cvc")}
+                  placeholder="123"
+                />
+                {errors.cvc && <Error>{errors.cvc.message}</Error>}
+              </FormGroup>
+            </FormRow>
 
             <ButtonGroup>
               <CancelButton type="button" onClick={() => setIsModalOpen(false)}>
@@ -225,7 +229,9 @@ const Wallet = () => {
             </ButtonGroup>
           </Form>
         </ModalContent>
-      </Modal>
+      </Modal>,
+      document.body
+      )}
 
       <AddButton onClick={() => setIsModalOpen(true)}>
         <PlusIcon /> Add Payment Method
@@ -525,6 +531,15 @@ const Input = styled.input`
   
   &::placeholder {
     color: #a0aec0;
+  }
+`;
+
+const FormRow = styled.div`
+  display: flex;
+  gap: 1rem;
+
+  & > * {
+    flex: 1;
   }
 `;
 

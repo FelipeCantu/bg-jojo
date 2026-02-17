@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { HeartIcon } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartIconSolid } from "@heroicons/react/24/solid";
 import styled, { keyframes } from "styled-components";
-import { client, articleAPI } from "../sanityClient";
+import { realtimeClient, articleAPI } from "../sanityClient";
 import useCurrentUser from "../hook/useCurrentUser";
 import toast from 'react-hot-toast';
 
@@ -20,7 +20,7 @@ const ArticleCounters = ({ articleId, isDetailView = false }) => {
 
     setIsLoading(true);
     try {
-      const data = await client.fetch(
+      const data = await realtimeClient.fetch(
         `*[_type == "article" && _id == $articleId][0]{
           views,
           likes,
@@ -75,7 +75,7 @@ const ArticleCounters = ({ articleId, isDetailView = false }) => {
 
     setIsLoading(true);
     try {
-      const article = await client.fetch(
+      const article = await realtimeClient.fetch(
         `*[_type == "article" && _id == $articleId][0]{
           _id,
           likes,

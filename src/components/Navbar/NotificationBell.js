@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BellIcon } from '@heroicons/react/24/outline';
 import { BellAlertIcon } from '@heroicons/react/24/solid';
 import styled from 'styled-components';
-import { client } from '../../sanityClient';
+import { client, realtimeClient } from '../../sanityClient';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../../firebaseconfig';
 
@@ -15,7 +15,7 @@ const NotificationBell = () => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {
         try {
-          const sanityUser = await client.fetch(
+          const sanityUser = await realtimeClient.fetch(
             `*[_type == "user" && _id == $firebaseUid][0]`,
             { firebaseUid: user.uid }
           );
@@ -39,7 +39,7 @@ const NotificationBell = () => {
 
     const fetchUnreadCount = async () => {
       try {
-        const count = await client.fetch(
+        const count = await realtimeClient.fetch(
           `count(*[_type == "notification" && user._ref == $userId && seen == false])`,
           { userId: currentUser.sanityId }
         );

@@ -6,8 +6,8 @@ export const comment = defineType({
   type: 'document',
   fields: [
     defineField({
-      name: 'text',
-      title: 'Text',
+      name: 'content',
+      title: 'Content',
       type: 'text',
       validation: (Rule) => Rule.required().min(1).max(1000),
     }),
@@ -19,8 +19,8 @@ export const comment = defineType({
       validation: (Rule) => Rule.required(),
     }),
     defineField({
-      name: 'user',
-      title: 'User',
+      name: 'author',
+      title: 'Author',
       type: 'reference',
       to: [{ type: 'user' }],
       validation: (Rule) => Rule.required(),
@@ -35,15 +35,15 @@ export const comment = defineType({
   ],
   preview: {
     select: {
-      title: 'text',
-      user: 'user.name',
+      title: 'content',
+      author: 'author.name',
       article: 'article.title'
     },
     prepare(selection) {
-      const { title, user, article } = selection;
+      const { title, author, article } = selection;
       return {
         title: title || 'No text',
-        subtitle: `by ${user || 'unknown'} on ${article || 'unknown article'}`
+        subtitle: `by ${author || 'unknown'} on ${article || 'unknown article'}`
       };
     }
   }

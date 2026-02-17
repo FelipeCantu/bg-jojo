@@ -38,6 +38,12 @@ export const notification = defineType({
       description: 'URL to redirect the user when they click the notification',
     }),
     defineField({
+      name: 'sender',
+      title: 'Sender',
+      type: 'reference',
+      to: [{ type: 'user' }],
+    }),
+    defineField({
       name: 'article',
       title: 'Article',
       type: 'reference',
@@ -56,6 +62,11 @@ export const notification = defineType({
       title: 'Seen',
       type: 'boolean',
       initialValue: false,
+    }),
+    defineField({
+      name: 'readAt',
+      title: 'Read At',
+      type: 'datetime',
     }),
   ],
 });

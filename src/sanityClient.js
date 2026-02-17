@@ -12,6 +12,9 @@ export const client = createClient({
   ignoreBrowserTokenWarning: true,
 });
 
+// Non-CDN client for real-time critical queries (notifications, etc.)
+export const realtimeClient = client.withConfig({ useCdn: false });
+
 // Initialize the image URL builder
 const builder = imageUrlBuilder(client);
 
@@ -264,7 +267,7 @@ export const articleAPI = {
             _ref: userId
           },
           type: "like",
-          relatedArticle: {
+          article: {
             _type: "reference",
             _ref: articleId
           },

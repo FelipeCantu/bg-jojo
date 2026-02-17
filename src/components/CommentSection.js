@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import styled, { keyframes } from "styled-components";
-import client from "../sanityClient";
+import client, { realtimeClient } from "../sanityClient";
 import useCurrentUser from "../hook/useCurrentUser";
 
 const CommentSection = ({ articleId }) => {
@@ -20,7 +20,7 @@ const CommentSection = ({ articleId }) => {
     const fetchComments = async () => {
       try {
         setIsLoadingComments(true);
-        const result = await client.fetch(
+        const result = await realtimeClient.fetch(
           `*[_type == "comment" && article._ref == $articleId] | order(_createdAt desc){
             _id,
             content,
@@ -108,7 +108,7 @@ const CommentSection = ({ articleId }) => {
           link: `/article/${articleId}`,
           seen: false,
           sender: { _type: "reference", _ref: currentUser.sanityId },
-          relatedContent: { _type: "reference", _ref: articleId }
+          article: { _type: "reference", _ref: articleId }
         });
       }
 
