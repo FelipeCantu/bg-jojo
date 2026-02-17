@@ -238,13 +238,19 @@ const Wallet = () => {
 
 // Styled Components
 const WalletContainer = styled.div`
-  max-width: 95%;
-  margin: 0 auto;
-  padding: 2rem;
-  // min-height: 100vh;
-  background: white;
-  border-radius: var(--border-radius);
-  box-shadow: var(--box-shadow);
+  max-width: 1000px;
+  margin: 1rem auto;
+  padding: 2.5rem;
+  background: var(--background);
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+
+  @media (max-width: 768px) {
+    padding: 1.5rem;
+    margin: 0.5rem;
+    border-radius: 12px;
+  }
 `;
 
 const Title = styled.h2`
@@ -270,30 +276,40 @@ const CardsList = styled.div`
 
 const CardItem = styled.div`
   display: flex;
-  gap: 1.5rem;
-  padding: 1.5rem;
-  background-color: ${(props) => (props.isDefault ? "#fff4e5" : "#f9f9f9")};
-  border-radius: 10px;
-  border: 1px solid ${(props) => (props.isDefault ? "#ffe0b2" : "#eee")};
-  transition: all 0.2s;
+  gap: 2rem;
+  padding: 2rem;
+  background: ${(props) => (props.isDefault ? "linear-gradient(135deg, #fff9f0 0%, #fff4e5 100%)" : "white")};
+  border-radius: 16px;
+  border: 1px solid ${(props) => (props.isDefault ? "var(--primary-color)" : "#edf2f7")};
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   margin: 0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 
   &:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   }
 
-  @media (max-width: 600px) {
+  @media (max-width: 850px) {
     flex-direction: column;
-    gap: 1rem;
+    align-items: center;
+    text-align: center;
+    padding: 1.5rem;
   }
 `;
 
 const CardPreview = styled.div`
-  width: 300px;
-  margin: 0;
+  width: 290px;
+  flex-shrink: 0;
   
-  @media (max-width: 600px) {
+  .rccs {
+    margin: 0;
+  }
+
+  @media (max-width: 400px) {
     width: 100%;
+    transform: scale(0.85);
+    margin: -1.5rem 0;
   }
 `;
 
@@ -301,8 +317,14 @@ const CardDetails = styled.div`
   flex: 1;
   display: flex;
   flex-direction: column;
+  justify-content: center;
   margin: 0;
   padding: 0;
+
+  @media (max-width: 850px) {
+    width: 100%;
+    align-items: center;
+  }
 `;
 
 const CardHolder = styled.h3`
@@ -319,9 +341,10 @@ const CardNumber = styled.p`
 `;
 
 const Expiry = styled.p`
-  color: #777;
-  font-size: 0.9rem;
+  color: var(--text-light);
+  font-size: 0.95rem;
   margin: 0;
+  font-weight: 500;
 `;
 
 const CardActions = styled.div`
@@ -381,19 +404,28 @@ const DefaultBadge = styled.span`
 const AddButton = styled.button`
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: center;
+  gap: 0.75rem;
   background: var(--secondary-color);
   color: white;
   border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  font-size: 1rem;
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
-  margin-top: 1rem;
+  transition: all 0.3s ease;
+  margin-top: 2rem;
+  box-shadow: 0 4px 14px 0 rgba(2, 73, 71, 0.39);
 
   &:hover {
     background: var(--secondary-color-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.23);
+  }
+
+  &:active {
+    transform: translateY(0);
   }
 `;
 
@@ -423,14 +455,19 @@ const Modal = styled.div`
 
 const ModalContent = styled.div`
   background: white;
-  border-radius: 12px;
-  padding: 2rem;
+  border-radius: 20px;
+  padding: 2.5rem;
   width: 100%;
   max-width: 500px;
   max-height: 90vh;
   overflow-y: auto;
   overflow-x: hidden;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  position: relative;
+
+  @media (max-width: 500px) {
+    padding: 1.5rem;
+  }
 `;
 
 const ModalTitle = styled.h3`
@@ -447,9 +484,18 @@ const Form = styled.form`
 `;
 
 const CardPreviewContainer = styled.div`
-  margin: 0 0 1rem 0;
+  margin: 0 0 2rem 0;
   display: flex;
   justify-content: center;
+  
+  .rccs {
+    margin: 0;
+  }
+
+  @media (max-width: 400px) {
+    transform: scale(0.85);
+    margin: -1.5rem 0 0.5rem 0;
+  }
 `;
 
 const FormGroup = styled.div`
@@ -465,16 +511,22 @@ const Label = styled.label`
 `;
 
 const Input = styled.input`
-  padding: 0.75rem 1rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  border: 2px solid #edf2f7;
+  border-radius: 12px;
   font-size: 1rem;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
+  background: #f8fafc;
 
   &:focus {
     border-color: var(--secondary-color);
+    background: white;
     outline: none;
-    box-shadow: 0 0 0 2px rgba(2, 74, 71, 0.2);
+    box-shadow: 0 0 0 4px rgba(2, 74, 71, 0.1);
+  }
+  
+  &::placeholder {
+    color: #a0aec0;
   }
 `;
 
@@ -510,17 +562,20 @@ const CancelButton = styled.button`
 `;
 
 const SaveButton = styled.button`
-  padding: 0.75rem 1.5rem;
+  padding: 1rem 2rem;
   background: var(--secondary-color);
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
 
   &:hover {
     background: var(--secondary-color-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   }
 `;
 
