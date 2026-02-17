@@ -59,7 +59,7 @@ const Wallet = () => {
 
       toast.success("Payment method added successfully!");
       setIsModalOpen(false);
-      reset();
+      reset({ cardholderName: '', cardNumber: '', expiry: '', cvc: '' });
     } catch (error) {
       toast.error("Failed to add payment method");
       console.error("Error adding document: ", error);
@@ -416,8 +416,9 @@ const Modal = styled.div`
   display: ${props => props.isOpen ? 'flex' : 'none'};
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 9999;
   padding: 1rem;
+  overflow: hidden;
 `;
 
 const ModalContent = styled.div`
@@ -428,6 +429,7 @@ const ModalContent = styled.div`
   max-width: 500px;
   max-height: 90vh;
   overflow-y: auto;
+  overflow-x: hidden;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 `;
 
@@ -445,7 +447,9 @@ const Form = styled.form`
 `;
 
 const CardPreviewContainer = styled.div`
-  margin: -1rem -1rem 1rem -1rem;
+  margin: 0 0 1rem 0;
+  display: flex;
+  justify-content: center;
 `;
 
 const FormGroup = styled.div`
