@@ -3,25 +3,10 @@ import styled from 'styled-components';
 import { ChevronRightIcon } from '@heroicons/react/24/solid';
 import Mission from './Mission';
 import { Link } from 'react-router-dom';
-import LoadingContainer from './LoadingContainer';
 import SEO from './SEO';
 
 function Home() {
   const [videoReady, setVideoReady] = useState(false);
-
-  if (!videoReady) {
-    return (
-      <>
-        <LoadingContainer />
-        <HiddenVideo
-          autoPlay loop muted playsInline
-          onCanPlay={() => setVideoReady(true)}
-        >
-          <source src={require('../assets/cloud.mp4')} type='video/mp4' />
-        </HiddenVideo>
-      </>
-    );
-  }
 
   return (
     <MainSection>
@@ -31,7 +16,13 @@ function Home() {
         path="/home"
       />
       <VideoWrapper>
-        <VideoBackground autoPlay loop muted playsInline disablePictureInPicture controlsList='nodownload nofullscreen noremoteplayback'>
+        <VideoBackground
+          autoPlay loop muted playsInline
+          disablePictureInPicture
+          controlsList='nodownload nofullscreen noremoteplayback'
+          onCanPlay={() => setVideoReady(true)}
+          $ready={videoReady}
+        >
           <source src={require('../assets/cloud.mp4')} type='video/mp4' />
           Your browser does not support the video tag.
         </VideoBackground>
@@ -140,17 +131,11 @@ const VideoWrapper = styled.div`
   margin: 0;
   padding: 0;
   overflow: hidden;
-  
+  background-color: #1a1a2e;
+
   @media (max-width: 768px) {
     height: 90vh;
   }
-`;
-
-const HiddenVideo = styled.video`
-  position: absolute;
-  width: 0;
-  height: 0;
-  opacity: 0;
 `;
 
 const VideoBackground = styled.video`
@@ -164,6 +149,8 @@ const VideoBackground = styled.video`
   margin: 0;
   padding: 0;
   z-index: -1;
+  opacity: ${props => props.$ready ? 1 : 0};
+  transition: opacity 0.6s ease;
 `;
 
 const Content = styled.div`
