@@ -1,45 +1,47 @@
-import { useEffect, Suspense, lazy } from 'react';
+import { useEffect, useState } from 'react';
 import './App.css';
 import { Route, Routes, Navigate, useLocation } from 'react-router-dom';
-import { Navbar, Footer, CartDrawer, LoadingContainer } from './components';
+import {
+  Home,
+  Navbar,
+  GetInvolved,
+  About,
+  Hotlines,
+  Events,
+  EventDetail,
+  ArticleList,
+  ArticleDetail,
+  TributeGallery,
+  TributeDetail,
+  Donate,
+  YourGift,
+  SupportingGiveBackJojo,
+  AccountSettings,
+  Profile,
+  Notifications,
+  Subscriptions,
+  Footer,
+  NotFound,
+  ArticleForm,
+  EditArticle,
+  LoadingContainer,
+  CartDrawer,
+  ProductPage,
+  ProductsPage,
+  CheckoutPage,
+  SuccessPage,
+  DonationSuccess,
+  AuthForm,
+  EmailVerification,
+  PrivacyPolicy,
+} from './components';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
+import AdminOrders from './components/admin/AdminOrders';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 import { getOrganizationSchema } from './utils/structuredData';
 import { analytics, logEvent } from './firestore';
-import { Toaster } from 'react-hot-toast';
-
-// Route-level code splitting
-const Home = lazy(() => import('./components/Home'));
-const About = lazy(() => import('./components/About'));
-const Hotlines = lazy(() => import('./components/Hotlines'));
-const GetInvolved = lazy(() => import('./components/GetInvolved'));
-const Events = lazy(() => import('./components/Events'));
-const EventDetail = lazy(() => import('./components/EventDetail'));
-const ArticleList = lazy(() => import('./components/ArticleList'));
-const ArticleDetail = lazy(() => import('./components/ArticleDetail'));
-const TributeGallery = lazy(() => import('./components/TributeGallery'));
-const TributeDetail = lazy(() => import('./components/TributeDetail'));
-const Donate = lazy(() => import('./components/Donate'));
-const YourGift = lazy(() => import('./components/YourGift'));
-const SupportingGiveBackJojo = lazy(() => import('./components/SupportingGiveBackJojo'));
-const AccountSettings = lazy(() => import('./components/Navbar/AccountSettings'));
-const Profile = lazy(() => import('./components/Navbar/Profile'));
-const Notifications = lazy(() => import('./components/Navbar/Notifications'));
-const Subscriptions = lazy(() => import('./components/Navbar/Subscriptions'));
-const NotFound = lazy(() => import('./components/NotFound'));
-const ArticleForm = lazy(() => import('./components/ArticleForm'));
-const EditArticle = lazy(() => import('./components/EditArticle'));
-const ProductPage = lazy(() => import('./components/ProductPage'));
-const ProductsPage = lazy(() => import('./components/ProductsPage'));
-const CheckoutPage = lazy(() => import('./components/CheckOutPage'));
-const SuccessPage = lazy(() => import('./components/SuccessPage'));
-const DonationSuccess = lazy(() => import('./components/DonationSuccess'));
-const AuthForm = lazy(() => import('./components/AuthForm'));
-const EmailVerification = lazy(() => import('./components/EmailVerification'));
-const PrivacyPolicy = lazy(() => import('./components/PrivacyPolicy'));
-const AdminOrders = lazy(() => import('./components/admin/AdminOrders'));
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -92,6 +94,25 @@ const SlideUpRoute = ({ children, disableAnimation = false, noPadding = false })
 
 function App() {
   const location = useLocation();
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadingTimer = setTimeout(() => {
+      setIsLoading(false);
+      document.body.classList.remove('loading');
+    }, 2000);
+
+    document.body.classList.add('loading');
+
+    return () => {
+      clearTimeout(loadingTimer);
+      document.body.classList.remove('loading');
+    };
+  }, []);
+
+  if (isLoading) {
+    return <LoadingContainer />;
+  }
 
   return (
     <div className="App">
@@ -103,7 +124,6 @@ function App() {
       <Navbar />
       <ScrollToTop />
 
-      <Suspense fallback={<LoadingContainer />}>
       <AnimatePresence mode="wait" initial={false}>
         <Routes location={location} key={location.pathname}>
           <Route path="/auth" element={<AuthForm />} />
@@ -112,7 +132,7 @@ function App() {
           <Route path="/email-verification" element={<SlideUpRoute noPadding><EmailVerification /></SlideUpRoute>} />
           <Route path='/dashboard' element={<Navigate to="/profile" replace />} />
           <Route path="/" element={<Navigate to="/home" replace />} />
-          <Route path="/home" element={<SlideUpRoute disableAnimation noPadding><Home /></SlideUpRoute>} />
+          <Route path="/home" element={<SlideUpRoute noPadding>{<Home />}</SlideUpRoute>} />
           <Route path="/about" element={<SlideUpRoute noPadding><About /></SlideUpRoute>} />
           <Route path="/hotlines" element={<SlideUpRoute><Hotlines /></SlideUpRoute>} />
           <Route path="/getinvolved" element={<SlideUpRoute noPadding><GetInvolved /></SlideUpRoute>} />
@@ -188,11 +208,9 @@ function App() {
           <Route path="*" element={<SlideUpRoute><NotFound /></SlideUpRoute>} />
         </Routes>
       </AnimatePresence>
-      </Suspense>
 
       <Footer />
       <CartDrawer />
-      <Toaster position="bottom-center" />
     </div>
   );
 }
