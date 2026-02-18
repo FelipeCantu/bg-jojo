@@ -112,7 +112,7 @@ function App() {
           <Route path="/email-verification" element={<SlideUpRoute noPadding><EmailVerification /></SlideUpRoute>} />
           <Route path='/dashboard' element={<Navigate to="/profile" replace />} />
           <Route path="/" element={<Navigate to="/home" replace />} />
-          <Route path="/home" element={<SlideUpRoute noPadding>{<Home />}</SlideUpRoute>} />
+          <Route path="/home" element={<SlideUpRoute disableAnimation noPadding><Home /></SlideUpRoute>} />
           <Route path="/about" element={<SlideUpRoute noPadding><About /></SlideUpRoute>} />
           <Route path="/hotlines" element={<SlideUpRoute><Hotlines /></SlideUpRoute>} />
           <Route path="/getinvolved" element={<SlideUpRoute noPadding><GetInvolved /></SlideUpRoute>} />

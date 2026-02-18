@@ -21,15 +21,13 @@ function Home() {
         <LoadingContainer />
       </LoadingOverlay>
 
-      <HiddenVideo
-        autoPlay loop muted playsInline
-        onCanPlay={() => setVideoReady(true)}
-      >
-        <source src={require('../assets/cloud.mp4')} type='video/mp4' />
-      </HiddenVideo>
-
       <VideoWrapper>
-        <VideoBackground autoPlay loop muted playsInline disablePictureInPicture controlsList='nodownload nofullscreen noremoteplayback'>
+        <VideoBackground
+          autoPlay loop muted playsInline
+          disablePictureInPicture
+          controlsList='nodownload nofullscreen noremoteplayback'
+          onCanPlay={() => setVideoReady(true)}
+        >
           <source src={require('../assets/cloud.mp4')} type='video/mp4' />
           Your browser does not support the video tag.
         </VideoBackground>
@@ -155,13 +153,6 @@ const VideoWrapper = styled.div`
   @media (max-width: 768px) {
     height: 90vh;
   }
-`;
-
-const HiddenVideo = styled.video`
-  position: absolute;
-  width: 0;
-  height: 0;
-  opacity: 0;
 `;
 
 const VideoBackground = styled.video`
