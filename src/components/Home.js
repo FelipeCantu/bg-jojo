@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { ChevronRightIcon } from '@heroicons/react/24/solid';
 import Mission from './Mission';
 import { Link } from 'react-router-dom';
+import LoadingContainer from './LoadingContainer';
 import SEO from './SEO';
 
 function Home() {
@@ -15,14 +16,20 @@ function Home() {
         description="Find mental health support and suicide prevention resources. Give Back Jojo provides free access to therapy, hotlines, and community support."
         path="/home"
       />
+
+      <LoadingOverlay $visible={!videoReady}>
+        <LoadingContainer />
+      </LoadingOverlay>
+
+      <HiddenVideo
+        autoPlay loop muted playsInline
+        onCanPlay={() => setVideoReady(true)}
+      >
+        <source src={require('../assets/cloud.mp4')} type='video/mp4' />
+      </HiddenVideo>
+
       <VideoWrapper>
-        <VideoBackground
-          autoPlay loop muted playsInline
-          disablePictureInPicture
-          controlsList='nodownload nofullscreen noremoteplayback'
-          onCanPlay={() => setVideoReady(true)}
-          $ready={videoReady}
-        >
+        <VideoBackground autoPlay loop muted playsInline disablePictureInPicture controlsList='nodownload nofullscreen noremoteplayback'>
           <source src={require('../assets/cloud.mp4')} type='video/mp4' />
           Your browser does not support the video tag.
         </VideoBackground>
@@ -57,6 +64,19 @@ function Home() {
   );
 }
 
+const LoadingOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 9999;
+  background: white;
+  opacity: ${props => props.$visible ? 1 : 0};
+  pointer-events: ${props => props.$visible ? 'all' : 'none'};
+  transition: opacity 0.6s ease;
+`;
+
 // Updated styled components for the image section
 const ImageSection = styled.section`
   width: 100%;
@@ -73,7 +93,7 @@ const ImageContainer = styled.div`
   align-items: center;
   max-width: 1200px;
   width: 90%;
-  
+
   @media (max-width: 768px) {
     width: 100%;
   }
@@ -97,7 +117,7 @@ const CenteredImage = styled.img`
   width: auto;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  
+
   @media (max-width: 768px) {
     max-height: 400px;
     width: 100%;
@@ -111,7 +131,7 @@ const ImageCaption = styled.p`
   margin-top: 1rem;
   max-width: 800px;
   line-height: 1.5;
-  
+
   @media (max-width: 768px) {
     font-size: 1rem;
     padding: 0 1rem;
@@ -131,11 +151,17 @@ const VideoWrapper = styled.div`
   margin: 0;
   padding: 0;
   overflow: hidden;
-  background-color: #1a1a2e;
 
   @media (max-width: 768px) {
     height: 90vh;
   }
+`;
+
+const HiddenVideo = styled.video`
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
 `;
 
 const VideoBackground = styled.video`
@@ -149,8 +175,6 @@ const VideoBackground = styled.video`
   margin: 0;
   padding: 0;
   z-index: -1;
-  opacity: ${props => props.$ready ? 1 : 0};
-  transition: opacity 0.6s ease;
 `;
 
 const Content = styled.div`
@@ -175,7 +199,7 @@ const HeroHeading = styled.h1`
   margin: 0 0 1rem 0;
   line-height: 1.2;
   text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
-  
+
   @media (max-width: 480px) {
     font-size: clamp(3.5rem, 12vw, 4rem); /* Larger on very small screens */
     margin-bottom: 2.5rem;
@@ -186,7 +210,7 @@ const HeroSubtext = styled.p`
   font-size: clamp(1.5rem, 5vw, 2.5rem); /* Increased base size */
   margin: 0 0 2rem 0;
   text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
-  
+
   @media (max-width: 480px) {
     font-size: clamp(1.8rem, 6vw, 2.2rem); /* Larger on very small screens */
     margin-bottom: 2.5rem;
@@ -209,7 +233,7 @@ const Button = styled.button`
   font-weight: 600;
   transition: all 0.3s ease;
   min-width: 150px;
-  
+
   &:hover {
     background-color: #004d40;
     color: white;
