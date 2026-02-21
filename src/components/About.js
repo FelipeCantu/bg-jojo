@@ -1,9 +1,17 @@
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import styled from "styled-components";
 import Carousel from './Carousel';
 import SEO from './SEO';
 
 const AboutSection = () => {
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.play().catch(() => {});
+    }
+  }, []);
+
   return (
     <SectionContainer>
       <SEO
@@ -12,7 +20,7 @@ const AboutSection = () => {
         path="/about"
       />
       <HeroSection>
-        <BackgroundVideo autoPlay loop muted playsInline disablePictureInPicture controlsList='nodownload nofullscreen noremoteplayback'>
+        <BackgroundVideo ref={videoRef} autoPlay loop muted playsInline disablePictureInPicture controlsList='nodownload nofullscreen noremoteplayback'>
           <source src={require('../assets/flamingos.mp4')} type='video/mp4' />
           Your browser does not support the video tag.
         </BackgroundVideo>
@@ -97,6 +105,28 @@ const BackgroundVideo = styled.video`
   z-index: -1;
   pointer-events: none;
   user-select: none;
+
+  &::-webkit-media-controls {
+    display: none !important;
+  }
+  &::-webkit-media-controls-panel {
+    display: none !important;
+  }
+  &::-webkit-media-controls-enclosure {
+    display: none !important;
+  }
+  &::-webkit-media-controls-play-button {
+    display: none !important;
+    opacity: 0 !important;
+  }
+  &::-webkit-media-controls-start-playback-button {
+    display: none !important;
+    opacity: 0 !important;
+  }
+  &::-webkit-media-controls-overlay-play-button {
+    display: none !important;
+    opacity: 0 !important;
+  }
 `;
 
 const Title = styled.h2`

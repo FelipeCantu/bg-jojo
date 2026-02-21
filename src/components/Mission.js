@@ -1,8 +1,16 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
 
 function MissionSection() {
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.play().catch(() => {});
+    }
+  }, []);
+
   return (
     <SectionWrapper>
       <TextContainer>
@@ -28,12 +36,13 @@ function MissionSection() {
       </TextContainer>
 
       <VideoContainer>
-        <VideoBackground 
-          autoPlay 
-          loop 
-          muted 
-          playsInline 
-          disablePictureInPicture 
+        <VideoBackground
+          ref={videoRef}
+          autoPlay
+          loop
+          muted
+          playsInline
+          disablePictureInPicture
           controlsList='nodownload nofullscreen noremoteplayback'
         >
           <source src={require('../assets/flamingo.mp4')} type='video/mp4' />

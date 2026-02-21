@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { ChevronRightIcon } from '@heroicons/react/24/solid';
 import Mission from './Mission';
@@ -8,6 +8,7 @@ import SEO from './SEO';
 
 function Home() {
   const [isLoading, setIsLoading] = useState(true);
+  const videoRef = useRef(null);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -16,6 +17,12 @@ function Home() {
 
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (!isLoading && videoRef.current) {
+      videoRef.current.play().catch(() => {});
+    }
+  }, [isLoading]);
 
   if (isLoading) {
     return <LoadingContainer />;
@@ -29,7 +36,7 @@ function Home() {
         path="/home"
       />
       <VideoWrapper>
-        <VideoBackground autoPlay loop muted playsInline disablePictureInPicture controlsList='nodownload nofullscreen noremoteplayback'>
+        <VideoBackground ref={videoRef} autoPlay loop muted playsInline disablePictureInPicture controlsList='nodownload nofullscreen noremoteplayback'>
           <source src={require('../assets/cloud.mp4')} type='video/mp4' />
           Your browser does not support the video tag.
         </VideoBackground>

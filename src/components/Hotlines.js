@@ -1,8 +1,16 @@
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import styled from "styled-components";
 import SEO from './SEO';
 
 const Hotlines = () => {
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.play().catch(() => {});
+    }
+  }, []);
+
   return (
     <PageContainer>
       <SEO
@@ -11,7 +19,7 @@ const Hotlines = () => {
         path="/hotlines"
       />
       <VideoBackground>
-        <video autoPlay loop muted playsInline disablePictureInPicture controlsList='nodownload nofullscreen noremoteplayback'>
+        <video ref={videoRef} autoPlay loop muted playsInline disablePictureInPicture controlsList='nodownload nofullscreen noremoteplayback'>
         <source src={require('../assets/cloud.mp4')} type='video/mp4' />
         Your browser does not support the video tag.
         </video>
@@ -122,6 +130,28 @@ const VideoBackground = styled.div`
     width: 100%;
     height: 100%;
     object-fit: cover;
+
+    &::-webkit-media-controls {
+      display: none !important;
+    }
+    &::-webkit-media-controls-panel {
+      display: none !important;
+    }
+    &::-webkit-media-controls-enclosure {
+      display: none !important;
+    }
+    &::-webkit-media-controls-play-button {
+      display: none !important;
+      opacity: 0 !important;
+    }
+    &::-webkit-media-controls-start-playback-button {
+      display: none !important;
+      opacity: 0 !important;
+    }
+    &::-webkit-media-controls-overlay-play-button {
+      display: none !important;
+      opacity: 0 !important;
+    }
   }
 `;
 
