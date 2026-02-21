@@ -37,6 +37,7 @@ const TributeDetail = () => {
     : "Date not available";
 
   return (
+    <PageBackground>
     <DetailContainer>
       <SEO
         title={`In Memory of ${tribute.name}`}
@@ -49,10 +50,21 @@ const TributeDetail = () => {
       <TributeDate>{formattedDate}</TributeDate>
       <Bio>{tribute.bio || "No biography available."}</Bio>
     </DetailContainer>
+    </PageBackground>
   );
 };
 
 // Styled Components
+
+const PageBackground = styled.div`
+  background-color: #fce4ec;
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 40px 20px;
+`;
 
 const DetailContainer = styled.div`
   text-align: center;

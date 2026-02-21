@@ -40,8 +40,10 @@ const CarouselComponent = () => {
       <StyledSlider {...settings}>
         {carouselItems.map((item, index) => (
           <CarouselItem key={index}>
-            <CarouselImage src={item.image} alt={`carousel image ${index + 1}`} />
-            <Text>{item.text}</Text>
+            <ImageWrapper>
+              <CarouselImage src={item.image} alt={`carousel image ${index + 1}`} />
+              <Text>{item.text}</Text>
+            </ImageWrapper>
           </CarouselItem>
         ))}
       </StyledSlider>
@@ -63,9 +65,14 @@ const StyledSlider = styled(Slider)`
   width: 80%;
   max-width: 1200px;
 
+  .slick-list {
+    overflow: visible;
+    padding-bottom: 1rem;
+  }
+
   .slick-prev,
   .slick-next {
-    background-color: white; /* Black background for the arrows */
+    background-color: transparent;
     width: 50px; /* Arrow width */
     height: 50px; /* Arrow height */
     border-radius: 50%; /* Circular button for the arrow */
@@ -89,7 +96,7 @@ const StyledSlider = styled(Slider)`
 
   .slick-prev:hover,
   .slick-next:hover {
-    background-color: white; /* Keep the same color on hover */
+    background-color: transparent;
   }
 
   .slick-prev::before {
@@ -114,26 +121,32 @@ const CarouselItem = styled.div`
   width: 100%;
 `;
 
-const CarouselImage = styled.img`
+const ImageWrapper = styled.div`
+  position: relative;
   width: 80%;
   max-width: 600px;
+  margin: 0 auto 1.5rem;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25);
+`;
+
+const CarouselImage = styled.img`
+  width: 100%;
   height: auto;
-  border-radius: 0.5rem;
-  border: 4px solid #fff;
-  margin-bottom: 1rem;
+  border-radius: 0;
+  border: 4px solid rgba(255, 255, 255, 0.9);
+  border-bottom: none;
   display: block;
-  margin-left: auto;
-  margin-right: auto;
 `;
 
 const Text = styled.div`
   color: #333;
   font-size: 1.25rem;
-  background-color: #fff;
+  background-color: rgba(255, 255, 255, 0.9);
   padding: 0.5rem 1rem;
-  border-radius: 5px;
-  width: 80%;
-  max-width: 600px;
-  margin: 0 auto;
+  border-radius: 0;
+  border: 4px solid rgba(255, 255, 255, 0.9);
+  border-top: none;
+  width: 100%;
+  box-sizing: border-box;
 `;
 export default CarouselComponent;

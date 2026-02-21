@@ -397,6 +397,7 @@ const ContentWrapper = styled.div`
   flex-direction: column;
   align-items: center;
   padding-top: 20px;
+  background-color: #fce4ec;
 `;
 
 const FormContainer = styled.div`

@@ -7,12 +7,16 @@ import SEO from './SEO';
 import { DEFAULT_PLACEHOLDER_IMAGE } from '../constants';
 
 // Styled Components
+const PageBackground = styled.div`
+  background-color: #fce4ec;
+  min-height: 100vh;
+  width: 100%;
+`;
+
 const PageContainer = styled.div`
   max-width: 1200px;
   margin: 0 auto;
   padding: 3rem 1.5rem;
-  min-height: 100vh;
-  background: #fafafa;
 
   @media (max-width: 768px) {
     padding: 1.5rem 0;
@@ -289,6 +293,7 @@ export default function ProductsPage() {
   }
 
   return (
+    <PageBackground>
     <PageContainer>
       <SEO
         title="Shop"
@@ -349,5 +354,6 @@ export default function ProductsPage() {
         )}
       </Grid>
     </PageContainer>
+    </PageBackground>
   );
 }

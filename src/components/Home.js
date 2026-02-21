@@ -66,11 +66,11 @@ function Home() {
 // Updated styled components for the image section
 const ImageSection = styled.section`
   width: 100%;
-  padding: 4rem 0;
+  height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: #fff;
+  background-color: #f8bbd0;
 `;
 
 const ImageContainer = styled.div`

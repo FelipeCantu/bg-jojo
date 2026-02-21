@@ -12,6 +12,12 @@ import { getProductSchema } from '../utils/structuredData';
 import { DEFAULT_PLACEHOLDER_IMAGE } from '../constants';
 
 // Styled Components
+const PageBackground = styled.div`
+  background-color: #fce4ec;
+  min-height: 100vh;
+  width: 100%;
+`;
+
 const Wrapper = styled.div`
   max-width: 1100px;
   margin: 0 auto;
@@ -521,6 +527,7 @@ export default function ProductPage() {
     (product.sizeOptions?.length > 0 || product.sizes?.length > 0);
 
   return (
+    <PageBackground>
     <Wrapper>
       <SEO
         title={product.name}
@@ -665,5 +672,6 @@ export default function ProductPage() {
         </ProductInfo>
       </ProductLayout>
     </Wrapper>
+    </PageBackground>
   );
 }

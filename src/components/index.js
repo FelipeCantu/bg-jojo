@@ -37,4 +37,5 @@ export { default as NotFound } from './NotFound';
 export { default as AuthForm } from './AuthForm';
 export { default as EmailVerification } from './EmailVerification';
 export { default as PrivacyPolicy } from './PrivacyPolicy';
+export { default as TermsOfService } from './TermsOfService';
 export { default as SEO } from './SEO';

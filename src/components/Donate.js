@@ -1,35 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import styled from 'styled-components';
 import Sponsorship from './Sponsorship';
 import { Link } from 'react-router-dom';
-import DonationCheckout from './DonationCheckout';
+import { DonationCheckoutInline } from './DonationCheckout';
 import SEO from './SEO';
 
 const Donate = () => {
-  const [showCheckout, setShowCheckout] = useState(false);
-  const [selectedAmount, setSelectedAmount] = useState(null);
-
-  const donationOptions = [
-    { amount: "$10", value: 10, description: "1 free meal" },
-    { amount: "$50", value: 50, description: "5 educational and recreational books" },
-    { amount: "$100", value: 100, description: "900 pcs of educational stickers for suicide prevention" },
-    { amount: "$250", value: 250, description: "Will contribute to one case of essential oils for the aroma therapy program" },
-    { amount: "$500", value: 500, description: "Facilitate educational/recreational mental health and suicide prevention events" },
-    { amount: "$1,000", value: 1000, description: "Supply art supplies (paint, canvases, brushes, etc.) for our art therapy program" },
-    { amount: "$2,000", value: 2000, description: "20 hours of free therapy for the community" },
-    { amount: "$5,000", value: 5000, description: "Will contribute to holding a dedicated mental health clinic for suicide prevention in Saratoga Springs, Utah" },
-  ];
-
-  const handleStartDonation = (amount = null) => {
-    setSelectedAmount(amount);
-    setShowCheckout(true);
-  };
-
-  const handleCloseCheckout = () => {
-    setShowCheckout(false);
-    setSelectedAmount(null);
-  };
-
   return (
     <BackgroundWrapper>
       <SEO
@@ -40,38 +16,20 @@ const Donate = () => {
       <Container>
         <Title>Donate</Title>
         <Subtitle>Empowering Jojo to Prevent Suicide and Elevate Mental Health Awareness</Subtitle>
-        <StartButton as="button" onClick={() => handleStartDonation()}>
-          Start Today
-        </StartButton>
 
-        <DonationList>
-          {donationOptions.map((option, index) => (
-            <DonationItem
-              key={index}
-              onClick={() => handleStartDonation(option.value)}
-              $clickable
-            >
-              <Amount>{option.amount}</Amount>
-              <Description>{option.description}</Description>
-            </DonationItem>
-          ))}
-        </DonationList>
+        <FormSection>
+          <DonationCheckoutInline />
+        </FormSection>
 
-        <AltPaymentLink to="/supporting-givebackjojo">
-          Prefer Venmo or Zelle?
-        </AltPaymentLink>
-
-        <LearnMore to="/YourGift">Learn More</LearnMore>
+        <LinksStack>
+          <AltPaymentLink to="/supporting-givebackjojo">
+            Prefer Venmo or Zelle?
+          </AltPaymentLink>
+          <LearnMore to="/YourGift">Learn More</LearnMore>
+        </LinksStack>
         <Divider />
         <Sponsorship />
       </Container>
-
-      {showCheckout && (
-        <DonationCheckout
-          preselectedAmount={selectedAmount}
-          onClose={handleCloseCheckout}
-        />
-      )}
     </BackgroundWrapper>
   );
 };
@@ -81,7 +39,7 @@ const BackgroundWrapper = styled.div`
   background: #fb9e8a;
   padding: 1rem;
   min-height: 100vh;
-  
+
   @media (min-width: 768px) {
     padding: 3rem 2rem;
   }
@@ -99,7 +57,7 @@ const Container = styled.div`
   max-width: 1200px;
   margin: 0 auto;
   box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-  
+
   @media (min-width: 768px) {
     padding: 3rem;
   }
@@ -119,7 +77,7 @@ const Title = styled.h2`
   color: #cc4200;
   margin-bottom: 0.5rem;
   line-height: 1.2;
-  
+
   @media (min-width: 768px) {
     font-size: 3rem;
   }
@@ -131,139 +89,63 @@ const Subtitle = styled.p`
   margin: 0 auto 1.5rem;
   max-width: 800px;
   line-height: 1.4;
-  
+
   @media (min-width: 768px) {
     font-size: 1.25rem;
     margin-bottom: 2rem;
   }
 `;
 
-const StartButton = styled.button`
-  background: #cc4200;
-  color: white;
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 5px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: inline-block;
-  text-decoration: none;
-  margin-bottom: 2rem;
-  width: 100%;
-  max-width: 300px;
-
-  &:hover {
-    background: #054944;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  }
+const FormSection = styled.div`
+  max-width: 700px;
+  margin: 0 auto 2rem;
+  text-align: left;
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
 
   @media (min-width: 768px) {
-    padding: 1rem 2rem;
-    font-size: 1.1rem;
-    width: auto;
+    padding: 2rem 2.5rem;
   }
 `;
 
-const DonationList = styled.div`
-  margin: 2rem auto;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
-  max-width: 800px;
-  
-  @media (min-width: 480px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
-  @media (min-width: 768px) {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1.5rem;
-  }
-`;
-
-const DonationItem = styled.div`
-  background: #f8ddd2;
-  padding: 1rem;
-  border-radius: 8px;
-  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+const LinksStack = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  transition: transform 0.3s ease;
-  text-align: center;
-  cursor: ${(p) => (p.$clickable ? 'pointer' : 'default')};
-
-  &:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-  }
-
-  @media (min-width: 768px) {
-    flex-direction: row;
-    align-items: center;
-    text-align: left;
-    padding: 1.25rem;
-  }
-`;
-
-const Amount = styled.span`
-  font-size: 1.25rem;
-  font-weight: bold;
-  color: #a73602;
-  
-  @media (min-width: 768px) {
-    font-size: 1.5rem;
-    min-width: 100px;
-  }
-`;
-
-const Description = styled.p`
-  font-size: 0.9rem;
-  color: #cc4200;
-  margin: 0;
-  line-height: 1.4;
-  
-  @media (min-width: 768px) {
-    font-size: 1rem;
-  }
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
 `;
 
 const LearnMore = styled(Link)`
   display: inline-block;
-  margin: 1.5rem auto 0;
   font-size: 1rem;
   color: #cc4200;
   text-decoration: none;
   font-weight: 600;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
+  padding: 0.5rem 1.5rem;
+  border-radius: 6px;
   transition: all 0.3s ease;
-  width: 100%;
-  max-width: 300px;
   text-align: center;
-  
+
   &:hover {
     text-decoration: underline;
     background-color: rgba(204, 66, 0, 0.1);
   }
-  
+
   @media (min-width: 768px) {
     font-size: 1.1rem;
-    margin-top: 2rem;
-    width: auto;
   }
 `;
 
 const AltPaymentLink = styled(Link)`
   display: inline-block;
-  margin: 1rem auto 0;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   color: #054944;
   text-decoration: underline;
   font-weight: 500;
+  transition: color 0.2s;
 
   &:hover {
     color: #cc4200;
@@ -276,7 +158,7 @@ const Divider = styled.div`
   background: rgba(0, 0, 0, 0.1);
   margin: 2rem auto;
   max-width: 800px;
-  
+
   @media (min-width: 768px) {
     margin: 4rem auto;
   }

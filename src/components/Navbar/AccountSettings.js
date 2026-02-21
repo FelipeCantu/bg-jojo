@@ -262,24 +262,14 @@ const ContainerWrapper = styled.div`
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  background: var(--background-alt);
+  background: #fce4ec;
   padding: 0;
   overflow: hidden;
   width: 100%;
-  
+
   @media (min-width: 768px) {
     padding: 2rem 0;
     align-items: center;
-  }
-
-  &:before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.6);
   }
 `;
 
@@ -288,7 +278,7 @@ const Container = styled.div`
   width: 100%;
   height: 100vh;
   margin: 0;
-  background: rgba(255, 255, 255, 0.95);
+  background: #f5f5f5;
   position: relative;
   z-index: 1;
   display: flex;

@@ -44,7 +44,7 @@ const Footer = () => {
 
         <FooterLinks>
           <FooterLink href="/about">About Us</FooterLink>
-          <FooterLink href="/contact">Contact</FooterLink>
+          <FooterLink href="/getinvolved">Contact</FooterLink>
           <FooterLink href="/privacy">Privacy Policy</FooterLink>
           <FooterLink href="/terms">Terms of Service</FooterLink>
         </FooterLinks>

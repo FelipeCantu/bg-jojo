@@ -34,6 +34,7 @@ import {
   AuthForm,
   EmailVerification,
   PrivacyPolicy,
+  TermsOfService,
 } from './components';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
@@ -142,7 +143,7 @@ function App() {
           <Route path="/article/:id" element={<SlideUpRoute><ArticleDetail /></SlideUpRoute>} />
           <Route path="/edit-article/:articleId" element={<ProtectedRoute><SlideUpRoute><EditArticle /></SlideUpRoute></ProtectedRoute>} />
           <Route path="/tributes" element={<SlideUpRoute noPadding><TributeGallery /></SlideUpRoute>} />
-          <Route path="/tribute/:slug" element={<SlideUpRoute><TributeDetail /></SlideUpRoute>} />
+          <Route path="/tribute/:slug" element={<SlideUpRoute noPadding><TributeDetail /></SlideUpRoute>} />
           <Route path="/yourgift" element={<SlideUpRoute noPadding><YourGift /></SlideUpRoute>} />
           <Route path="/donate" element={<SlideUpRoute noPadding><Donate /></SlideUpRoute>} />
           <Route path="/supporting-givebackjojo" element={<SlideUpRoute><SupportingGiveBackJojo /></SlideUpRoute>} />
@@ -153,6 +154,7 @@ function App() {
           <Route path="/success" element={<SlideUpRoute><SuccessPage /></SlideUpRoute>} />
           <Route path="/donation-success" element={<SlideUpRoute noPadding><DonationSuccess /></SlideUpRoute>} />
           <Route path="/privacy" element={<SlideUpRoute><PrivacyPolicy /></SlideUpRoute>} />
+          <Route path="/terms" element={<SlideUpRoute><TermsOfService /></SlideUpRoute>} />
           <Route
             path="/account-settings/*"
             element={

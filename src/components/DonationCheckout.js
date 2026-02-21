@@ -99,7 +99,7 @@ const StripeCardForm = ({ onSubmit, isSubmitting, amount, error, setError }) => 
   );
 };
 
-const DonationCheckoutInner = ({ preselectedAmount, onClose }) => {
+const DonationCheckoutInner = ({ preselectedAmount, onClose, isInline = false }) => {
   const { isAuthenticated, currentUser } = useAuth();
   const {
     handleDonationCardPayment,
@@ -258,17 +258,23 @@ const DonationCheckoutInner = ({ preselectedAmount, onClose }) => {
         </SuccessCheckmark>
         <SuccessTitle>Thank You!</SuccessTitle>
         <SuccessText>Your donation of ${amount.toFixed(2)} has been processed successfully.</SuccessText>
-        <CloseButton onClick={onClose}>Close</CloseButton>
+        {isInline ? (
+          <CloseButton onClick={() => setIsSuccess(false)}>Donate Again</CloseButton>
+        ) : (
+          <CloseButton onClick={onClose}>Close</CloseButton>
+        )}
       </SuccessWrapper>
     );
   }
 
   return (
-    <CheckoutWrapper>
-      <CheckoutHeader>
-        <CheckoutTitle>Make a Donation</CheckoutTitle>
-        <CloseIcon onClick={onClose}>&times;</CloseIcon>
-      </CheckoutHeader>
+    <CheckoutWrapper $inline={isInline}>
+      {!isInline && (
+        <CheckoutHeader>
+          <CheckoutTitle>Make a Donation</CheckoutTitle>
+          <CloseIcon onClick={onClose}>&times;</CloseIcon>
+        </CheckoutHeader>
+      )}
 
       {donationError && <ErrorBanner>{donationError}</ErrorBanner>}
 
@@ -488,13 +494,13 @@ const Overlay = styled.div`
 `;
 
 const CheckoutWrapper = styled.div`
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
+  background: ${(p) => (p.$inline ? 'transparent' : 'white')};
+  border-radius: ${(p) => (p.$inline ? '0' : '12px')};
+  padding: ${(p) => (p.$inline ? '0' : '1.5rem')};
   width: 100%;
   max-width: 700px;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.25);
-  animation: slideUp 0.3s ease-out;
+  box-shadow: ${(p) => (p.$inline ? 'none' : '0 16px 48px rgba(0, 0, 0, 0.25)')};
+  animation: ${(p) => (p.$inline ? 'none' : 'slideUp 0.3s ease-out')};
 
   @keyframes slideUp {
     from {
@@ -508,7 +514,7 @@ const CheckoutWrapper = styled.div`
   }
 
   @media (min-width: 768px) {
-    padding: 2rem;
+    padding: ${(p) => (p.$inline ? '0' : '2rem')};
   }
 `;
 
@@ -949,5 +955,14 @@ const CloseButton = styled.button`
     background: #cc4200;
   }
 `;
+
+export const DonationCheckoutInline = () => {
+  const { stripePromise } = useDonationPayment();
+  return (
+    <Elements stripe={stripePromise}>
+      <DonationCheckoutInner isInline />
+    </Elements>
+  );
+};
 
 export default DonationCheckout;

@@ -61,8 +61,10 @@ const AboutSection = () => {
           </ImageContainer>
         </ContentWrapper>
       </ContentContainer>
-      <CarouselTitle>Get to Know Us</CarouselTitle>
-      <Carousel />
+      <CarouselSection>
+        <CarouselTitle>Get to Know Us</CarouselTitle>
+        <Carousel />
+      </CarouselSection>
     </SectionContainer>
   );
 };
@@ -118,6 +120,7 @@ const ContentContainer = styled.div`
   padding: 0 2rem;
   position: relative;
   z-index: 1;
+  background-color: #fce4ec;
 
   @media (max-width: 768px) {
     padding: 0 1rem;
@@ -141,6 +144,14 @@ const ContentWrapper = styled.div`
   @media (min-width: 768px) {
     flex-direction: row;
   }
+`;
+
+const CarouselSection = styled.div`
+  width: 100%;
+  background-color: #fce4ec;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 `;
 
 const CarouselTitle = styled.h1`

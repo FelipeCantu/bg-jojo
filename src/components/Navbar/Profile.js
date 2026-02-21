@@ -209,7 +209,7 @@ const ProfileContainer = styled.div`
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  background: #f3f3f3;
+  background: #fce4ec;
   min-height: 100vh;
   padding-top: 0; // Ensure there's no extra space at the top
 `;

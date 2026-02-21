@@ -66,7 +66,7 @@ const TributeGallery = () => {
 
 const Container = styled.div`
   padding: 40px 20px;
-  background-color: #f9f9f9;
+  background-color: #fce4ec;
   min-height: 100vh;
 
   @media (max-width: 768px) {

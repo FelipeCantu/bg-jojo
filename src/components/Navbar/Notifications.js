@@ -240,9 +240,11 @@ const Notifications = () => {
   }, [navigate]);
 
   if (loading) return (
+    <PageBackground>
     <Container>
       <Loader>Loading notifications...</Loader>
     </Container>
+    </PageBackground>
   );
 
   if (error === "Please sign in to view notifications" || !currentUser) {
@@ -258,6 +260,7 @@ const Notifications = () => {
   if (error) return <Error>{error}</Error>;
 
   return (
+    <PageBackground>
     <Container>
       <Header>
         <h2>Your Notifications</h2>
@@ -332,10 +335,18 @@ const Notifications = () => {
         </List>
       )}
     </Container>
+    </PageBackground>
   );
 };
 
 // Styled Components
+const PageBackground = styled.div`
+  background-color: #fce4ec;
+  min-height: 100vh;
+  width: 100%;
+  padding: 20px;
+`;
+
 const Container = styled.div`
   max-width: 600px;
   min-height: 100vh;

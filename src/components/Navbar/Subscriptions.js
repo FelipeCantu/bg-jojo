@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { FaHeart } from 'react-icons/fa';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { getFirestore, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
@@ -127,7 +128,7 @@ const Subscriptions = () => {
         ) : subscriptions.length === 0 ? (
           <ContentArea>
             <NoSubscriptions>
-              <EmptyStateIcon>🎫</EmptyStateIcon>
+              <EmptyStateIcon><FaHeart /></EmptyStateIcon>
               <h3>No subscriptions found</h3>
               <p>
                 When you set up a monthly donation, it will appear here.
@@ -226,7 +227,7 @@ const ContainerWrapper = styled.div`
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  background: var(--background-alt);
+  background: #fce4ec;
   padding: 0;
   overflow: hidden;
   width: 100%;
@@ -234,16 +235,6 @@ const ContainerWrapper = styled.div`
   @media (min-width: 768px) {
     padding: 2rem 0;
     align-items: center;
-  }
-
-  &:before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.6);
   }
 `;
 
@@ -320,9 +311,10 @@ const NoSubscriptions = styled.div`
 `;
 
 const EmptyStateIcon = styled.div`
-  font-size: 3rem;
+  font-size: 2rem;
   margin-bottom: 0.5rem;
-  background: #fff3e0;
+  background: #fce4ec;
+  color: #e91e63;
   width: 80px;
   height: 80px;
   display: flex;
