@@ -485,7 +485,7 @@ const BackButton = styled.button`
   transition: color 0.2s ease;
 
   &:hover {
-    color: #4CAF50;
+    color: #024947;
   }
 `;
 
@@ -535,7 +535,7 @@ const Input = styled.input`
 
   &:focus {
     outline: none;
-    border-color: ${props => props.error ? '#e53935' : '#4CAF50'};
+    border-color: ${props => props.error ? '#e53935' : '#024947'};
   }
 `;
 
@@ -550,7 +550,7 @@ const Select = styled.select`
 
   &:focus {
     outline: none;
-    border-color: ${props => props.error ? '#e53935' : '#4CAF50'};
+    border-color: ${props => props.error ? '#e53935' : '#024947'};
   }
 `;
 
@@ -590,7 +590,7 @@ const OrderTotal = styled.div`
 const SubmitButton = styled.button`
   width: 100%;
   padding: 1rem;
-  background: #4CAF50;
+  background: #024947;
   color: white;
   border: none;
   border-radius: 4px;
@@ -605,7 +605,7 @@ const SubmitButton = styled.button`
   gap: 0.5rem;
 
   &:hover {
-    background: #45a049;
+    background: #013634;
   }
 
   &:disabled {
@@ -621,7 +621,7 @@ const SuccessMessage = styled.div`
 `;
 
 const SuccessIcon = styled.div`
-  color: #4CAF50;
+  color: #024947;
   margin-bottom: 1rem;
 
   svg {
@@ -648,7 +648,7 @@ const SecureBadge = styled.div`
   align-items: center;
   gap: 0.4rem;
   font-size: 0.8rem;
-  color: #4CAF50;
+  color: #024947;
   margin-bottom: 1rem;
   font-weight: 500;
 `;
@@ -665,14 +665,14 @@ const PaymentOption = styled.div`
   align-items: flex-start;
   gap: 0.75rem;
   padding: 1rem;
-  border: 2px solid ${props => props.$selected ? '#044947' : '#e0e0e0'};
+  border: 2px solid ${props => props.$selected ? '#024947' : '#e0e0e0'};
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
   background: ${props => props.$selected ? '#f8fffe' : '#fff'};
 
   &:hover {
-    border-color: ${props => props.$selected ? '#044947' : '#bbb'};
+    border-color: ${props => props.$selected ? '#024947' : '#bbb'};
   }
 `;
 
@@ -681,7 +681,7 @@ const PaymentOptionRadio = styled.div`
   flex-shrink: 0;
 
   input[type="radio"] {
-    accent-color: #044947;
+    accent-color: #024947;
     width: 16px;
     height: 16px;
     cursor: pointer;
@@ -717,7 +717,7 @@ const RecommendedBadge = styled.span`
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  background: #044947;
+  background: #024947;
   color: white;
   padding: 0.15rem 0.5rem;
   border-radius: 4px;

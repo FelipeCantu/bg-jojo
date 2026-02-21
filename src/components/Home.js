@@ -71,6 +71,11 @@ const ImageSection = styled.section`
   justify-content: center;
   align-items: center;
   background-color: #f8bbd0;
+
+  @media (max-width: 768px) {
+    height: auto;
+    padding: 3rem 1.5rem;
+  }
 `;
 
 const ImageContainer = styled.div`
@@ -154,6 +159,25 @@ const VideoBackground = styled.video`
   margin: 0;
   padding: 0;
   z-index: -1;
+  pointer-events: none;
+
+  &::-webkit-media-controls {
+    display: none;
+  }
+  &::-webkit-media-controls-panel {
+    display: none;
+  }
+  &::-webkit-media-controls-play-button {
+    display: none;
+  }
+  &::-webkit-media-controls-start-playback-button {
+    display: none;
+    opacity: 0;
+  }
+  &::-webkit-media-controls-overlay-play-button {
+    display: none;
+    opacity: 0;
+  }
 `;
 
 const Content = styled.div`
@@ -169,7 +193,12 @@ const Content = styled.div`
   margin: 0;
 
   @media (max-width: 768px) {
+    width: 95%;
+  }
+
+  @media (max-width: 480px) {
     width: 100%;
+    padding: 0 1.25rem;
   }
 `;
 

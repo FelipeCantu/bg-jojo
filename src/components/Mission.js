@@ -177,12 +177,32 @@ const VideoContainer = styled.div`
 `;
 
 const VideoBackground = styled.video`
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
   position: absolute;
   top: 0;
   left: 0;
+  pointer-events: none;
+
+  &::-webkit-media-controls {
+    display: none;
+  }
+  &::-webkit-media-controls-panel {
+    display: none;
+  }
+  &::-webkit-media-controls-play-button {
+    display: none;
+  }
+  &::-webkit-media-controls-start-playback-button {
+    display: none;
+    opacity: 0;
+  }
+  &::-webkit-media-controls-overlay-play-button {
+    display: none;
+    opacity: 0;
+  }
 
   @media (max-width: 1024px) {
     position: relative;

@@ -88,7 +88,7 @@ const CartBadge = styled.span`
   position: absolute;
   top: -6px;
   right: -8px;
-  background: #ff5a5f;
+  background: #f35686;
   color: white;
   font-size: 0.65rem;
   font-weight: 700;
@@ -242,7 +242,7 @@ const QtyBtn = styled.button`
   transition: all 0.15s ease;
 
   &:hover {
-    background: #044947;
+    background: #024947;
     color: white;
   }
 
@@ -275,8 +275,8 @@ const DeleteBtn = styled.button`
   color: #bbb;
 
   &:hover {
-    background: #fff1f1;
-    color: #ff5a5f;
+    background: #fce4ec;
+    color: #f35686;
   }
 
   svg {
@@ -287,12 +287,12 @@ const DeleteBtn = styled.button`
 `;
 
 const Footer = styled.div`
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid #f8bbd0;
   padding: 1.25rem 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  background: #fafafa;
+  background: #fdf2f6;
 `;
 
 const TotalRow = styled.div`
@@ -315,7 +315,7 @@ const TotalAmount = styled.span`
 `;
 
 const CheckoutButton = styled.button`
-  background: #044947;
+  background: #024947;
   color: white;
   border: none;
   width: 100%;
@@ -328,9 +328,9 @@ const CheckoutButton = styled.button`
   letter-spacing: 0.5px;
 
   &:hover {
-    background: #033634;
+    background: #013634;
     transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(4, 73, 71, 0.25);
+    box-shadow: 0 6px 16px rgba(2, 73, 71, 0.25);
   }
 
   &:active {
@@ -349,7 +349,7 @@ const ContinueLink = styled.button`
   transition: color 0.2s ease;
 
   &:hover {
-    color: #044947;
+    color: #024947;
   }
 `;
 
@@ -367,7 +367,7 @@ const EmptyMessage = styled.div`
 const EmptyIcon = styled.div`
   width: 64px;
   height: 64px;
-  background: #f5f5f5;
+  background: #fce4ec;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -376,7 +376,7 @@ const EmptyIcon = styled.div`
   svg {
     width: 28px;
     height: 28px;
-    color: #ccc;
+    color: #f35686;
   }
 `;
 
@@ -388,8 +388,8 @@ const EmptyText = styled.p`
 
 const ShopLink = styled.button`
   background: none;
-  border: 1.5px solid #1a1a1a;
-  color: #1a1a1a;
+  border: 1.5px solid #024947;
+  color: #024947;
   padding: 0.6rem 1.5rem;
   border-radius: 8px;
   font-size: 0.9rem;
@@ -398,7 +398,7 @@ const ShopLink = styled.button`
   transition: all 0.2s ease;
 
   &:hover {
-    background: #1a1a1a;
+    background: #024947;
     color: white;
   }
 `;
