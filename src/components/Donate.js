@@ -17,6 +17,10 @@ const Donate = () => {
         <Title>Donate</Title>
         <Subtitle>Empowering Jojo to Prevent Suicide and Elevate Mental Health Awareness</Subtitle>
 
+        <Description>
+          Give Back JoJo is a Non Profit dedicated to mental health awareness and suicide prevention. Our goal is to have a dedicated mental health clinic that offers free art/group therapy. We want to create a warm, inviting, and safe environment by providing meals to those that attend, educational and recreational books, educational stickers for suicide prevention, and aroma therapy. We ask for your help to achieve this goal! By granting us your donation, you will help us spread positive change in mental health, suicide prevention, and bringing the community together. Thank you for being here ♥
+        </Description>
+
         <FormSection>
           <DonationCheckoutInline />
         </FormSection>
@@ -93,6 +97,19 @@ const Subtitle = styled.p`
   @media (min-width: 768px) {
     font-size: 1.25rem;
     margin-bottom: 2rem;
+  }
+`;
+
+const Description = styled.p`
+  font-size: 1rem;
+  color: #7a2600;
+  max-width: 700px;
+  margin: 0 auto 2rem;
+  line-height: 1.7;
+  text-align: center;
+
+  @media (min-width: 768px) {
+    font-size: 1.05rem;
   }
 `;
 
