@@ -162,21 +162,25 @@ const VideoBackground = styled.video`
   pointer-events: none;
 
   &::-webkit-media-controls {
-    display: none;
+    display: none !important;
   }
   &::-webkit-media-controls-panel {
-    display: none;
+    display: none !important;
+  }
+  &::-webkit-media-controls-enclosure {
+    display: none !important;
   }
   &::-webkit-media-controls-play-button {
-    display: none;
+    display: none !important;
+    opacity: 0 !important;
   }
   &::-webkit-media-controls-start-playback-button {
-    display: none;
-    opacity: 0;
+    display: none !important;
+    opacity: 0 !important;
   }
   &::-webkit-media-controls-overlay-play-button {
-    display: none;
-    opacity: 0;
+    display: none !important;
+    opacity: 0 !important;
   }
 `;
 

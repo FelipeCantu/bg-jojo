@@ -101,7 +101,7 @@ const CartBadge = styled.span`
 `;
 
 const CloseBtn = styled.button`
-  background: #f5f5f5;
+  background: #fce4ec;
   border: none;
   border-radius: 50%;
   width: 36px;
@@ -110,10 +110,12 @@ const CloseBtn = styled.button`
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  color: #f35686;
   transition: all 0.2s ease;
 
   &:hover {
-    background: #eee;
+    background: #f35686;
+    color: white;
     transform: rotate(90deg);
   }
 
