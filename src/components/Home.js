@@ -10,23 +10,20 @@ function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const videoRef = useRef(null);
 
+  // Play the video immediately on mount — before the loading overlay clears
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video) {
+      video.play().catch(() => {});
+    }
+  }, []);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 2000);
-
     return () => clearTimeout(timer);
   }, []);
-
-  useEffect(() => {
-    if (!isLoading && videoRef.current) {
-      videoRef.current.play().catch(() => {});
-    }
-  }, [isLoading]);
-
-  if (isLoading) {
-    return <LoadingContainer />;
-  }
 
   return (
     <MainSection>
@@ -35,8 +32,23 @@ function Home() {
         description="Find mental health support and suicide prevention resources. Give Back Jojo provides free access to therapy, hotlines, and community support."
         path="/home"
       />
+
+      {isLoading && (
+        <LoadingOverlay>
+          <LoadingContainer />
+        </LoadingOverlay>
+      )}
+
       <VideoWrapper>
-        <VideoBackground ref={videoRef} autoPlay loop muted playsInline disablePictureInPicture controlsList='nodownload nofullscreen noremoteplayback'>
+        <VideoBackground
+          ref={videoRef}
+          autoPlay
+          loop
+          muted
+          playsInline
+          disablePictureInPicture
+          controlsList='nodownload nofullscreen noremoteplayback'
+        >
           <source src={require('../assets/cloud.mp4')} type='video/mp4' />
           Your browser does not support the video tag.
         </VideoBackground>
@@ -70,6 +82,16 @@ function Home() {
   );
 }
 
+const LoadingOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 9999;
+  background: white;
+`;
+
 // Updated styled components for the image section
 const ImageSection = styled.section`
   width: 100%;
@@ -91,7 +113,7 @@ const ImageContainer = styled.div`
   align-items: center;
   max-width: 1200px;
   width: 90%;
-  
+
   @media (max-width: 768px) {
     width: 100%;
   }
@@ -115,7 +137,7 @@ const CenteredImage = styled.img`
   width: auto;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  
+
   @media (max-width: 768px) {
     max-height: 400px;
     width: 100%;
@@ -129,7 +151,7 @@ const ImageCaption = styled.p`
   margin-top: 1rem;
   max-width: 800px;
   line-height: 1.5;
-  
+
   @media (max-width: 768px) {
     font-size: 1rem;
     padding: 0 1rem;
@@ -149,7 +171,7 @@ const VideoWrapper = styled.div`
   margin: 0;
   padding: 0;
   overflow: hidden;
-  
+
   @media (max-width: 768px) {
     height: 90vh;
   }
@@ -214,24 +236,24 @@ const Content = styled.div`
 `;
 
 const HeroHeading = styled.h1`
-  font-size: clamp(3rem, 10vw, 6rem); /* Increased base size */
+  font-size: clamp(3rem, 10vw, 6rem);
   margin: 0 0 1rem 0;
   line-height: 1.2;
   text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
-  
+
   @media (max-width: 480px) {
-    font-size: clamp(3.5rem, 12vw, 4rem); /* Larger on very small screens */
+    font-size: clamp(3.5rem, 12vw, 4rem);
     margin-bottom: 2.5rem;
   }
 `;
 
 const HeroSubtext = styled.p`
-  font-size: clamp(1.5rem, 5vw, 2.5rem); /* Increased base size */
+  font-size: clamp(1.5rem, 5vw, 2.5rem);
   margin: 0 0 2rem 0;
   text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
-  
+
   @media (max-width: 480px) {
-    font-size: clamp(1.8rem, 6vw, 2.2rem); /* Larger on very small screens */
+    font-size: clamp(1.8rem, 6vw, 2.2rem);
     margin-bottom: 2.5rem;
   }
 `;
@@ -248,11 +270,11 @@ const Button = styled.button`
   border-radius: 4px;
   box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.15);
   cursor: pointer;
-  font-size: clamp(1rem, 2.5vw, 1.2rem); /* Slightly larger */
+  font-size: clamp(1rem, 2.5vw, 1.2rem);
   font-weight: 600;
   transition: all 0.3s ease;
   min-width: 150px;
-  
+
   &:hover {
     background-color: #004d40;
     color: white;
