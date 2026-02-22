@@ -1,0 +1,114 @@
+diff --git a/src/components/Home.js b/src/components/Home.js
+index 3027b47..eb2f661 100644
+--- a/src/components/Home.js
++++ b/src/components/Home.js
+@@ -13,9 +13,24 @@ function Home() {
+   // Play the video immediately on mount — before the loading overlay clears
+   useEffect(() => {
+     const video = videoRef.current;
+-    if (video) {
+-      video.play().catch(() => {});
+-    }
++    if (!video) return;
++
++    video.play().catch(() => {});
++
++    const handlePause = () => {
++      if (!document.hidden) video.play().catch(() => {});
++    };
++    const handleVisibility = () => {
++      if (!document.hidden) video.play().catch(() => {});
++    };
++
++    video.addEventListener('pause', handlePause);
++    document.addEventListener('visibilitychange', handleVisibility);
++
++    return () => {
++      video.removeEventListener('pause', handlePause);
++      document.removeEventListener('visibilitychange', handleVisibility);
++    };
+   }, []);
+ 
+   useEffect(() => {
+@@ -46,6 +61,7 @@ function Home() {
+           loop
+           muted
+           playsInline
++          webkitPlaysInline
+           disablePictureInPicture
+           controlsList='nodownload nofullscreen noremoteplayback'
+         >
+diff --git a/src/components/Mission.js b/src/components/Mission.js
+index dd6419a..bb76646 100644
+--- a/src/components/Mission.js
++++ b/src/components/Mission.js
+@@ -6,9 +6,25 @@ function MissionSection() {
+   const videoRef = useRef(null);
+ 
+   useEffect(() => {
+-    if (videoRef.current) {
+-      videoRef.current.play().catch(() => {});
+-    }
++    const video = videoRef.current;
++    if (!video) return;
++
++    video.play().catch(() => {});
++
++    const handlePause = () => {
++      if (!document.hidden) video.play().catch(() => {});
++    };
++    const handleVisibility = () => {
++      if (!document.hidden) video.play().catch(() => {});
++    };
++
++    video.addEventListener('pause', handlePause);
++    document.addEventListener('visibilitychange', handleVisibility);
++
++    return () => {
++      video.removeEventListener('pause', handlePause);
++      document.removeEventListener('visibilitychange', handleVisibility);
++    };
+   }, []);
+ 
+   return (
+@@ -42,6 +58,7 @@ function MissionSection() {
+           loop
+           muted
+           playsInline
++          webkitPlaysInline
+           disablePictureInPicture
+           controlsList='nodownload nofullscreen noremoteplayback'
+         >
+@@ -196,21 +213,25 @@ const VideoBackground = styled.video`
+   pointer-events: none;
+ 
+   &::-webkit-media-controls {
+-    display: none;
++    display: none !important;
+   }
+   &::-webkit-media-controls-panel {
+-    display: none;
++    display: none !important;
++  }
++  &::-webkit-media-controls-enclosure {
++    display: none !important;
+   }
+   &::-webkit-media-controls-play-button {
+-    display: none;
++    display: none !important;
++    opacity: 0 !important;
+   }
+   &::-webkit-media-controls-start-playback-button {
+-    display: none;
+-    opacity: 0;
++    display: none !important;
++    opacity: 0 !important;
+   }
+   &::-webkit-media-controls-overlay-play-button {
+-    display: none;
+-    opacity: 0;
++    display: none !important;
++    opacity: 0 !important;
+   }
+ 
+   @media (max-width: 1024px) {
