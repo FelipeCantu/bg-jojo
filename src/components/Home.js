@@ -17,18 +17,13 @@ function Home() {
 
     video.play().catch(() => {});
 
-    const handlePause = () => {
-      if (!document.hidden) video.play().catch(() => {});
-    };
     const handleVisibility = () => {
       if (!document.hidden) video.play().catch(() => {});
     };
 
-    video.addEventListener('pause', handlePause);
     document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
-      video.removeEventListener('pause', handlePause);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, []);
@@ -61,7 +56,6 @@ function Home() {
           loop
           muted
           playsInline
-          webkitPlaysInline
           disablePictureInPicture
           controlsList='nodownload nofullscreen noremoteplayback'
         >
