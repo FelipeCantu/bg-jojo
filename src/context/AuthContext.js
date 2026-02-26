@@ -3,6 +3,8 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { app } from "../firebaseconfig";
 import { motion, AnimatePresence } from "framer-motion";
 import * as authService from "../services/authService";
+import toast from "react-hot-toast";
+import * as Sentry from "@sentry/react";
 
 const AuthContext = createContext({
   currentUser: null,
@@ -41,6 +43,7 @@ export function AuthProvider({ children }) {
       }
     } catch (err) {
       console.error("Error refreshing user:", err);
+      Sentry.captureException(err);
       setError({
         message: err.message || "Failed to refresh user data",
         code: err.code || "refresh-failed",
@@ -63,6 +66,22 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // Handle the result of a mobile redirect sign-in (Google/Facebook)
+  useEffect(() => {
+    authService.handleRedirectResult().then((result) => {
+      if (result?.success) {
+        toast.success(
+          result.isNewUser ? "Account created!" : "Login successful!"
+        );
+      } else if (result?.success === false) {
+        // Ignore popup-closed — user just cancelled
+        if (result.code !== "auth/popup-closed-by-user") {
+          toast.error(result.error || "Sign-in failed. Please try again.");
+        }
+      }
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     const auth = getAuth(app);
     let isMounted = true;
@@ -79,8 +98,10 @@ export function AuthProvider({ children }) {
               } else {
                 setCurrentUser(user);
               }
+              Sentry.setUser({ id: user.uid, email: user.email });
             } else {
               setCurrentUser(null);
+              Sentry.setUser(null);
             }
             
             setLoading(false);

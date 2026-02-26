@@ -15,6 +15,7 @@
     "@sanity/portable-text-editor": "^3.48.1",
     "@sanity/types": "^3.79.0",
     "@sanity/ui": "^2.15.6",
+    "@sentry/react": "^10.39.0",
     "@stripe/react-stripe-js": "^3.6.0",
     "@stripe/stripe-js": "^7.1.0",
     "@tiptap/extension-image": "^2.11.5",

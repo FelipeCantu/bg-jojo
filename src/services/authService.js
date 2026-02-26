@@ -1,8 +1,10 @@
-import { 
+import {
   getAuth,
   createUserWithEmailAndPassword,
-  signInWithEmailAndPassword, 
+  signInWithEmailAndPassword,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   FacebookAuthProvider,
   GoogleAuthProvider,
   sendEmailVerification,
@@ -13,6 +15,13 @@ import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from "firebase/firest
 import { firestore } from "../firebaseconfig";
 
 const auth = getAuth();
+
+const SITE_URL = process.env.REACT_APP_SITE_URL || "https://givebackjojo.org";
+
+const isMobile = () =>
+  /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(
+    navigator.userAgent
+  );
 
 // Email and Password Authentication
 const registerWithEmail = async (email, password, displayName) => {
@@ -25,7 +34,10 @@ const registerWithEmail = async (email, password, displayName) => {
       photoURL: `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=random`
     });
     
-    await sendEmailVerification(user);
+    await sendEmailVerification(user, {
+      url: `${SITE_URL}/profile`,
+      handleCodeInApp: false,
+    });
     await createUserDocument(user);
     
     return { success: true, user };
@@ -54,27 +66,34 @@ const loginWithEmail = async (email, password) => {
 };
 
 // Social Authentication
+// On mobile, signInWithPopup is blocked by browsers — use redirect instead.
 const signInWithFacebook = async () => {
   try {
     const provider = new FacebookAuthProvider();
     provider.addScope('email');
     provider.addScope('public_profile');
-    
+
+    if (isMobile()) {
+      await signInWithRedirect(auth, provider);
+      // Redirect flow — result is handled by handleRedirectResult on app load
+      return { success: true, redirecting: true };
+    }
+
     const result = await signInWithPopup(auth, provider);
     const isNewUser = result._tokenResponse?.isNewUser || false;
     await createUserDocument(result.user);
-    
-    return { 
-      success: true, 
-      user: result.user, 
-      isNewUser 
+
+    return {
+      success: true,
+      user: result.user,
+      isNewUser
     };
   } catch (error) {
     console.error("Facebook sign-in error:", error);
-    return { 
-      success: false, 
+    return {
+      success: false,
       error: error.message,
-      code: error.code 
+      code: error.code
     };
   }
 };
@@ -84,30 +103,55 @@ const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
     provider.addScope('email');
     provider.addScope('profile');
-    
+
+    if (isMobile()) {
+      await signInWithRedirect(auth, provider);
+      // Redirect flow — result is handled by handleRedirectResult on app load
+      return { success: true, redirecting: true };
+    }
+
     const result = await signInWithPopup(auth, provider);
     const isNewUser = result._tokenResponse?.isNewUser || false;
     await createUserDocument(result.user);
-    
-    return { 
-      success: true, 
-      user: result.user, 
-      isNewUser 
+
+    return {
+      success: true,
+      user: result.user,
+      isNewUser
     };
   } catch (error) {
     console.error("Google sign-in error:", error);
-    return { 
-      success: false, 
+    return {
+      success: false,
       error: error.message,
-      code: error.code 
+      code: error.code
     };
+  }
+};
+
+// Called once on app load to pick up the result of a redirect sign-in
+const handleRedirectResult = async () => {
+  try {
+    const result = await getRedirectResult(auth);
+    if (result?.user) {
+      await createUserDocument(result.user);
+      const isNewUser = result._tokenResponse?.isNewUser || false;
+      return { success: true, user: result.user, isNewUser };
+    }
+    return null; // No pending redirect
+  } catch (error) {
+    console.error("Redirect result error:", error);
+    return { success: false, error: error.message, code: error.code };
   }
 };
 
 // Password Reset
 const resetPassword = async (email) => {
   try {
-    await sendPasswordResetEmail(auth, email);
+    await sendPasswordResetEmail(auth, email, {
+      url: `${SITE_URL}/login`,
+      handleCodeInApp: false,
+    });
     return { success: true };
   } catch (error) {
     console.error("Password reset error:", error);
@@ -176,5 +220,6 @@ export {
   signInWithFacebook,
   signInWithGoogle,
   resetPassword,
-  signOut
+  signOut,
+  handleRedirectResult,
 };

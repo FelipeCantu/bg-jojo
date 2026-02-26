@@ -207,7 +207,7 @@ function App() {
             }
           />
           <Route path="/create-article" element={<ProtectedRoute><SlideUpRoute noPadding><ArticleForm /></SlideUpRoute></ProtectedRoute>} />
-          <Route path="*" element={<SlideUpRoute><NotFound /></SlideUpRoute>} />
+          <Route path="*" element={<SlideUpRoute noPadding><NotFound /></SlideUpRoute>} />
         </Routes>
       </AnimatePresence>
 

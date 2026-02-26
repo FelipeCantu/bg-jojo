@@ -8,6 +8,18 @@ import { ThemeProvider, studioTheme } from '@sanity/ui';
 import { BrowserRouter } from 'react-router-dom';
 import { CartProvider } from './CartContext';
 import { HelmetProvider } from 'react-helmet-async';
+import * as Sentry from '@sentry/react';
+
+if (process.env.REACT_APP_SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.REACT_APP_SENTRY_DSN,
+    environment: process.env.NODE_ENV,
+    // Only send errors in production to avoid noise during development
+    enabled: process.env.NODE_ENV === 'production',
+    tracesSampleRate: 0.2,
+    replaysOnErrorSampleRate: 1.0,
+  });
+}
 
 
 // Enhanced Error Boundary with hydration error support
@@ -31,7 +43,7 @@ class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     console.error("Error caught by ErrorBoundary:", error, errorInfo);
-    // Add error reporting here if needed
+    Sentry.captureException(error, { extra: errorInfo });
   }
 
   handleFullReload = () => {
