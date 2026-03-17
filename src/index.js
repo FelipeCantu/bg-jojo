@@ -1,5 +1,13 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+
+// Unregister any stale service workers from previous builds.
+// A leftover SW was intercepting Firebase auth network requests and breaking login.
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    registrations.forEach((reg) => reg.unregister());
+  });
+}
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';

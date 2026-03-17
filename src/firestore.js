@@ -15,7 +15,7 @@ import {
   where,
   query
 } from "firebase/firestore"; 
-import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, browserLocalPersistence, browserSessionPersistence, setPersistence } from "firebase/auth";
 import { getAnalytics, logEvent } from "firebase/analytics";
 
 const firebaseConfig = {
@@ -31,6 +31,12 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
+
+// iOS Safari has unreliable IndexedDB (Firebase's default storage).
+// Fall back to sessionStorage which Safari handles correctly.
+const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+setPersistence(auth, isSafari ? browserSessionPersistence : browserLocalPersistence).catch(() => {});
+
 const provider = new GoogleAuthProvider();
 const analytics = typeof window !== "undefined" ? getAnalytics(app) : null;
 

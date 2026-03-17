@@ -1,0 +1,10 @@
+[build]
+  command = "npm run build"
+  publish = "build"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Allow Firebase OAuth popups (Google/Facebook sign-in) to close themselves.
+    # Netlify's default COOP: same-origin blocks cross-origin window.close calls.
+    Cross-Origin-Opener-Policy = "same-origin-allow-popups"
