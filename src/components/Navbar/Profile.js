@@ -118,14 +118,7 @@ const Profile = () => {
             )}
           </BannerEditIconWithText>
           <UserInfo>
-            <ProfileImage
-              src={
-                user.photoURL?.includes('graph.facebook.com')
-                  ? `${user.photoURL}?height=200`
-                  : user.photoURL
-              }
-              alt={`${user.displayName}'s profile`}
-            />
+            <ProfileImage src={user.photoURL} alt={`${user.displayName}'s profile`} />
             <div>
               <UserName>{user.displayName}</UserName>
               <UserEmail>{user.email}</UserEmail>
