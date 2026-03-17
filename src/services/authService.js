@@ -79,18 +79,10 @@ const signInWithProvider = async (provider) => {
   }
 };
 
-const isMobile = () => /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
 const signInWithFacebook = async () => {
   const provider = new FacebookAuthProvider();
   provider.addScope('email');
   provider.addScope('public_profile');
-
-  if (isMobile()) {
-    await signInWithRedirect(auth, provider);
-    return { success: true, redirecting: true };
-  }
-
   try {
     const result = await signInWithPopup(auth, provider);
     const isNewUser = result._tokenResponse?.isNewUser || false;
@@ -120,10 +112,6 @@ const signInWithFacebook = async () => {
     }
     return { success: true, user: result.user, isNewUser };
   } catch (error) {
-    if (error.code === 'auth/popup-blocked') {
-      await signInWithRedirect(auth, provider);
-      return { success: true, redirecting: true };
-    }
     console.error("Facebook sign-in error:", error.code, error.message);
     return { success: false, error: error.message, code: error.code };
   }
