@@ -58,62 +58,41 @@ const loginWithEmail = async (email, password) => {
   }
 };
 
-const isMobile = () =>
-  /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
-
-// Social Authentication
-// Desktop uses popup (fast, no page reload needed).
-// Mobile uses redirect — iOS Safari opens OAuth in the same tab, not a true
-// popup, so signInWithPopup never resolves and throws popup-closed-by-user.
-const signInWithFacebook = async () => {
+// Shared helper: try popup first; if the browser blocks it, fall back to redirect
+const signInWithProvider = async (provider) => {
   try {
-    const provider = new FacebookAuthProvider();
-    provider.addScope('email');
-    provider.addScope('public_profile');
-
-    if (isMobile()) {
-      await signInWithRedirect(auth, provider);
-      return { success: true, redirecting: true };
-    }
-
     const result = await signInWithPopup(auth, provider);
     const isNewUser = result._tokenResponse?.isNewUser || false;
     try {
       await createUserDocument(result.user);
     } catch (firestoreError) {
-      console.error("Failed to save Facebook user document:", firestoreError);
+      console.error("Failed to save user document:", firestoreError);
     }
     return { success: true, user: result.user, isNewUser };
   } catch (error) {
-    console.error("Facebook sign-in error:", error);
+    // Only fall back to redirect when the browser actively blocks the popup
+    if (error.code === 'auth/popup-blocked') {
+      await signInWithRedirect(auth, provider);
+      return { success: true, redirecting: true };
+    }
+    console.error("Social sign-in error:", error.code, error.message);
     return { success: false, error: error.message, code: error.code };
   }
 };
 
+const signInWithFacebook = async () => {
+  const provider = new FacebookAuthProvider();
+  provider.addScope('email');
+  provider.addScope('public_profile');
+  return signInWithProvider(provider);
+};
+
 const signInWithGoogle = async () => {
-  try {
-    const provider = new GoogleAuthProvider();
-    provider.addScope('email');
-    provider.addScope('profile');
-    provider.setCustomParameters({ prompt: 'select_account' });
-
-    if (isMobile()) {
-      await signInWithRedirect(auth, provider);
-      return { success: true, redirecting: true };
-    }
-
-    const result = await signInWithPopup(auth, provider);
-    const isNewUser = result._tokenResponse?.isNewUser || false;
-    try {
-      await createUserDocument(result.user);
-    } catch (firestoreError) {
-      console.error("Failed to save Google user document:", firestoreError);
-    }
-    return { success: true, user: result.user, isNewUser };
-  } catch (error) {
-    console.error("Google sign-in error:", error);
-    return { success: false, error: error.message, code: error.code };
-  }
+  const provider = new GoogleAuthProvider();
+  provider.addScope('email');
+  provider.addScope('profile');
+  provider.setCustomParameters({ prompt: 'select_account' });
+  return signInWithProvider(provider);
 };
 
 // Picks up the result of a mobile redirect sign-in on app load
