@@ -4,9 +4,6 @@ import {
   signInWithPopup,
   signInWithRedirect,
   getRedirectResult,
-  setPersistence,
-  browserSessionPersistence,
-  browserLocalPersistence,
   FacebookAuthProvider,
   GoogleAuthProvider,
   sendEmailVerification,
@@ -82,9 +79,7 @@ const signInWithProvider = async (provider) => {
   }
 };
 
-const isMobile = () =>
-  /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
-  navigator.maxTouchPoints > 0;
+const isMobile = () => /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
 const signInWithFacebook = async () => {
   const provider = new FacebookAuthProvider();
@@ -92,9 +87,6 @@ const signInWithFacebook = async () => {
   provider.addScope('public_profile');
 
   if (isMobile()) {
-    // sessionStorage survives same-tab cross-origin navigation on iOS Safari,
-    // unlike IndexedDB which Safari may clear during OAuth redirects.
-    await setPersistence(auth, browserSessionPersistence);
     await signInWithRedirect(auth, provider);
     return { success: true, redirecting: true };
   }
@@ -126,7 +118,6 @@ const signInWithFacebook = async () => {
     return { success: true, user: result.user, isNewUser };
   } catch (error) {
     if (error.code === 'auth/popup-blocked') {
-      await setPersistence(auth, browserSessionPersistence);
       await signInWithRedirect(auth, provider);
       return { success: true, redirecting: true };
     }
@@ -166,10 +157,6 @@ const handleRedirectResult = async () => {
           }
         }
       }
-
-      // Migrate from session persistence (used for the redirect) back to local
-      // so the user stays logged in across browser sessions.
-      await setPersistence(auth, browserLocalPersistence).catch(() => {});
 
       try {
         await createUserDocument(result.user);
