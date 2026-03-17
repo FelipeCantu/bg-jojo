@@ -1,13 +1,5 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-
-// Unregister any stale service workers from previous builds.
-// A leftover SW was intercepting Firebase auth network requests and breaking login.
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then((registrations) => {
-    registrations.forEach((reg) => reg.unregister());
-  });
-}
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
@@ -16,6 +8,14 @@ import { ThemeProvider, studioTheme } from '@sanity/ui';
 import { BrowserRouter } from 'react-router-dom';
 import { CartProvider } from './CartContext';
 import { HelmetProvider } from 'react-helmet-async';
+
+// Unregister any stale service workers from previous builds.
+// A leftover SW was intercepting Firebase auth network requests and breaking login.
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    registrations.forEach((reg) => reg.unregister());
+  });
+}
 
 // Enhanced Error Boundary with hydration error support
 class ErrorBoundary extends React.Component {
