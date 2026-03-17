@@ -58,8 +58,16 @@ const loginWithEmail = async (email, password) => {
   }
 };
 
-// Shared helper: try popup first; if the browser blocks it, fall back to redirect
+const isMobile = () =>
+  /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+// On mobile, popups are killed by the OS before OAuth completes — use redirect instead.
+// On desktop, popup is preferred (no full-page navigation required).
 const signInWithProvider = async (provider) => {
+  if (isMobile()) {
+    await signInWithRedirect(auth, provider);
+    return { success: true, redirecting: true };
+  }
   try {
     const result = await signInWithPopup(auth, provider);
     const isNewUser = result._tokenResponse?.isNewUser || false;
@@ -70,7 +78,6 @@ const signInWithProvider = async (provider) => {
     }
     return { success: true, user: result.user, isNewUser };
   } catch (error) {
-    // Only fall back to redirect when the browser actively blocks the popup
     if (error.code === 'auth/popup-blocked') {
       await signInWithRedirect(auth, provider);
       return { success: true, redirecting: true };
