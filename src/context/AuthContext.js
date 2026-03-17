@@ -65,17 +65,27 @@ export function AuthProvider({ children }) {
   };
 
 
-  // Pick up the result of a mobile redirect sign-in (Google/Facebook)
+  // Pick up the result of a mobile redirect sign-in (Google/Facebook).
+  // Also fires on pageshow so iOS Safari's BFCache restores are handled —
+  // Safari can resurrect the page from memory instead of doing a fresh load,
+  // which means the initial useEffect call happened before the redirect and
+  // getRedirectResult returned null. pageshow fires in both cases.
   useEffect(() => {
-    authService.handleRedirectResult().then((result) => {
-      if (result?.success) {
-        toast.success(result.isNewUser ? "Account created!" : "Login successful!");
-      } else if (result?.success === false) {
-        if (result.code !== "auth/popup-closed-by-user") {
-          toast.error(result.error || "Sign-in failed. Please try again.");
+    const handleRedirectResult = () => {
+      authService.handleRedirectResult().then((result) => {
+        if (result?.success) {
+          toast.success(result.isNewUser ? "Account created!" : "Login successful!");
+        } else if (result?.success === false) {
+          if (result.code !== "auth/popup-closed-by-user") {
+            toast.error(result.error || "Sign-in failed. Please try again.");
+          }
         }
-      }
-    });
+      });
+    };
+
+    handleRedirectResult();
+    window.addEventListener('pageshow', handleRedirectResult);
+    return () => window.removeEventListener('pageshow', handleRedirectResult);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
