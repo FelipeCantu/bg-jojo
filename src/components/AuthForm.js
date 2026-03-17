@@ -318,9 +318,10 @@ const AuthFormComponent = ({ mode = "login", title, subtitle, redirectTo, embedd
       if (result.success && !result.redirecting) {
         toast.success(`${result.isNewUser ? "Account created" : "Login successful"}!`);
         // Same as email login — let isAuthenticated useEffect handle navigation
-      } else {
+      } else if (!result.redirecting) {
         handleAuthError(result);
       }
+      // If redirecting, do nothing — the browser is navigating to the OAuth provider
     } catch (error) {
       console.error(`${provider} auth error:`, error);
       setFormError("An unexpected error occurred. Please try again.");

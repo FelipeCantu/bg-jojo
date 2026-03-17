@@ -81,7 +81,11 @@ const signInWithFacebook = async () => {
 
     const result = await signInWithPopup(auth, provider);
     const isNewUser = result._tokenResponse?.isNewUser || false;
-    await createUserDocument(result.user);
+    try {
+      await createUserDocument(result.user);
+    } catch (firestoreError) {
+      console.error("Failed to save Facebook user document:", firestoreError);
+    }
     return { success: true, user: result.user, isNewUser };
   } catch (error) {
     console.error("Facebook sign-in error:", error);
@@ -103,7 +107,11 @@ const signInWithGoogle = async () => {
 
     const result = await signInWithPopup(auth, provider);
     const isNewUser = result._tokenResponse?.isNewUser || false;
-    await createUserDocument(result.user);
+    try {
+      await createUserDocument(result.user);
+    } catch (firestoreError) {
+      console.error("Failed to save Google user document:", firestoreError);
+    }
     return { success: true, user: result.user, isNewUser };
   } catch (error) {
     console.error("Google sign-in error:", error);
