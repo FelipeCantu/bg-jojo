@@ -92,13 +92,19 @@ export function AuthProvider({ children }) {
         if (isMounted) {
           try {
             if (user) {
-              if (!user.emailVerified && user.providerData[0]?.providerId === 'password') {
-                await user.reload();
-                setCurrentUser(auth.currentUser);
-              } else {
-                setCurrentUser(user);
-              }
+              // Set currentUser immediately so isAuthenticated becomes true right away.
+              // Don't await user.reload() here — on mobile that network call can fail
+              // or be slow, which blocks the auth state from updating at all.
+              setCurrentUser(user);
               Sentry.setUser({ id: user.uid, email: user.email });
+              // Reload in the background to pick up latest emailVerified status
+              if (!user.emailVerified && user.providerData[0]?.providerId === 'password') {
+                user.reload().then(() => {
+                  if (isMounted && auth.currentUser) {
+                    setCurrentUser({ ...auth.currentUser });
+                  }
+                }).catch(() => {});
+              }
             } else {
               setCurrentUser(null);
               Sentry.setUser(null);
