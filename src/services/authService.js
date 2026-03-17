@@ -79,10 +79,18 @@ const signInWithProvider = async (provider) => {
   }
 };
 
+const isMobile = () => /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
 const signInWithFacebook = async () => {
   const provider = new FacebookAuthProvider();
   provider.addScope('email');
   provider.addScope('public_profile');
+
+  if (isMobile()) {
+    await signInWithRedirect(auth, provider);
+    return { success: true, redirecting: true };
+  }
+
   try {
     const result = await signInWithPopup(auth, provider);
     const isNewUser = result._tokenResponse?.isNewUser || false;
