@@ -3,7 +3,6 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { app } from "../firebaseconfig";
 import { motion, AnimatePresence } from "framer-motion";
 import * as authService from "../services/authService";
-import toast from "react-hot-toast";
 
 const AuthContext = createContext({
   currentUser: null,
