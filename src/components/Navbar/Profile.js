@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { auth, db } from '../../firestore';
-import { onAuthStateChanged } from 'firebase/auth';
+import { db } from '../../firestore';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import styled from 'styled-components';
 import { FaCamera, FaCog, FaShoppingCart, FaBell } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import UserArticles from './UserArticles';
-import { client } from '../../sanityClient'; // Assuming you've set up Sanity client
-import AuthForm from '../AuthForm';
+import { client } from '../../sanityClient';
+import { useAuth } from '../../context/AuthContext';
 
 const Profile = () => {
-  const [user, setUser] = useState(null);
+  const { currentUser: user, loading } = useAuth();
   const [joinDate, setJoinDate] = useState('');
   const [bio, setBio] = useState('');
   const [banner, setBanner] = useState('');
@@ -19,32 +18,27 @@ const Profile = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-        const creationDate = new Date(currentUser.metadata.creationTime);
-        setJoinDate(
-          creationDate.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          })
-        );
+    if (!user) return;
 
-        const userRef = doc(db, 'users', currentUser.uid);
-        const userSnap = await getDoc(userRef);
+    const creationDate = new Date(user.metadata.creationTime);
+    setJoinDate(
+      creationDate.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
+    );
 
-        if (userSnap.exists()) {
-          setBio(userSnap.data().bio || '');
-          setBanner(userSnap.data().banner || '');
-        } else {
-          console.error('User data not found in Firestore');
-        }
+    const userRef = doc(db, 'users', user.uid);
+    getDoc(userRef).then((userSnap) => {
+      if (userSnap.exists()) {
+        setBio(userSnap.data().bio || '');
+        setBanner(userSnap.data().banner || '');
       }
+    }).catch((err) => {
+      console.error('Error loading profile data:', err);
     });
-
-    return () => unsubscribe();
-  }, []);
+  }, [user]);
 
   const handleBioChange = (e) => setBio(e.target.value);
 
@@ -98,14 +92,8 @@ const Profile = () => {
     }
   };
 
-  if (!user) {
-    return (
-      <AuthForm
-        title="Sign in to View Profile"
-        subtitle="Manage your bio, articles, and settings"
-        redirectTo="/profile"
-      />
-    );
+  if (loading || !user) {
+    return null;
   }
 
   return (
