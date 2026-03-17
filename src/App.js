@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Toaster } from 'react-hot-toast';
 import './App.css';
 import { Route, Routes, Navigate, useLocation } from 'react-router-dom';
 import {
@@ -118,6 +119,7 @@ function App() {
 
   return (
     <ToastProvider>
+    <Toaster position="top-center" toastOptions={{ duration: 4000 }} />
     <div className="App">
       <Helmet>
         <script type="application/ld+json">

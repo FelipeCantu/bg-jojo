@@ -81,13 +81,10 @@ const signInWithProvider = async (provider) => {
 };
 
 const signInWithFacebook = async () => {
-  // Facebook's popup closes before completing in most browsers.
-  // Redirect is the reliable approach for Facebook OAuth.
   const provider = new FacebookAuthProvider();
   provider.addScope('email');
   provider.addScope('public_profile');
-  await signInWithRedirect(auth, provider);
-  return { success: true, redirecting: true };
+  return signInWithProvider(provider);
 };
 
 const signInWithGoogle = async () => {
