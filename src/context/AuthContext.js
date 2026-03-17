@@ -4,7 +4,6 @@ import { app } from "../firebaseconfig";
 import { motion, AnimatePresence } from "framer-motion";
 import * as authService from "../services/authService";
 import toast from "react-hot-toast";
-import * as Sentry from "@sentry/react";
 
 const AuthContext = createContext({
   currentUser: null,
@@ -43,7 +42,6 @@ export function AuthProvider({ children }) {
       }
     } catch (err) {
       console.error("Error refreshing user:", err);
-      Sentry.captureException(err);
       setError({
         message: err.message || "Failed to refresh user data",
         code: err.code || "refresh-failed",
@@ -96,7 +94,6 @@ export function AuthProvider({ children }) {
               // Don't await user.reload() here — on mobile that network call can fail
               // or be slow, which blocks the auth state from updating at all.
               setCurrentUser(user);
-              Sentry.setUser({ id: user.uid, email: user.email });
               // Reload in the background to pick up latest emailVerified status
               if (!user.emailVerified && user.providerData[0]?.providerId === 'password') {
                 user.reload().then(() => {
@@ -107,7 +104,6 @@ export function AuthProvider({ children }) {
               }
             } else {
               setCurrentUser(null);
-              Sentry.setUser(null);
             }
             
             setLoading(false);
