@@ -652,13 +652,6 @@ const TierAmount = styled.div`
   letter-spacing: ${(p) => (p.$large ? '-0.02em' : 'normal')};
 `;
 
-const TierDesc = styled.div`
-  font-size: 0.7rem;
-  margin-top: 0.25rem;
-  line-height: 1.3;
-  opacity: 0.85;
-  max-width: 280px;
-`;
 
 const CustomAmountWrapper = styled.div`
   margin-top: 0.5rem;
