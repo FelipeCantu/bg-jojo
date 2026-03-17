@@ -350,6 +350,8 @@ const AuthFormComponent = ({ mode = "login", title, subtitle, redirectTo, embedd
       "auth/popup-blocked": "Your browser blocked the sign-in window. Please allow pop-ups and try again.",
       "auth/cancelled-popup-request": "Sign-in was cancelled. Please try again.",
       "auth/account-exists-with-different-credential": "You already have an account using a different sign-in method. Try logging in with that instead.",
+      "auth/unauthorized-domain": "This domain is not authorized for sign-in. Please contact support.",
+      "auth/operation-not-allowed": "This sign-in method is not enabled. Please contact support.",
       // Network
       "auth/network-request-failed": "Connection error. Check your internet and try again.",
     };

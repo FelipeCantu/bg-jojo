@@ -1,5 +1,4 @@
 import {
-  getAuth,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -12,9 +11,7 @@ import {
   updateProfile,
 } from "firebase/auth";
 import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
-import { firestore } from "../firebaseconfig";
-
-const auth = getAuth();
+import { firestore, auth } from "../firebaseconfig";
 
 const SITE_URL = process.env.REACT_APP_SITE_URL || "https://givebackjojo.org";
 
@@ -124,7 +121,11 @@ const handleRedirectResult = async () => {
   try {
     const result = await getRedirectResult(auth);
     if (result?.user) {
-      await createUserDocument(result.user);
+      try {
+        await createUserDocument(result.user);
+      } catch (firestoreError) {
+        console.error("Failed to save redirect user document:", firestoreError);
+      }
       const isNewUser = result._tokenResponse?.isNewUser || false;
       return { success: true, user: result.user, isNewUser };
     }
