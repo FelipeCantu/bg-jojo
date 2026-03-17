@@ -2,14 +2,6 @@
   command = "npm run build"
   publish = "build"
 
-# Proxy Firebase auth handler through our domain so Safari ITP doesn't block
-# cross-site storage access when authDomain is firebaseapp.com.
-[[redirects]]
-  from = "/__/auth/*"
-  to = "https://bg-jojo.firebaseapp.com/__/auth/:splat"
-  status = 200
-  force = true
-
 [[headers]]
   for = "/*"
   [headers.values]
