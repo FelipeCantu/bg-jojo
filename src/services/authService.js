@@ -79,7 +79,9 @@ const signInWithProvider = async (provider) => {
   }
 };
 
-const isMobile = () => /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+const isMobile = () =>
+  /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+  navigator.maxTouchPoints > 0;
 
 const signInWithFacebook = async () => {
   const provider = new FacebookAuthProvider();
