@@ -3,6 +3,7 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { app } from "../firebaseconfig";
 import { motion, AnimatePresence } from "framer-motion";
 import * as authService from "../services/authService";
+import toast from "react-hot-toast";
 
 const AuthContext = createContext({
   currentUser: null,
@@ -63,6 +64,19 @@ export function AuthProvider({ children }) {
     }
   };
 
+
+  // Pick up the result of a mobile redirect sign-in (Google/Facebook)
+  useEffect(() => {
+    authService.handleRedirectResult().then((result) => {
+      if (result?.success) {
+        toast.success(result.isNewUser ? "Account created!" : "Login successful!");
+      } else if (result?.success === false) {
+        if (result.code !== "auth/popup-closed-by-user") {
+          toast.error(result.error || "Sign-in failed. Please try again.");
+        }
+      }
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const auth = getAuth(app);
