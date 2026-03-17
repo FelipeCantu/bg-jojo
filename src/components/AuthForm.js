@@ -300,37 +300,31 @@ const AuthFormComponent = ({ mode = "login", title, subtitle, redirectTo, embedd
     }
   };
 
-  const handleSocialAuth = async (provider) => {
-    setSocialLoading({
-      ...socialLoading,
-      [provider]: true
-    });
+  const handleSocialAuth = (provider) => {
+    // Start the auth popup synchronously before any state updates —
+    // iOS Safari requires window.open() to be called directly within the
+    // user gesture handler, or it treats the popup as blocked.
+    const authPromise = provider === "facebook"
+      ? authService.signInWithFacebook()
+      : authService.signInWithGoogle();
 
-    try {
-      let result;
+    setSocialLoading({ ...socialLoading, [provider]: true });
 
-      if (provider === "facebook") {
-        result = await authService.signInWithFacebook();
-      } else if (provider === "google") {
-        result = await authService.signInWithGoogle();
-      }
-
-      if (result.success && !result.redirecting) {
-        toast.success(`${result.isNewUser ? "Account created" : "Login successful"}!`);
-        // Same as email login — let isAuthenticated useEffect handle navigation
-      } else if (!result.redirecting) {
-        handleAuthError(result);
-      }
-      // If redirecting, do nothing — the browser is navigating to the OAuth provider
-    } catch (error) {
-      console.error(`${provider} auth error:`, error);
-      setFormError("An unexpected error occurred. Please try again.");
-    } finally {
-      setSocialLoading({
-        ...socialLoading,
-        [provider]: false
+    authPromise
+      .then((result) => {
+        if (result.success && !result.redirecting) {
+          toast.success(`${result.isNewUser ? "Account created" : "Login successful"}!`);
+        } else if (!result.redirecting) {
+          handleAuthError(result);
+        }
+      })
+      .catch((error) => {
+        console.error(`${provider} auth error:`, error);
+        setFormError("An unexpected error occurred. Please try again.");
+      })
+      .finally(() => {
+        setSocialLoading({ ...socialLoading, [provider]: false });
       });
-    }
   };
 
   const handleAuthError = (result) => {
