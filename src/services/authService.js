@@ -83,8 +83,35 @@ const signInWithFacebook = async () => {
   const provider = new FacebookAuthProvider();
   provider.addScope('email');
   provider.addScope('public_profile');
-  await signInWithRedirect(auth, provider);
-  return { success: true, redirecting: true };
+  try {
+    const result = await signInWithPopup(auth, provider);
+    const isNewUser = result._tokenResponse?.isNewUser || false;
+
+    const credential = FacebookAuthProvider.credentialFromResult(result);
+    if (credential?.accessToken) {
+      try {
+        const res = await fetch(
+          `https://graph.facebook.com/me/picture?redirect=false&width=400&height=400&access_token=${credential.accessToken}`
+        );
+        const data = await res.json();
+        if (data?.data?.url) {
+          await updateProfile(result.user, { photoURL: data.data.url });
+        }
+      } catch (photoError) {
+        console.error("Failed to fetch Facebook photo:", photoError);
+      }
+    }
+
+    try {
+      await createUserDocument(result.user);
+    } catch (firestoreError) {
+      console.error("Failed to save user document:", firestoreError);
+    }
+    return { success: true, user: result.user, isNewUser };
+  } catch (error) {
+    console.error("Facebook sign-in error:", error.code, error.message);
+    return { success: false, error: error.message, code: error.code };
+  }
 };
 
 const signInWithGoogle = async () => {
