@@ -18,10 +18,6 @@ const auth = getAuth();
 
 const SITE_URL = process.env.REACT_APP_SITE_URL || "https://givebackjojo.org";
 
-const isMobile = () =>
-  /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(
-    navigator.userAgent
-  );
 
 // Email and Password Authentication
 const registerWithEmail = async (email, password, displayName) => {
@@ -65,8 +61,13 @@ const loginWithEmail = async (email, password) => {
   }
 };
 
+const isMobile = () =>
+  /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
+
 // Social Authentication
-// On mobile, signInWithPopup is blocked by browsers — use redirect instead.
+// Mobile uses redirect (popups are blocked by browsers).
+// Desktop uses popup — redirect is unreliable on localhost and the COOP warning
+// it produces is cosmetic and does not break sign-in.
 const signInWithFacebook = async () => {
   try {
     const provider = new FacebookAuthProvider();
@@ -75,26 +76,16 @@ const signInWithFacebook = async () => {
 
     if (isMobile()) {
       await signInWithRedirect(auth, provider);
-      // Redirect flow — result is handled by handleRedirectResult on app load
       return { success: true, redirecting: true };
     }
 
     const result = await signInWithPopup(auth, provider);
     const isNewUser = result._tokenResponse?.isNewUser || false;
     await createUserDocument(result.user);
-
-    return {
-      success: true,
-      user: result.user,
-      isNewUser
-    };
+    return { success: true, user: result.user, isNewUser };
   } catch (error) {
     console.error("Facebook sign-in error:", error);
-    return {
-      success: false,
-      error: error.message,
-      code: error.code
-    };
+    return { success: false, error: error.message, code: error.code };
   }
 };
 
@@ -106,26 +97,16 @@ const signInWithGoogle = async () => {
 
     if (isMobile()) {
       await signInWithRedirect(auth, provider);
-      // Redirect flow — result is handled by handleRedirectResult on app load
       return { success: true, redirecting: true };
     }
 
     const result = await signInWithPopup(auth, provider);
     const isNewUser = result._tokenResponse?.isNewUser || false;
     await createUserDocument(result.user);
-
-    return {
-      success: true,
-      user: result.user,
-      isNewUser
-    };
+    return { success: true, user: result.user, isNewUser };
   } catch (error) {
     console.error("Google sign-in error:", error);
-    return {
-      success: false,
-      error: error.message,
-      code: error.code
-    };
+    return { success: false, error: error.message, code: error.code };
   }
 };
 

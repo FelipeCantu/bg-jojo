@@ -15,7 +15,7 @@ import {
   where,
   query
 } from "firebase/firestore"; 
-import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, browserLocalPersistence, browserSessionPersistence, setPersistence } from "firebase/auth";
+import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, browserSessionPersistence, setPersistence } from "firebase/auth";
 import { getAnalytics, logEvent } from "firebase/analytics";
 
 const firebaseConfig = {
@@ -33,9 +33,12 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 
 // iOS Safari has unreliable IndexedDB (Firebase's default storage).
-// Fall back to sessionStorage which Safari handles correctly.
+// Only override persistence for Safari — Chrome/Firefox must keep the default
+// (IndexedDB) so getRedirectResult can find the pending redirect state after OAuth.
 const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-setPersistence(auth, isSafari ? browserSessionPersistence : browserLocalPersistence).catch(() => {});
+if (isSafari) {
+  setPersistence(auth, browserSessionPersistence).catch(() => {});
+}
 
 const provider = new GoogleAuthProvider();
 const analytics = typeof window !== "undefined" ? getAnalytics(app) : null;
