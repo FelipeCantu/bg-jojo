@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
 import Sponsorship from './Sponsorship';
 import { Link } from 'react-router-dom';
-import { DonationCheckoutInline } from './DonationCheckout';
+import DonationCheckout from './DonationCheckout';
 import SEO from './SEO';
 
 const Donate = () => {
+  const [showCheckout, setShowCheckout] = useState(false);
+
   return (
     <BackgroundWrapper>
       <SEO
@@ -21,9 +23,13 @@ const Donate = () => {
           Give Back JoJo is a Non Profit dedicated to mental health awareness and suicide prevention. Our goal is to have a dedicated mental health clinic that offers free art/group therapy. We want to create a warm, inviting, and safe environment by providing meals to those that attend, educational and recreational books, educational stickers for suicide prevention, and aroma therapy. We ask for your help to achieve this goal! By granting us your donation, you will help us spread positive change in mental health, suicide prevention, and bringing the community together. Thank you for being here ♥
         </Description>
 
-        <FormSection>
-          <DonationCheckoutInline />
-        </FormSection>
+        <DonateButton onClick={() => setShowCheckout(true)}>
+          Donate Now
+        </DonateButton>
+
+        {showCheckout && (
+          <DonationCheckout onClose={() => setShowCheckout(false)} />
+        )}
 
         <LinksStack>
           <AltPaymentLink to="/supporting-givebackjojo">
@@ -113,17 +119,29 @@ const Description = styled.p`
   }
 `;
 
-const FormSection = styled.div`
-  max-width: 700px;
+const DonateButton = styled.button`
+  display: inline-block;
+  background: #cc4200;
+  color: white;
+  font-size: 1.2rem;
+  font-weight: 700;
+  padding: 1rem 3rem;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
   margin: 0 auto 2rem;
-  text-align: left;
-  background: white;
-  border-radius: 16px;
-  padding: 1.5rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 16px rgba(204, 66, 0, 0.35);
+
+  &:hover {
+    background: #054944;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(5, 73, 68, 0.35);
+  }
 
   @media (min-width: 768px) {
-    padding: 2rem 2.5rem;
+    font-size: 1.35rem;
+    padding: 1.1rem 4rem;
   }
 `;
 

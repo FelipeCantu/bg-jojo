@@ -13,7 +13,7 @@ const AuthContainer = styled.div`
   align-items: center;
   min-height: ${({ $embedded }) => $embedded ? 'auto' : '100vh'};
   padding: ${({ $embedded }) => $embedded ? '0' : '2rem'};
-  background-color: ${({ $embedded }) => $embedded ? 'transparent' : 'var(--background-alt)'};
+  background-color: ${({ $embedded }) => $embedded ? 'transparent' : '#feedfd'};
 `;
 
 const AuthCard = styled.div`
@@ -282,7 +282,10 @@ const AuthFormComponent = ({ mode = "login", title, subtitle, redirectTo, embedd
         result = await authService.loginWithEmail(email, password);
         if (result.success) {
           toast.success("Login successful!");
-          navigate(targetPath);
+          // Don't navigate here — let the isAuthenticated useEffect below handle it
+          // after Firebase confirms the auth state change. Navigating immediately
+          // causes a race condition on mobile where ProtectedRoute redirects back
+          // to /login before onAuthStateChanged has updated isAuthenticated.
         }
       }
 
@@ -312,9 +315,9 @@ const AuthFormComponent = ({ mode = "login", title, subtitle, redirectTo, embedd
         result = await authService.signInWithGoogle();
       }
 
-      if (result.success) {
+      if (result.success && !result.redirecting) {
         toast.success(`${result.isNewUser ? "Account created" : "Login successful"}!`);
-        navigate(targetPath);
+        // Same as email login — let isAuthenticated useEffect handle navigation
       } else {
         handleAuthError(result);
       }
@@ -330,17 +333,27 @@ const AuthFormComponent = ({ mode = "login", title, subtitle, redirectTo, embedd
   };
 
   const handleAuthError = (result) => {
-    // Map Firebase error codes to user-friendly messages
     const errorMessages = {
-      "auth/email-already-in-use": "This email is already registered. Please log in instead.",
-      "auth/wrong-password": "Incorrect email or password. Please try again.",
-      "auth/user-not-found": "No account found with this email. Please sign up.",
-      "auth/too-many-requests": "Too many unsuccessful login attempts. Please try again later.",
-      "auth/popup-closed-by-user": "Sign-in was cancelled. Please try again.",
-      "auth/account-exists-with-different-credential": "An account already exists with the same email address but different sign-in credentials. Try signing in using a different method."
+      // Email/password
+      "auth/email-already-in-use": "An account with this email already exists. Try logging in instead.",
+      "auth/user-not-found": "We couldn't find an account with that email. Double-check it or sign up.",
+      "auth/wrong-password": "That password doesn't match. Try again or reset your password below.",
+      "auth/invalid-credential": "Incorrect email or password. Please try again.",
+      "auth/invalid-email": "That doesn't look like a valid email address.",
+      "auth/weak-password": "Your password needs to be at least 8 characters.",
+      "auth/user-disabled": "This account has been disabled. Please contact support.",
+      // Rate limiting
+      "auth/too-many-requests": "Too many failed attempts. Please wait a few minutes and try again.",
+      // Social auth
+      "auth/popup-closed-by-user": "The sign-in window was closed. Please try again.",
+      "auth/popup-blocked": "Your browser blocked the sign-in window. Please allow pop-ups and try again.",
+      "auth/cancelled-popup-request": "Sign-in was cancelled. Please try again.",
+      "auth/account-exists-with-different-credential": "You already have an account using a different sign-in method. Try logging in with that instead.",
+      // Network
+      "auth/network-request-failed": "Connection error. Check your internet and try again.",
     };
 
-    const friendlyMessage = errorMessages[result.code] || result.error || "Authentication failed. Please try again.";
+    const friendlyMessage = errorMessages[result.code] || "Something went wrong. Please try again.";
     setFormError(friendlyMessage);
   };
 

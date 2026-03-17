@@ -64,7 +64,7 @@ const BackgroundWrapper = styled.div`
 `;
 
 const Container = styled.div`
-    background: #fb9e8a;
+    background: #feedfd;
     border-radius: 10px;
     box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
     width: 100%;

@@ -10,7 +10,6 @@ import { CartProvider } from './CartContext';
 import { HelmetProvider } from 'react-helmet-async';
 import * as Sentry from '@sentry/react';
 
-console.log('[Sentry] DSN present:', !!process.env.REACT_APP_SENTRY_DSN);
 if (process.env.REACT_APP_SENTRY_DSN) {
   Sentry.init({
     dsn: process.env.REACT_APP_SENTRY_DSN,

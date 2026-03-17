@@ -6,12 +6,15 @@ import { auth, db } from '../firestore'; // Import Firestore
 import { doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import SEO from './SEO';
 import { getEventSchema } from '../utils/structuredData';
+import LoadingContainer from './LoadingContainer';
+import { useToast } from '../context/ToastContext';
 
 const EventDetail = () => {
   const [event, setEvent] = useState(null);
   const [error, setError] = useState(null);
   const [attendees, setAttendees] = useState([]);
   const [user, setUser] = useState(null);
+  const { showToast } = useToast();
   const { id } = useParams(); // Event ID from URL
 
   useEffect(() => {
@@ -72,7 +75,7 @@ const EventDetail = () => {
 
   // Function to toggle attending status
   const handleToggleAttend = async () => {
-    if (!user) return alert('Please log in to join the event.');
+    if (!user) return showToast('Please log in to join the event.', 'info');
 
     const eventRef = doc(db, 'events', id);
 
@@ -99,7 +102,7 @@ const EventDetail = () => {
   };
 
   if (error) return <ErrorMessage>{error}</ErrorMessage>;
-  if (!event) return <div>Loading...</div>;
+  if (!event) return <LoadingContainer message="Loading event..." />;
 
   return (
     <PageContainer>
@@ -120,61 +123,43 @@ const EventDetail = () => {
         })}
       />
       <ContentWrapper>
-        <EventTitle>{event.title}</EventTitle>
-        <EventVenue>{event.venue}</EventVenue>
-        <EventLocation>{event.location.city}, {event.location.state}</EventLocation>
-        <EventDate>{new Date(event.date).toLocaleDateString()}</EventDate>
-        {event.image && <EventImage src={event.image.asset.url} alt={event.title} />}
-        <EventDescription>{event.description}</EventDescription>
-        <EventDetails>
-          <EventAge>Age: {event.age}</EventAge>
-          <EventDoorOpen>Doors Open: {event.doorOpenTime}</EventDoorOpen>
-        </EventDetails>
+        {event.image && (
+          <EventImageBanner src={event.image.asset.url} alt={event.title} />
+        )}
 
-        {/* Join/Leave Event Button */}
-        <AttendButton onClick={handleToggleAttend}>
-          {isUserAttending ? 'Leave Event' : 'Join Event'}
-        </AttendButton>
+        <CardBody>
+          <EventTitle>{event.title}</EventTitle>
 
-        {/* Attendee Count */}
-        <AttendeeCount>{attendees.length} people are going</AttendeeCount>
+          <MetaRow>
+            {event.venue && <MetaChip>📍 {event.venue}{event.location ? `, ${event.location.city}, ${event.location.state}` : ''}</MetaChip>}
+            <MetaChip>📅 {new Date(event.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</MetaChip>
+            {event.doorOpenTime && <MetaChip>🕐 Doors Open: {event.doorOpenTime}</MetaChip>}
+            {event.age && <MetaChip>🎟 Age: {event.age}</MetaChip>}
+          </MetaRow>
+
+          {event.description && (
+            <EventDescription>{event.description}</EventDescription>
+          )}
+
+          <AttendRow>
+            <AttendButton $attending={isUserAttending} onClick={handleToggleAttend}>
+              {isUserAttending ? '✓ You\'re Going' : 'Join Event'}
+            </AttendButton>
+            <AttendeeCount>{attendees.length} {attendees.length === 1 ? 'person' : 'people'} going</AttendeeCount>
+          </AttendRow>
+        </CardBody>
       </ContentWrapper>
     </PageContainer>
   );
 };
 
-const AttendButton = styled.button`
-  margin-top: 20px;
-  padding: 10px 20px;
-  background-color: #024a47;
-  color: white;
-  font-size: 16px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-
-  &:hover {
-    background-color: #013d3b;
-  }
-`;
-
-const AttendeeCount = styled.p`
-  margin-top: 10px;
-  font-size: 16px;
-  color: #555;
-`;
-
 const PageContainer = styled.div`
   min-height: 100vh;
+  background: url("https://static.wixstatic.com/media/88d74a1559c84402a4a957527a839260.png/v1/fill/w_1903,h_1067,al_c,q_95,usm_0.66_1.00_0.01,enc_avif,quality_auto/88d74a1559c84402a4a957527a839260.png") center/cover no-repeat fixed;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  background: url("https://static.wixstatic.com/media/88d74a1559c84402a4a957527a839260.png/v1/fill/w_1903,h_1067,al_c,q_95,usm_0.66_1.00_0.01,enc_avif,quality_auto/88d74a1559c84402a4a957527a839260.png") center/cover no-repeat;
-  background-size: cover;
-  background-position: center center;
-  background-attachment: fixed;
-  padding: 24px;
+  padding: 2.5rem 1.5rem;
 
   @media (max-width: 768px) {
     padding: 0;
@@ -183,66 +168,100 @@ const PageContainer = styled.div`
 
 const ContentWrapper = styled.div`
   width: 100%;
-  max-width: 1200px;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.8);
-  border-radius: 12px;
-  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  max-width: 800px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
 
   @media (max-width: 768px) {
     border-radius: 0;
-    padding: 15px;
+    box-shadow: none;
+    min-height: 100vh;
+  }
+`;
+
+const EventImageBanner = styled.img`
+  width: 100%;
+  height: 320px;
+  object-fit: cover;
+  display: block;
+
+  @media (max-width: 768px) {
+    height: 220px;
+  }
+`;
+
+const CardBody = styled.div`
+  padding: 2rem 2.5rem;
+
+  @media (max-width: 768px) {
+    padding: 1.25rem 1rem;
   }
 `;
 
 const EventTitle = styled.h2`
-  font-size: 28px;
-  font-weight: bold;
-  color: #333;
+  font-size: 2rem;
+  font-weight: 800;
+  color: #1a1a1a;
+  margin: 0 0 1.25rem;
+  line-height: 1.2;
+
+  @media (max-width: 768px) {
+    font-size: 1.5rem;
+  }
 `;
 
-const EventLocation = styled.p`
-  font-size: 18px;
-  color: #777;
+const MetaRow = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 1.75rem;
 `;
 
-const EventDate = styled.p`
-  font-size: 16px;
-  color: #555;
-`;
-
-const EventImage = styled.img`
-  width: 100%;
-  height: auto;
-  border-radius: 8px;
-  margin-top: 20px;
+const MetaChip = styled.span`
+  font-size: 0.95rem;
+  color: #444;
+  line-height: 1.4;
 `;
 
 const EventDescription = styled.p`
-  font-size: 18px;
-  margin-top: 20px;
-  color: #333;
+  font-size: 1rem;
+  color: #555;
+  line-height: 1.75;
+  margin-bottom: 2rem;
+  white-space: pre-line;
 `;
 
-const EventDetails = styled.div`
-  margin-top: 20px;
+const AttendRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #eee;
 `;
 
-const EventAge = styled.p`
-  font-size: 16px;
-  color: #333;
+const AttendButton = styled.button`
+  padding: 0.75rem 2rem;
+  background: ${(p) => (p.$attending ? '#e8f5e9' : '#024a47')};
+  color: ${(p) => (p.$attending ? '#2e7d32' : 'white')};
+  border: 2px solid ${(p) => (p.$attending ? '#a5d6a7' : '#024a47')};
+  border-radius: 50px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: ${(p) => (p.$attending ? '#ffebee' : '#013d3b')};
+    border-color: ${(p) => (p.$attending ? '#ef9a9a' : '#013d3b')};
+    color: ${(p) => (p.$attending ? '#c62828' : 'white')};
+  }
 `;
 
-const EventDoorOpen = styled.p`
-  font-size: 16px;
-  color: #333;
-`;
-
-const EventVenue = styled.p`
-  font-size: 16px;
-  color: #333;
-  font-weight: bold;
-  margin-top: 10px;
+const AttendeeCount = styled.span`
+  font-size: 0.9rem;
+  color: #888;
 `;
 
 const ErrorMessage = styled.div`

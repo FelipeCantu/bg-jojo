@@ -2,13 +2,31 @@ import React from 'react';
 import styled from 'styled-components';
 import SEO from './SEO';
 
+const BackgroundWrapper = styled.div`
+  background: #feedfd;
+  min-height: 100vh;
+  padding: 2rem 1rem;
+
+  @media (max-width: 768px) {
+    padding: 0;
+  }
+`;
+
 const TermsContainer = styled.div`
-  max-width: 800px;
+  max-width: 1000px;
   margin: 0 auto;
   padding: 2rem;
   line-height: 1.6;
+  background: #fcd3c1;
+  border-radius: 10px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
   color: var(--text-color);
   font-family: var(--font-body);
+
+  @media (max-width: 768px) {
+    border-radius: 0;
+    box-shadow: none;
+  }
 `;
 
 const LastUpdated = styled.p`
@@ -71,6 +89,7 @@ const ExternalLink = styled.a`
 
 const TermsOfService = () => {
   return (
+    <BackgroundWrapper>
     <TermsContainer>
       <SEO
         title="Terms of Service"
@@ -185,6 +204,7 @@ const TermsOfService = () => {
         </List>
       </Section>
     </TermsContainer>
+    </BackgroundWrapper>
   );
 };
 

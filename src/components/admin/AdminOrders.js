@@ -3,10 +3,12 @@ import styled from 'styled-components';
 import { getFirestore, collection, query, orderBy, getDocs, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { getApp } from 'firebase/app';
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import { useToast } from '../../context/ToastContext';
 
 const STATUS_TABS = ['all', 'pending', 'paid', 'shipped', 'refund_requested', 'return_approved', 'refunded', 'failed'];
 
 const AdminOrders = () => {
+  const { showToast } = useToast();
   const [allOrders, setAllOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
@@ -28,7 +30,7 @@ const AdminOrders = () => {
     } catch (error) {
       console.error('Error approving return:', error);
       const msg = error?.details?.message || error?.message || 'Failed to approve return';
-      alert(msg);
+      showToast(msg, 'error');
     } finally {
       setProcessingRefund(null);
     }
@@ -47,7 +49,7 @@ const AdminOrders = () => {
     } catch (error) {
       console.error('Error processing refund:', error);
       const msg = error?.details?.message || error?.message || 'Failed to process refund';
-      alert(msg);
+      showToast(msg, 'error');
     } finally {
       setProcessingRefund(null);
     }
@@ -66,7 +68,7 @@ const AdminOrders = () => {
       );
     } catch (error) {
       console.error('Error denying refund:', error);
-      alert(error.message || 'Failed to deny refund');
+      showToast(error.message || 'Failed to deny refund', 'error');
     } finally {
       setProcessingRefund(null);
     }
@@ -86,7 +88,7 @@ const AdminOrders = () => {
     } catch (error) {
       console.error('Error archiving orders:', error);
       const msg = error?.details?.message || error?.message || 'Failed to archive orders';
-      alert(msg);
+      showToast(msg, 'error');
     } finally {
       setArchiving(false);
     }

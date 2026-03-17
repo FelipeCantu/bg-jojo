@@ -43,6 +43,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 import { getOrganizationSchema } from './utils/structuredData';
 import { analytics, logEvent } from './firestore';
+import { ToastProvider } from './context/ToastContext';
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -116,6 +117,7 @@ function App() {
   }
 
   return (
+    <ToastProvider>
     <div className="App">
       <Helmet>
         <script type="application/ld+json">
@@ -138,7 +140,7 @@ function App() {
           <Route path="/hotlines" element={<SlideUpRoute><Hotlines /></SlideUpRoute>} />
           <Route path="/getinvolved" element={<SlideUpRoute noPadding><GetInvolved /></SlideUpRoute>} />
           <Route path="/events" element={<SlideUpRoute noPadding><Events /></SlideUpRoute>} />
-          <Route path="/events/:id" element={<SlideUpRoute><EventDetail /></SlideUpRoute>} />
+          <Route path="/events/:id" element={<SlideUpRoute noPadding><EventDetail /></SlideUpRoute>} />
           <Route path="/articles" element={<SlideUpRoute noPadding><ArticleList /></SlideUpRoute>} />
           <Route path="/article/:id" element={<SlideUpRoute><ArticleDetail /></SlideUpRoute>} />
           <Route path="/edit-article/:articleId" element={<ProtectedRoute><SlideUpRoute><EditArticle /></SlideUpRoute></ProtectedRoute>} />
@@ -146,15 +148,15 @@ function App() {
           <Route path="/tribute/:slug" element={<SlideUpRoute noPadding><TributeDetail /></SlideUpRoute>} />
           <Route path="/yourgift" element={<SlideUpRoute noPadding><YourGift /></SlideUpRoute>} />
           <Route path="/donate" element={<SlideUpRoute noPadding><Donate /></SlideUpRoute>} />
-          <Route path="/supporting-givebackjojo" element={<SlideUpRoute><SupportingGiveBackJojo /></SlideUpRoute>} />
+          <Route path="/supporting-givebackjojo" element={<SlideUpRoute noPadding><SupportingGiveBackJojo /></SlideUpRoute>} />
           <Route path="/SupportingGiveBackJojo" element={<Navigate to="/supporting-givebackjojo" replace />} />
           <Route path="/products/:slug" element={<SlideUpRoute noPadding><ProductPage /></SlideUpRoute>} />
           <Route path="/products" element={<SlideUpRoute noPadding><ProductsPage /></SlideUpRoute>} />
           <Route path="/checkout" element={<SlideUpRoute><CheckoutPage /></SlideUpRoute>} />
           <Route path="/success" element={<SlideUpRoute><SuccessPage /></SlideUpRoute>} />
           <Route path="/donation-success" element={<SlideUpRoute noPadding><DonationSuccess /></SlideUpRoute>} />
-          <Route path="/privacy" element={<SlideUpRoute><PrivacyPolicy /></SlideUpRoute>} />
-          <Route path="/terms" element={<SlideUpRoute><TermsOfService /></SlideUpRoute>} />
+          <Route path="/privacy" element={<SlideUpRoute noPadding><PrivacyPolicy /></SlideUpRoute>} />
+          <Route path="/terms" element={<SlideUpRoute noPadding><TermsOfService /></SlideUpRoute>} />
           <Route
             path="/account-settings/*"
             element={
@@ -214,6 +216,7 @@ function App() {
       <Footer />
       <CartDrawer />
     </div>
+    </ToastProvider>
   );
 }
 

@@ -109,7 +109,7 @@ const ImageSection = styled.section`
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: #f8bbd0;
+  background-color: #feedfd;
 
   @media (max-width: 768px) {
     height: auto;

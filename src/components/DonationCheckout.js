@@ -306,7 +306,6 @@ const DonationCheckoutInner = ({ preselectedAmount, onClose, isInline = false })
             onClick={() => handleTierSelect(tier.amount)}
           >
             <TierAmount $large={i === 4 || i === 7}>{tier.label}</TierAmount>
-            <TierDesc>{tier.description}</TierDesc>
           </TierCard>
         ))}
       </TierGrid>

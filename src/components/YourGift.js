@@ -52,7 +52,7 @@ const YourGift = () => {
 
 // Styled Components
 const BackgroundWrapper = styled.div`
-  background: #fb9e8a; /* Background color behind everything */
+  background: #feedfd; /* Background color behind everything */
   padding: 60px 0;
 
   @media (max-width: 768px) {

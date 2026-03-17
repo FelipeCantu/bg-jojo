@@ -108,7 +108,7 @@ const PageContainer = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: #fb9e8a;
+  background: #feedfd;
   padding: 3rem 1rem;
 `;
 

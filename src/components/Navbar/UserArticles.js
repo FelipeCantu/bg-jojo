@@ -6,9 +6,11 @@ import useCurrentUser from "../../hook/useCurrentUser";
 import ArticleCounters from "../ArticleCounters";
 import { HiDotsVertical } from 'react-icons/hi';
 import { DEFAULT_ANONYMOUS_AVATAR, DEFAULT_PLACEHOLDER_IMAGE } from '../../constants';
+import { useToast } from '../../context/ToastContext';
 
 const UserArticles = () => {
   const { currentUser, loading, error } = useCurrentUser();
+  const { showToast } = useToast();
   const [articles, setArticles] = useState([]);
   const [fetchError, setFetchError] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
@@ -122,7 +124,7 @@ const UserArticles = () => {
     setArticleToDelete(null);
     
     // Show success message
-    alert('Article deleted successfully');
+    showToast('Article deleted successfully', 'success');
   } catch (error) {
     console.error("Force delete error:", error);
     
@@ -158,14 +160,14 @@ const UserArticles = () => {
           setArticles((prev) => prev.filter((a) => a._id !== articleId));
           setConfirmDelete(false);
           setArticleToDelete(null);
-          alert('Article deleted successfully using transaction method');
+          showToast('Article deleted successfully', 'success');
         } catch (transactionError) {
           console.error("Transaction delete failed:", transactionError);
-          alert(`Could not delete article: ${transactionError.message}`);
+          showToast(`Could not delete article: ${transactionError.message}`, 'error');
         }
       }
     } else {
-      alert(`Error deleting article: ${error.message}`);
+      showToast(`Error deleting article: ${error.message}`, 'error');
     }
   } finally {
     setIsDeleting(false);

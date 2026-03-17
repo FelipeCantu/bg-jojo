@@ -10,6 +10,7 @@ import LoadingContainer from './LoadingContainer';
 import SEO from './SEO';
 import { getProductSchema } from '../utils/structuredData';
 import { DEFAULT_PLACEHOLDER_IMAGE } from '../constants';
+import { useToast } from '../context/ToastContext';
 
 // Styled Components
 const PageBackground = styled.div`
@@ -417,6 +418,7 @@ export default function ProductPage() {
   const { slug } = useParams();
   const navigate = useNavigate();
   const { addToCart, toggleCart, items } = useCart();
+  const { showToast } = useToast();
   const [product, setProduct] = useState(null);
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState(null);
@@ -478,7 +480,7 @@ export default function ProductPage() {
     const isSizeRequired = product.category !== 'plushie' && product.category !== 'sticker';
 
     if (isSizeRequired && !selectedSize) {
-      alert("Please select a size before adding to cart.");
+      showToast("Please select a size before adding to cart.", "warning");
       return;
     }
 
@@ -491,7 +493,7 @@ export default function ProductPage() {
       : product.stripePriceId;
 
     if (!stripePriceId) {
-      alert("This product is not available for purchase at the moment. Please try again later.");
+      showToast("This product is not available for purchase at the moment. Please try again later.", "error");
       console.error("Missing Stripe price ID for product:", product.name);
       return;
     }

@@ -1,89 +1,107 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import sponsorship1 from '../assets/sponsorship-1.png';
 import sponsorship2 from '../assets/sponsorship-2.png';
+import { client } from '../sanityClient';
+
+const FALLBACK_LEVELS = [
+  {
+    _id: 'fallback-1',
+    title: "Reaching Out",
+    amount: "$1,000",
+    perks: [
+      "10 exclusive Give Back JoJo stickers",
+      "5 Give Back JoJo T-Shirts",
+      "Recognition at 1 Give Back JoJo event",
+      "Recognition on our website",
+      "1 booth at a Give Back JoJo event",
+    ],
+  },
+  {
+    _id: 'fallback-2',
+    title: "Lend a Hand",
+    amount: "$2,500",
+    perks: [
+      "20 exclusive Give Back JoJo stickers",
+      "10 Give Back JoJo T-Shirts",
+      "Recognition at 1 Give Back JoJo event",
+      "Recognition on our website",
+      "1 booth at a Give Back JoJo event",
+      "Recognition on our brochures/flyers",
+      "Recognition on an IG/FB post",
+    ],
+  },
+  {
+    _id: 'fallback-3',
+    title: "Positive Reinforcements",
+    amount: "$5,000",
+    perks: [
+      "30 exclusive Give Back JoJo stickers",
+      "15 Give Back JoJo T-Shirts",
+      "Recognition at 1 Give Back JoJo event",
+      "Recognition on our website",
+      "1 booth at a Give Back JoJo event",
+      "Recognition on our brochures/flyers",
+      "Recognition on an IG/FB post",
+      "Recognition on 1 banner at a Give Back JoJo event",
+    ],
+  },
+  {
+    _id: 'fallback-4',
+    title: "Connect & Support",
+    amount: "$10,000",
+    perks: [
+      "50 exclusive Give Back JoJo stickers",
+      "25 Give Back JoJo T-Shirts",
+      "Recognition at 3 Give Back JoJo events",
+      "Recognition on our website",
+      "1 booth at a Give Back JoJo event",
+      "Recognition on our brochures/flyers",
+      "Recognition on an IG/FB post",
+      "Recognition on banners at 3 Give Back JoJo events",
+      "Opportunity for a speech at 1 Give Back JoJo event",
+      "1 performance at a Give Back JoJo event",
+    ],
+  },
+  {
+    _id: 'fallback-5',
+    title: "Save a Life",
+    amount: "$25,000",
+    perks: [
+      "100 exclusive Give Back JoJo stickers",
+      "50 Give Back JoJo T-Shirts",
+      "Recognition at all Give Back JoJo events",
+      "Recognition on our website",
+      "1 booth at all Give Back JoJo events",
+      "Recognition on our brochures/flyers",
+      "Recognition on an IG/FB post",
+      "Recognition on all banners on Give Back JoJo events",
+      "Opportunity for a speech at all Give Back JoJo events",
+      "1 performance at all Give Back JoJo events",
+      "Name/Logo on Billboard(s)",
+    ],
+  },
+];
 
 const Sponsorship = () => {
-
   const navigate = useNavigate();
+  const [sponsorshipLevels, setSponsorshipLevels] = useState(FALLBACK_LEVELS);
+
+  useEffect(() => {
+    client
+      .fetch(`*[_type == "sponsorshipLevel"] | order(order asc) { _id, title, amount, perks }`)
+      .then((data) => {
+        if (data && data.length > 0) {
+          setSponsorshipLevels(data);
+        }
+      })
+      .catch((err) => console.error('Failed to load sponsorship levels:', err));
+  }, []);
+
   const handleStartToday = () => {
     navigate('/getinvolved');
   };
-
-  const sponsorshipLevels = [
-    {
-      title: "Reaching Out",
-      amount: "$1,000",
-      perks: [
-        "10 exclusive Give Back JoJo stickers",
-        "5 Give Back JoJo T-Shirts",
-        "Recognition at 1 Give Back JoJo event",
-        "Recognition on our website",
-        "1 booth at a Give Back JoJo event",
-      ],
-    },
-    {
-      title: "Lend a Hand",
-      amount: "$2,500",
-      perks: [
-        "20 exclusive Give Back JoJo stickers",
-        "10 Give Back JoJo T-Shirts",
-        "Recognition at 1 Give Back JoJo event",
-        "Recognition on our website",
-        "1 booth at a Give Back JoJo event",
-        "Recognition on our brochures/flyers",
-        "Recognition on an IG/FB post",
-      ],
-    },
-    {
-      title: "Positive Reinforcements",
-      amount: "$5,000",
-      perks: [
-        "30 exclusive Give Back JoJo stickers",
-        "15 Give Back JoJo T-Shirts",
-        "Recognition at 1 Give Back JoJo event",
-        "Recognition on our website",
-        "1 booth at a Give Back JoJo event",
-        "Recognition on our brochures/flyers",
-        "Recognition on an IG/FB post",
-        "Recognition on 1 banner at a Give Back JoJo event",
-      ],
-    },
-    {
-      title: "Connect & Support",
-      amount: "$10,000",
-      perks: [
-        "50 exclusive Give Back JoJo stickers",
-        "25 Give Back JoJo T-Shirts",
-        "Recognition at 3 Give Back JoJo events",
-        "Recognition on our website",
-        "1 booth at a Give Back JoJo event",
-        "Recognition on our brochures/flyers",
-        "Recognition on an IG/FB post",
-        "Recognition on banners at 3 Give Back JoJo events",
-        "Opportunity for a speech at 1 Give Back JoJo event",
-        "1 performance at a Give Back JoJo event",
-      ],
-    },
-    {
-      title: "Save a Life",
-      amount: "$25,000",
-      perks: [
-        "100 exclusive Give Back JoJo stickers",
-        "50 Give Back JoJo T-Shirts",
-        "Recognition at all Give Back JoJo events",
-        "Recognition on our website",
-        "1 booth at all Give Back JoJo events",
-        "Recognition on our brochures/flyers",
-        "Recognition on an IG/FB post",
-        "Recognition on all banners on Give Back JoJo events",
-        "Opportunity for a speech at all Give Back JoJo events",
-        "1 performance at all Give Back JoJo events",
-        "Name/Logo on Billboard(s)",
-      ],
-    },
-  ];
 
   return (
     <Container>
@@ -99,8 +117,8 @@ const Sponsorship = () => {
       <Button onClick={handleStartToday}>Start Today</Button>
       {/* Sponsorship Levels Grid */}
       <SponsorshipGrid>
-        {sponsorshipLevels.map((level, index) => (
-          <SponsorshipItem key={index}>
+        {sponsorshipLevels.map((level) => (
+          <SponsorshipItem key={level._id}>
             <Amount>{level.amount}</Amount>
             <SponsorshipTitle>{level.title}</SponsorshipTitle>
             <PerksList>

@@ -4,9 +4,11 @@ import { getFirestore, collection, query, where, getDocs } from 'firebase/firest
 import { getApp } from 'firebase/app';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 
 const MyOrderHistory = () => {
   const { currentUser, loading: authLoading } = useAuth();
+  const { showToast } = useToast();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState(null);
@@ -120,7 +122,7 @@ const MyOrderHistory = () => {
       closeReturnModal();
     } catch (error) {
       console.error('Error requesting return:', error);
-      alert(error.message || 'Failed to submit return request. Please try again.');
+      showToast(error.message || 'Failed to submit return request. Please try again.', 'error');
     } finally {
       setSubmittingReturn(false);
     }

@@ -4,6 +4,7 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getApp } from 'firebase/app';
 import styled from 'styled-components';
 import SEO from './SEO';
+import { useToast } from '../context/ToastContext';
 
 // Styled Components
 const PageContainer = styled.div`
@@ -91,6 +92,7 @@ const HomeButton = styled.button`
 `;
 
 export default function SuccessPage() {
+  const { showToast } = useToast();
   // Extract query parameters
   const { search } = useLocation();
   const searchParams = new URLSearchParams(search);
@@ -121,7 +123,7 @@ export default function SuccessPage() {
   const handleCopyOrderId = () => {
     if (!orderId) return;
     navigator.clipboard.writeText(orderId);
-    alert('Order ID copied to clipboard!');
+    showToast('Order ID copied to clipboard!', 'success');
   };
 
   return (

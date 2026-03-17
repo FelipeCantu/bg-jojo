@@ -6,10 +6,12 @@ import { getFirestore, collection, query, where, orderBy, getDocs } from 'fireba
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getApp } from 'firebase/app';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 
 const Subscriptions = () => {
   const navigate = useNavigate();
   const { currentUser, isAuthenticated } = useAuth();
+  const { showToast } = useToast();
   const [subscriptions, setSubscriptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [cancellingId, setCancellingId] = useState(null);
@@ -60,7 +62,7 @@ const Subscriptions = () => {
       setConfirmCancelId(null);
     } catch (error) {
       console.error('Error cancelling subscription:', error);
-      alert('Failed to cancel subscription. Please try again.');
+      showToast('Failed to cancel subscription. Please try again.', 'error');
     } finally {
       setCancellingId(null);
     }

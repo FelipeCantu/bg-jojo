@@ -4,8 +4,10 @@ import { onAuthStateChanged, updateProfile } from 'firebase/auth';
 import styled from 'styled-components';
 import { FaCamera, FaUser, FaEnvelope } from 'react-icons/fa';
 import { DEFAULT_ANONYMOUS_AVATAR } from '../../constants';
+import { useToast } from '../../context/ToastContext';
 
 const MyAccount = () => {
+  const { showToast } = useToast();
   const [user, setUser] = useState(null);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -51,10 +53,10 @@ const MyAccount = () => {
         });
 
         setPhotoURL(imageURL);
-        alert("Profile updated successfully");
+        showToast("Profile updated successfully", "success");
       } catch (error) {
         console.error("Error updating profile:", error);
-        alert("Error updating profile");
+        showToast("Error updating profile", "error");
       }
     }
   };
