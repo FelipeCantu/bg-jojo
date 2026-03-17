@@ -64,21 +64,6 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // Handle the result of a mobile redirect sign-in (Google/Facebook)
-  useEffect(() => {
-    authService.handleRedirectResult().then((result) => {
-      if (result?.success) {
-        toast.success(
-          result.isNewUser ? "Account created!" : "Login successful!"
-        );
-      } else if (result?.success === false) {
-        // Ignore popup-closed — user just cancelled
-        if (result.code !== "auth/popup-closed-by-user") {
-          toast.error(result.error || "Sign-in failed. Please try again.");
-        }
-      }
-    });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const auth = getAuth(app);

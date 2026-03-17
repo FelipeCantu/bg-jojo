@@ -3,13 +3,11 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signInWithPopup,
-  signInWithRedirect,
-  getRedirectResult,
   FacebookAuthProvider,
   GoogleAuthProvider,
   sendEmailVerification,
   sendPasswordResetEmail,
-  updateProfile
+  updateProfile,
 } from "firebase/auth";
 import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { firestore } from "../firebaseconfig";
@@ -61,23 +59,15 @@ const loginWithEmail = async (email, password) => {
   }
 };
 
-const isMobile = () =>
-  /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
-
 // Social Authentication
-// Mobile uses redirect (popups are blocked by browsers).
-// Desktop uses popup — redirect is unreliable on localhost and the COOP warning
-// it produces is cosmetic and does not break sign-in.
+// Always use popup — it works on desktop and mobile when triggered by a direct
+// user tap. signInWithRedirect is unreliable on localhost and has cross-origin
+// iframe issues that vary by browser.
 const signInWithFacebook = async () => {
   try {
     const provider = new FacebookAuthProvider();
     provider.addScope('email');
     provider.addScope('public_profile');
-
-    if (isMobile()) {
-      await signInWithRedirect(auth, provider);
-      return { success: true, redirecting: true };
-    }
 
     const result = await signInWithPopup(auth, provider);
     const isNewUser = result._tokenResponse?.isNewUser || false;
@@ -95,11 +85,6 @@ const signInWithGoogle = async () => {
     provider.addScope('email');
     provider.addScope('profile');
 
-    if (isMobile()) {
-      await signInWithRedirect(auth, provider);
-      return { success: true, redirecting: true };
-    }
-
     const result = await signInWithPopup(auth, provider);
     const isNewUser = result._tokenResponse?.isNewUser || false;
     await createUserDocument(result.user);
@@ -111,20 +96,6 @@ const signInWithGoogle = async () => {
 };
 
 // Called once on app load to pick up the result of a redirect sign-in
-const handleRedirectResult = async () => {
-  try {
-    const result = await getRedirectResult(auth);
-    if (result?.user) {
-      await createUserDocument(result.user);
-      const isNewUser = result._tokenResponse?.isNewUser || false;
-      return { success: true, user: result.user, isNewUser };
-    }
-    return null; // No pending redirect
-  } catch (error) {
-    console.error("Redirect result error:", error);
-    return { success: false, error: error.message, code: error.code };
-  }
-};
 
 // Password Reset
 const resetPassword = async (email) => {
@@ -202,5 +173,4 @@ export {
   signInWithGoogle,
   resetPassword,
   signOut,
-  handleRedirectResult,
 };
