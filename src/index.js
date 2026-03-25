@@ -142,28 +142,32 @@ function renderApp() {
     console.error('Failed to render application:', error);
 
     // Fallback error display if rendering fails completely
+    // NOTE: Uses safe DOM API (textContent) instead of innerHTML to prevent XSS
     const rootElement = document.getElementById('root') || document.body;
-    rootElement.innerHTML = `
-      <div style="padding: 2rem; text-align: center; font-family: sans-serif;">
-        <h2 style="color: #e03131;">Critical Rendering Error</h2>
-        <p>Failed to initialize the application.</p>
-        <p>${error.message}</p>
-        <button 
-          onclick="window.location.reload(true)" 
-          style="
-            padding: 0.75rem 1.5rem;
-            background: #228be6;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-top: 1rem;
-          "
-        >
-          Force Reload
-        </button>
-      </div>
-    `;
+    const wrapper = document.createElement('div');
+    wrapper.setAttribute('style', 'padding: 2rem; text-align: center; font-family: sans-serif;');
+
+    const heading = document.createElement('h2');
+    heading.setAttribute('style', 'color: #e03131;');
+    heading.textContent = 'Critical Rendering Error';
+
+    const msg1 = document.createElement('p');
+    msg1.textContent = 'Failed to initialize the application.';
+
+    const msg2 = document.createElement('p');
+    msg2.textContent = error.message; // textContent is safe — no XSS
+
+    const btn = document.createElement('button');
+    btn.setAttribute('style', 'padding: 0.75rem 1.5rem; background: #228be6; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 1rem;');
+    btn.textContent = 'Force Reload';
+    btn.onclick = () => window.location.reload(true);
+
+    wrapper.appendChild(heading);
+    wrapper.appendChild(msg1);
+    wrapper.appendChild(msg2);
+    wrapper.appendChild(btn);
+    rootElement.innerHTML = '';
+    rootElement.appendChild(wrapper);
   }
 }
 

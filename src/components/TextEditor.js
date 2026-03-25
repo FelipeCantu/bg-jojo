@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
+import DOMPurify from 'dompurify';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
@@ -98,7 +99,9 @@ const TextEditor = forwardRef(({
     ],
     content: value || '',
     onUpdate: ({ editor }) => {
-      const html = editor.getHTML();
+      const rawHtml = editor.getHTML();
+      // Sanitize HTML output before passing upstream to prevent stored XSS
+      const html = DOMPurify.sanitize(rawHtml, { USE_PROFILES: { html: true } });
       lastContentRef.current = html;
       setHasUnsavedChanges(true);
       onChange(html);
@@ -126,7 +129,8 @@ const TextEditor = forwardRef(({
       if (!editor) return null;
       setIsSaving(true);
       try {
-        const html = editor.getHTML();
+        const rawHtml = editor.getHTML();
+        const html = DOMPurify.sanitize(rawHtml, { USE_PROFILES: { html: true } });
         const portableText = await convertHtmlToPortableText(html);
         onChange(portableText);
         setHasUnsavedChanges(false);

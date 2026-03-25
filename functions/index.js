@@ -317,26 +317,9 @@ app.use(rateLimit({
 // HTTP API Endpoints
 app.get("/healthz", (req, res) => res.status(200).send("OK"));
 
-/**
- * Root endpoint that returns API status information
- * @param {object} req Express request object
- * @param {object} res Express response object
- */
+// Root endpoint — returns minimal status only (no internal config disclosed)
 app.get("/", (req, res) => {
-  if (!stripe) stripe = initializeStripe();
-
-  const stripeMode = process.env.STRIPE_SECRET_KEY?.startsWith("sk_test_") ? "test" : "live";
-
-  res.json({
-    status: "API is running",
-    environment: process.env.K_SERVICE ? "production" : "development",
-    stripe: stripe ? "ready" : "not configured",
-    stripeMode,
-    endpoints: {
-      api: "callable api function (all payment/checkout/donation operations)",
-      webhook: "POST /webhook",
-    },
-  });
+  res.json({ status: "OK" });
 });
 
 // Error handling for the Express app

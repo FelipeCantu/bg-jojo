@@ -100,10 +100,11 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Brief delay only to allow fonts/styles to settle — reduced from 2000ms
     const loadingTimer = setTimeout(() => {
       setIsLoading(false);
       document.body.classList.remove('loading');
-    }, 2000);
+    }, 300);
 
     document.body.classList.add('loading');
 

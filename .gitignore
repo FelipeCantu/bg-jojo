@@ -32,3 +32,15 @@ functions/.runtimeconfig.json
 .claude/
 CLAUDE.md
 
+# Firebase debug logs (local development artifacts)
+firestore-debug.log
+firebase-debug.log
+pubsub-debug.log
+functions/firestore-debug.log
+functions/firebase-debug.log
+functions/pubsub-debug.log
+
+# Git patch files
+*.patch
+diff.patch
+

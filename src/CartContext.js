@@ -12,10 +12,24 @@ const CartContext = createContext({
 
 const CART_STORAGE_KEY = 'bg-jojo-cart';
 
+const isValidCartItem = (item) => {
+  if (!item || typeof item !== 'object') return false;
+  if (typeof item.name !== 'string' || !item.name.trim()) return false;
+  if (typeof item.price !== 'number' || item.price < 0 || item.price > 10000) return false;
+  if (!Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 99) return false;
+  // Validate Stripe price ID format if present
+  if (item.stripePriceId !== undefined && (typeof item.stripePriceId !== 'string' || !item.stripePriceId.startsWith('price_'))) return false;
+  return true;
+};
+
 const loadCartFromStorage = () => {
   try {
     const stored = localStorage.getItem(CART_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
+    if (!stored) return [];
+    const parsed = JSON.parse(stored);
+    if (!Array.isArray(parsed)) return [];
+    // Filter out any tampered or malformed items
+    return parsed.filter(isValidCartItem);
   } catch {
     return [];
   }

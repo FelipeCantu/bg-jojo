@@ -4,7 +4,7 @@ import { DEFAULT_ANONYMOUS_AVATAR } from "./constants";
 
 // Initialize Sanity client
 export const client = createClient({
-  projectId: process.env.REACT_APP_SANITY_PROJECT_ID || "wssoiuia",
+  projectId: process.env.REACT_APP_SANITY_PROJECT_ID,
   dataset: process.env.REACT_APP_SANITY_DATASET || "production",
   useCdn: process.env.NODE_ENV === 'production',
   apiVersion: "2023-05-03",

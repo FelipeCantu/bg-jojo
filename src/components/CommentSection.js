@@ -61,8 +61,15 @@ const CommentSection = ({ articleId }) => {
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
 
-    if (!newComment.trim()) {
+    const trimmedComment = newComment.trim();
+
+    if (!trimmedComment) {
       setError("Comment cannot be empty");
+      return;
+    }
+
+    if (trimmedComment.length > 2000) {
+      setError("Comment must be 2,000 characters or less");
       return;
     }
 
@@ -77,7 +84,7 @@ const CommentSection = ({ articleId }) => {
 
       const newCommentData = {
         _type: "comment",
-        content: newComment,
+        content: trimmedComment,
         article: {
           _type: "reference",
           _ref: articleId,
