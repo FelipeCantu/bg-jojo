@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useCart } from '../CartContext';
-import { ArrowLeftIcon, CheckCircleIcon, ExclamationCircleIcon, LockClosedIcon, CreditCardIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, CheckCircleIcon, ExclamationCircleIcon, LockClosedIcon, CreditCardIcon, TruckIcon, BuildingStorefrontIcon } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { getFirestore, collection, addDoc, serverTimestamp, updateDoc, doc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { getApp } from 'firebase/app';
+import emailjs from 'emailjs-com';
 import useStripePayment from './useStripePayment';
 import SEO from './SEO';
 
@@ -86,11 +89,13 @@ const validateForm = (formData) => {
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
     errors.email = 'Please enter a valid email';
   }
-  if (!formData.address.trim()) errors.address = 'Address is required';
-  if (!formData.city.trim()) errors.city = 'City is required';
-  if (!formData.state.trim()) errors.state = 'State/Province is required';
-  if (!formData.zipCode.trim()) errors.zipCode = 'ZIP code is required';
-  if (!formData.country.trim()) errors.country = 'Country is required';
+  if (formData.fulfillmentType === 'shipping') {
+    if (!formData.address.trim()) errors.address = 'Address is required';
+    if (!formData.city.trim()) errors.city = 'City is required';
+    if (!formData.state.trim()) errors.state = 'State/Province is required';
+    if (!formData.zipCode.trim()) errors.zipCode = 'ZIP code is required';
+    if (!formData.country.trim()) errors.country = 'Country is required';
+  }
   return errors;
 };
 
@@ -112,12 +117,14 @@ const CheckoutPage = () => {
     state: '',
     zipCode: '',
     country: 'US',
-    paymentMethod: 'stripe_checkout'
+    paymentMethod: 'stripe_checkout',
+    fulfillmentType: 'shipping'
   });
   
   const [formErrors, setFormErrors] = useState({});
   const [isSuccess, setIsSuccess] = useState(false);
   const [orderId, setOrderId] = useState(null);
+  const [pickupDetails, setPickupDetails] = useState(null);
 
   const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const isBelowMinimum = total < 0.50;
@@ -157,17 +164,20 @@ const CheckoutPage = () => {
       total,
       status,
       paymentMethod,
+      fulfillmentType: formData.fulfillmentType,
       shippingInfo: {
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
         phone: formData.phone,
-        address: formData.address,
-        addressLine2: formData.addressLine2,
-        city: formData.city,
-        state: formData.state,
-        zipCode: formData.zipCode,
-        country: formData.country
+        ...(formData.fulfillmentType === 'shipping' && {
+          address: formData.address,
+          addressLine2: formData.addressLine2,
+          city: formData.city,
+          state: formData.state,
+          zipCode: formData.zipCode,
+          country: formData.country
+        })
       },
       createdAt: now,
       updatedAt: now,
@@ -210,6 +220,41 @@ const CheckoutPage = () => {
           await updateOrderStatus(localOrderId, 'paid', result.paymentId);
         }
         clearCart();
+        if (formData.fulfillmentType === 'pickup') {
+          try {
+            const api = httpsCallable(getFunctions(getApp(), 'us-central1'), 'api');
+            const { data } = await api({ endpoint: 'getPickupDetails', orderId: localOrderId });
+            setPickupDetails(data);
+            // Send pickup confirmation using existing EmailJS template
+            if (process.env.REACT_APP_EMAILJS_SERVICE_ID && process.env.REACT_APP_EMAILJS_TEMPLATE_ID) {
+              const pickupMessage = [
+                `Your order #${localOrderId} is confirmed for local pickup.`,
+                '',
+                `Pickup Location: ${data?.address || 'We will contact you with location details.'}`,
+                data?.hours ? `Hours: ${data.hours}` : '',
+                data?.instructions ? `Note: ${data.instructions}` : '',
+                '',
+                "We'll reach out when your order is ready. Thank you!",
+              ].filter(line => line !== null && line !== undefined).join('\n');
+
+              emailjs.send(
+                process.env.REACT_APP_EMAILJS_SERVICE_ID,
+                process.env.REACT_APP_EMAILJS_TEMPLATE_ID,
+                {
+                  firstName: formData.firstName,
+                  lastName: formData.lastName,
+                  email: formData.email,
+                  phone: formData.phone || '',
+                  role: 'Order Pickup Confirmation',
+                  message: pickupMessage,
+                },
+                process.env.REACT_APP_EMAILJS_USER_KEY
+              ).catch(e => console.error('Pickup email error:', e));
+            }
+          } catch (e) {
+            console.error('Could not fetch pickup details', e);
+          }
+        }
         setIsSuccess(true);
       }
     } catch (error) {
@@ -236,7 +281,8 @@ const CheckoutPage = () => {
     return handleCheckout({
       formData,
       items,
-      orderId
+      orderId,
+      fulfillmentType: formData.fulfillmentType
     });
   };
 
@@ -260,7 +306,20 @@ const CheckoutPage = () => {
           <h2>Order Confirmed!</h2>
           <p>Thank you for your purchase. Your order has been received.</p>
           {orderId && <p>Order ID: {orderId}</p>}
-          <p>A confirmation email has been sent to {formData.email}</p>
+          {formData.fulfillmentType === 'pickup' ? (
+            <PickupNotice>
+              <strong>Pickup Location</strong><br />
+              {pickupDetails?.address
+                ? <>{pickupDetails.address}</>
+                : 'We\'ll contact you with pickup details shortly.'}
+              {pickupDetails?.hours && <><br /><span>Hours: {pickupDetails.hours}</span></>}
+              {pickupDetails?.instructions && <><br /><em>{pickupDetails.instructions}</em></>}
+              <br /><br />
+              A confirmation has been sent to {formData.email}
+            </PickupNotice>
+          ) : (
+            <p>A confirmation email has been sent to {formData.email}</p>
+          )}
           <SubmitButton onClick={() => navigate('/')}>
             Continue Shopping
           </SubmitButton>
@@ -289,7 +348,56 @@ const CheckoutPage = () => {
           <CheckoutGrid>
             <div>
               <Section>
-                <SectionTitle>Shipping Information</SectionTitle>
+                <SectionTitle>Fulfillment</SectionTitle>
+                <FulfillmentOptions>
+                  <FulfillmentOption
+                    $selected={formData.fulfillmentType === 'shipping'}
+                    onClick={() => setFormData(prev => ({ ...prev, fulfillmentType: 'shipping' }))}
+                  >
+                    <PaymentOptionRadio>
+                      <input
+                        type="radio"
+                        name="fulfillmentType"
+                        value="shipping"
+                        checked={formData.fulfillmentType === 'shipping'}
+                        onChange={handleChange}
+                      />
+                    </PaymentOptionRadio>
+                    <PaymentOptionContent>
+                      <PaymentOptionHeader>
+                        <TruckIcon width={18} height={18} />
+                        <PaymentOptionTitle>Ship to me</PaymentOptionTitle>
+                      </PaymentOptionHeader>
+                      <PaymentOptionDesc>We'll ship your order to your address.</PaymentOptionDesc>
+                    </PaymentOptionContent>
+                  </FulfillmentOption>
+
+                  <FulfillmentOption
+                    $selected={formData.fulfillmentType === 'pickup'}
+                    onClick={() => setFormData(prev => ({ ...prev, fulfillmentType: 'pickup' }))}
+                  >
+                    <PaymentOptionRadio>
+                      <input
+                        type="radio"
+                        name="fulfillmentType"
+                        value="pickup"
+                        checked={formData.fulfillmentType === 'pickup'}
+                        onChange={handleChange}
+                      />
+                    </PaymentOptionRadio>
+                    <PaymentOptionContent>
+                      <PaymentOptionHeader>
+                        <BuildingStorefrontIcon width={18} height={18} />
+                        <PaymentOptionTitle>Local Pickup</PaymentOptionTitle>
+                      </PaymentOptionHeader>
+                      <PaymentOptionDesc>Pick up your order in person. We'll contact you when it's ready.</PaymentOptionDesc>
+                    </PaymentOptionContent>
+                  </FulfillmentOption>
+                </FulfillmentOptions>
+              </Section>
+
+              <Section>
+                <SectionTitle>{formData.fulfillmentType === 'pickup' ? 'Contact Information' : 'Shipping Information'}</SectionTitle>
                 <FormGroup>
                   <Label>First Name</Label>
                   <Input name="firstName" value={formData.firstName} onChange={handleChange} error={formErrors.firstName} required />
@@ -309,48 +417,53 @@ const CheckoutPage = () => {
                   <Label>Phone</Label>
                   <Input type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="(555) 123-4567" />
                 </FormGroup>
-                <FormGroup>
-                  <Label>Address</Label>
-                  <Input name="address" value={formData.address} onChange={handleChange} error={formErrors.address} required />
-                  {formErrors.address && <ErrorText>{formErrors.address}</ErrorText>}
-                </FormGroup>
-                <FormGroup>
-                  <Label>Address Line 2</Label>
-                  <Input name="addressLine2" value={formData.addressLine2} onChange={handleChange} placeholder="Apt, suite, unit, etc. (optional)" />
-                </FormGroup>
-                <FormGroup>
-                  <Label>City</Label>
-                  <Input name="city" value={formData.city} onChange={handleChange} error={formErrors.city} required />
-                  {formErrors.city && <ErrorText>{formErrors.city}</ErrorText>}
-                </FormGroup>
-                <FormGroup>
-                  <Label>State / Province</Label>
-                  {(formData.country === 'US' || formData.country === 'CA') ? (
-                    <Select name="state" value={formData.state} onChange={handleChange} error={formErrors.state}>
-                      <option value="">Select...</option>
-                      {(formData.country === 'US' ? US_STATES : CA_PROVINCES).map(([code, name]) => (
-                        <option key={code} value={code}>{name}</option>
-                      ))}
-                    </Select>
-                  ) : (
-                    <Input name="state" value={formData.state} onChange={handleChange} error={formErrors.state} required />
-                  )}
-                  {formErrors.state && <ErrorText>{formErrors.state}</ErrorText>}
-                </FormGroup>
-                <FormGroup>
-                  <Label>ZIP Code</Label>
-                  <Input name="zipCode" value={formData.zipCode} onChange={handleChange} error={formErrors.zipCode} required />
-                  {formErrors.zipCode && <ErrorText>{formErrors.zipCode}</ErrorText>}
-                </FormGroup>
-                <FormGroup>
-                  <Label>Country</Label>
-                  <Select name="country" value={formData.country} onChange={handleChange} error={formErrors.country}>
-                    <option value="US">United States</option>
-                    <option value="CA">Canada</option>
-                    <option value="GB">United Kingdom</option>
-                  </Select>
-                  {formErrors.country && <ErrorText>{formErrors.country}</ErrorText>}
-                </FormGroup>
+
+                {formData.fulfillmentType === 'shipping' && (
+                  <>
+                    <FormGroup>
+                      <Label>Address</Label>
+                      <Input name="address" value={formData.address} onChange={handleChange} error={formErrors.address} required />
+                      {formErrors.address && <ErrorText>{formErrors.address}</ErrorText>}
+                    </FormGroup>
+                    <FormGroup>
+                      <Label>Address Line 2</Label>
+                      <Input name="addressLine2" value={formData.addressLine2} onChange={handleChange} placeholder="Apt, suite, unit, etc. (optional)" />
+                    </FormGroup>
+                    <FormGroup>
+                      <Label>City</Label>
+                      <Input name="city" value={formData.city} onChange={handleChange} error={formErrors.city} required />
+                      {formErrors.city && <ErrorText>{formErrors.city}</ErrorText>}
+                    </FormGroup>
+                    <FormGroup>
+                      <Label>State / Province</Label>
+                      {(formData.country === 'US' || formData.country === 'CA') ? (
+                        <Select name="state" value={formData.state} onChange={handleChange} error={formErrors.state}>
+                          <option value="">Select...</option>
+                          {(formData.country === 'US' ? US_STATES : CA_PROVINCES).map(([code, name]) => (
+                            <option key={code} value={code}>{name}</option>
+                          ))}
+                        </Select>
+                      ) : (
+                        <Input name="state" value={formData.state} onChange={handleChange} error={formErrors.state} required />
+                      )}
+                      {formErrors.state && <ErrorText>{formErrors.state}</ErrorText>}
+                    </FormGroup>
+                    <FormGroup>
+                      <Label>ZIP Code</Label>
+                      <Input name="zipCode" value={formData.zipCode} onChange={handleChange} error={formErrors.zipCode} required />
+                      {formErrors.zipCode && <ErrorText>{formErrors.zipCode}</ErrorText>}
+                    </FormGroup>
+                    <FormGroup>
+                      <Label>Country</Label>
+                      <Select name="country" value={formData.country} onChange={handleChange} error={formErrors.country}>
+                        <option value="US">United States</option>
+                        <option value="CA">Canada</option>
+                        <option value="GB">United Kingdom</option>
+                      </Select>
+                      {formErrors.country && <ErrorText>{formErrors.country}</ErrorText>}
+                    </FormGroup>
+                  </>
+                )}
               </Section>
 
               <Section>
@@ -743,6 +856,37 @@ const LoadingSpinner = styled.div`
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
   }
+`;
+
+const FulfillmentOptions = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+`;
+
+const FulfillmentOption = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 2px solid ${props => props.$selected ? '#024947' : '#e0e0e0'};
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: ${props => props.$selected ? '#f8fffe' : '#fff'};
+
+  &:hover {
+    border-color: ${props => props.$selected ? '#024947' : '#bbb'};
+  }
+`;
+
+const PickupNotice = styled.p`
+  background: #f0faf9;
+  border: 1px solid #024947;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  color: #024947;
+  font-size: 0.95rem;
 `;
 
 export default CheckoutPage;

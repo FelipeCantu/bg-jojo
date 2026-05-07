@@ -7,6 +7,8 @@ const cors = require("cors");
 const rateLimit = require("express-rate-limit");
 const Stripe = require("stripe");
 const crypto = require("crypto");
+const Sentry = require("@sentry/node");
+const https = require("https");
 
 // Security recommendation: Validate environment in local emulator
 if (process.env.FUNCTIONS_EMULATOR === "true") {
@@ -35,6 +37,62 @@ admin.initializeApp({
   databaseURL: process.env.FIREBASE_DATABASE_URL || "https://bg-jojo.firebaseio.com",
   projectId: process.env.GCLOUD_PROJECT || "bg-jojo",
 });
+
+// Initialize Sentry error tracking
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  environment: process.env.K_SERVICE ? "production" : "development",
+  tracesSampleRate: 0.1,
+});
+
+/**
+ * Sends an error notification embed to a Discord webhook.
+ * Set DISCORD_WEBHOOK_URL in your Firebase Function environment variables.
+ * @param title
+ * @param description
+ * @param fields
+ * @param color
+ */
+const notifyDiscord = (title, description, fields = [], color = 15158332) => {
+  return new Promise(resolve => {
+    const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
+    if (!webhookUrl) return resolve();
+    try {
+      const url = new URL(webhookUrl);
+      const body = JSON.stringify({
+        embeds: [{
+          title,
+          description,
+          color,
+          fields,
+          timestamp: new Date().toISOString(),
+          footer: { text: "Give Back Jojo — Error Monitor" },
+        }],
+      });
+      const options = {
+        hostname: url.hostname,
+        path: url.pathname + url.search,
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(body),
+        },
+      };
+      const req = https.request(options, res => {
+        res.resume(); resolve();
+      });
+      req.on("error", err => {
+        console.error("Discord notification failed:", err.message);
+        resolve();
+      });
+      req.write(body);
+      req.end();
+    } catch (err) {
+      console.error("Discord notification error:", err.message);
+      resolve();
+    }
+  });
+};
 
 // Stripe initialization
 let stripe;
@@ -201,6 +259,20 @@ app.post("/webhook", express.raw({ type: "application/json" }), async (req, res)
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           });
         }
+        Sentry.captureEvent({
+          message: "Stripe payment_intent.payment_failed",
+          level: "error",
+          extra: { paymentIntentId: pi.id, metadata: pi.metadata },
+        });
+        await notifyDiscord(
+          "Payment Failed",
+          `A ${pi.metadata?.type === "donation" ? "donation" : "order"} payment failed.`,
+          [
+            { name: "Payment Intent", value: pi.id, inline: false },
+            { name: "Amount", value: `$${((pi.amount || 0) / 100).toFixed(2)}`, inline: true },
+            { name: "Error", value: pi.last_payment_error?.message || "Unknown", inline: false },
+          ]
+        );
         break;
       }
       case "checkout.session.completed": {
@@ -226,6 +298,7 @@ app.post("/webhook", express.raw({ type: "application/json" }), async (req, res)
           const orderRef = db.collection("orders").doc(session.metadata.orderId);
           const orderSnap = await orderRef.get();
           if (orderSnap.exists && orderSnap.data().status !== "paid") {
+            const order = orderSnap.data();
             await orderRef.update({
               status: "paid",
               paymentId: session.id,
@@ -260,6 +333,20 @@ app.post("/webhook", express.raw({ type: "application/json" }), async (req, res)
             });
           }
         }
+        Sentry.captureEvent({
+          message: "Stripe invoice.payment_failed",
+          level: "error",
+          extra: { invoiceId: invoice.id, metadata: invoice.subscription_details?.metadata },
+        });
+        await notifyDiscord(
+          "Subscription Payment Failed",
+          "A recurring donation invoice payment failed.",
+          [
+            { name: "Invoice ID", value: invoice.id, inline: false },
+            { name: "Amount Due", value: `$${((invoice.amount_due || 0) / 100).toFixed(2)}`, inline: true },
+            { name: "Attempt Count", value: String(invoice.attempt_count || 1), inline: true },
+          ]
+        );
         break;
       }
       case "customer.subscription.deleted": {
@@ -325,10 +412,26 @@ app.get("/", (req, res) => {
 // Error handling for the Express app
 app.use((err, req, res, _next) => { // Prefix unused parameter with underscore
   console.error("Server error:", err);
+  Sentry.captureException(err, { tags: { domain: "http", path: req.path } });
   res.status(500).json({ error: "Internal server error" });
 });
 
 // Export the HTTP API function (webhook + REST endpoints)
+// Called by the frontend to forward auth errors to Discord
+exports.reportError = onCall({}, async request => {
+  const { title, message, method, code } = request.data || {};
+  await notifyDiscord(
+    title || "Auth Error",
+    message || "An authentication error occurred.",
+    [
+      { name: "Method", value: method || "unknown", inline: true },
+      { name: "Code", value: code || "unknown", inline: true },
+    ],
+    15158332 // red
+  );
+  return { ok: true };
+});
+
 exports.httpApi = onRequest({
   minInstances: CONFIG.minInstances,
   invoker: "public",
@@ -352,741 +455,789 @@ exports.api = onCall({
   // Get the endpoint from request data
   const { endpoint, ...data } = request.data;
 
+  try {
   // Create Payment Intent
-  if (endpoint === "createPaymentIntent") {
-    const { amount, currency = "usd", metadata = {}, receipt_email } = data;
+    if (endpoint === "createPaymentIntent") {
+      const { amount, currency = "usd", metadata = {}, receipt_email } = data;
 
-    if (!amount || isNaN(amount) || amount < 50) {
-      throw new Error("Invalid amount");
+      if (!amount || isNaN(amount) || amount < 50) {
+        throw new Error("Invalid amount");
+      }
+
+      let verifiedAmount = Math.round(amount);
+
+      // Server-side amount verification: when an orderId is provided,
+      // use the order's total from Firestore instead of trusting the client
+      if (metadata.orderId) {
+        const db = admin.firestore();
+        const orderSnap = await db.collection("orders").doc(metadata.orderId).get();
+        if (!orderSnap.exists) {
+          throw new HttpsError("not-found", "Order not found");
+        }
+        const order = orderSnap.data();
+        const expectedAmount = Math.round(order.total * 100); // total is in dollars, convert to cents
+        if (verifiedAmount !== expectedAmount) {
+          console.error(`Amount mismatch for order ${metadata.orderId}: client sent ${verifiedAmount}, expected ${expectedAmount}`);
+          throw new HttpsError("invalid-argument", "Payment amount does not match order total");
+        }
+        verifiedAmount = expectedAmount;
+      }
+
+      const intentParams = {
+        amount: verifiedAmount,
+        currency,
+        metadata,
+        automatic_payment_methods: { enabled: true },
+      };
+      if (receipt_email) {
+        intentParams.receipt_email = receipt_email;
+      }
+
+      const idempotencyKey = metadata.orderId ?
+        `pi_order_${metadata.orderId}` :
+        `pi_${crypto.randomUUID()}`;
+
+      const paymentIntent = await stripe.paymentIntents.create(
+        intentParams,
+        { idempotencyKey }
+      );
+
+      return {
+        clientSecret: paymentIntent.client_secret,
+        amount: paymentIntent.amount,
+        currency: paymentIntent.currency,
+      };
     }
 
-    let verifiedAmount = Math.round(amount);
+    // Confirm Order Payment — verifies with Stripe and updates Firestore
+    if (endpoint === "confirmOrderPayment") {
+      const { orderId, paymentIntentId } = data;
+      if (!orderId) {
+        throw new HttpsError("invalid-argument", "Missing orderId");
+      }
 
-    // Server-side amount verification: when an orderId is provided,
-    // use the order's total from Firestore instead of trusting the client
-    if (metadata.orderId) {
       const db = admin.firestore();
-      const orderSnap = await db.collection("orders").doc(metadata.orderId).get();
+      const orderRef = db.collection("orders").doc(orderId);
+      const orderSnap = await orderRef.get();
+
       if (!orderSnap.exists) {
         throw new HttpsError("not-found", "Order not found");
       }
+
       const order = orderSnap.data();
-      const expectedAmount = Math.round(order.total * 100); // total is in dollars, convert to cents
-      if (verifiedAmount !== expectedAmount) {
-        console.error(`Amount mismatch for order ${metadata.orderId}: client sent ${verifiedAmount}, expected ${expectedAmount}`);
-        throw new HttpsError("invalid-argument", "Payment amount does not match order total");
+
+      if (request.auth?.uid && order.userId && order.userId !== request.auth.uid) {
+        throw new HttpsError("permission-denied", "Unauthorized");
       }
-      verifiedAmount = expectedAmount;
-    }
 
-    const intentParams = {
-      amount: verifiedAmount,
-      currency,
-      metadata,
-      automatic_payment_methods: { enabled: true },
-    };
-    if (receipt_email) {
-      intentParams.receipt_email = receipt_email;
-    }
+      if (order.status === "paid") {
+        return { success: true, status: "paid" };
+      }
 
-    const idempotencyKey = metadata.orderId ?
-      `pi_order_${metadata.orderId}` :
-      `pi_${crypto.randomUUID()}`;
+      // Verify with Stripe — handle both payment intents (pi_) and checkout sessions (cs_)
+      if (paymentIntentId) {
+        if (paymentIntentId.startsWith("cs_")) {
+          const session = await stripe.checkout.sessions.retrieve(paymentIntentId);
+          if (session.payment_status !== "paid") {
+            throw new HttpsError("failed-precondition", `Payment not complete. Status: ${session.payment_status}`);
+          }
+        } else {
+          const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+          if (pi.status !== "succeeded") {
+            throw new HttpsError("failed-precondition", `Payment not complete. Status: ${pi.status}`);
+          }
+        }
+      }
 
-    const paymentIntent = await stripe.paymentIntents.create(
-      intentParams,
-      { idempotencyKey }
-    );
+      await orderRef.update({
+        status: "paid",
+        ...(paymentIntentId && { paymentId: paymentIntentId }),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
 
-    return {
-      clientSecret: paymentIntent.client_secret,
-      amount: paymentIntent.amount,
-      currency: paymentIntent.currency,
-    };
-  }
-
-  // Confirm Order Payment — verifies with Stripe and updates Firestore
-  if (endpoint === "confirmOrderPayment") {
-    const { orderId, paymentIntentId } = data;
-    if (!orderId) {
-      throw new HttpsError("invalid-argument", "Missing orderId");
-    }
-
-    const db = admin.firestore();
-    const orderRef = db.collection("orders").doc(orderId);
-    const orderSnap = await orderRef.get();
-
-    if (!orderSnap.exists) {
-      throw new HttpsError("not-found", "Order not found");
-    }
-
-    const order = orderSnap.data();
-
-    if (request.auth?.uid && order.userId && order.userId !== request.auth.uid) {
-      throw new HttpsError("permission-denied", "Unauthorized");
-    }
-
-    if (order.status === "paid") {
       return { success: true, status: "paid" };
     }
 
-    // Verify with Stripe — handle both payment intents (pi_) and checkout sessions (cs_)
-    if (paymentIntentId) {
-      if (paymentIntentId.startsWith("cs_")) {
-        const session = await stripe.checkout.sessions.retrieve(paymentIntentId);
+    // Create Checkout Session
+    if (endpoint === "createCheckoutSession") {
+      const { lineItems, successUrl, cancelUrl, customerEmail, metadata = {} } = data;
+
+      // Validate URLs are from allowed domains
+      const isValidRedirectUrl = url => {
+        try {
+          const parsed = new URL(url);
+          return ALLOWED_REDIRECT_DOMAINS.some(domain => parsed.hostname === domain || parsed.hostname.endsWith(`.${domain}`));
+        } catch {
+          return false;
+        }
+      };
+
+      if (!isValidRedirectUrl(successUrl) || !isValidRedirectUrl(cancelUrl)) {
+        throw new Error("Invalid URL domain");
+      }
+
+      const idempotencyKey = metadata.orderId ?
+        `cs_order_${metadata.orderId}` :
+        `cs_${crypto.randomUUID()}`;
+
+      const session = await stripe.checkout.sessions.create(
+        {
+          payment_method_types: ["card"],
+          line_items: lineItems,
+          mode: "payment",
+          success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: cancelUrl,
+          customer_email: customerEmail,
+          metadata,
+          expires_at: Math.floor(Date.now() / 1000) + 1800, // 30 minutes
+        },
+        { idempotencyKey }
+      );
+
+      return {
+        id: session.id,
+        url: session.url,
+        expires: session.expires_at,
+      };
+    }
+
+    // Create Donation Payment Intent
+    if (endpoint === "createDonationPaymentIntent") {
+      const { amountCents, currency = "usd", donorInfo = {}, frequency = "one_time" } = data;
+
+      if (!amountCents || isNaN(amountCents) || amountCents < 100) {
+        throw new Error("Invalid amount. Minimum donation is $1.00");
+      }
+      if (amountCents > 5000000) {
+        throw new Error("Amount exceeds maximum donation limit");
+      }
+
+      const db = admin.firestore();
+      const donationRef = await db.collection("donations").add({
+        donorEmail: donorInfo.email || null,
+        donorName: donorInfo.firstName && donorInfo.lastName ?
+          `${donorInfo.firstName} ${donorInfo.lastName}` : null,
+        userId: request.auth?.uid || null,
+        amount: amountCents / 100,
+        amountCents,
+        currency,
+        frequency,
+        paymentMethod: "card",
+        stripePaymentIntentId: null,
+        stripeSessionId: null,
+        stripeSubscriptionId: null,
+        stripeCustomerId: null,
+        status: "pending",
+        tierDescription: donorInfo.tierDescription || null,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        paidAt: null,
+        cancelledAt: null,
+      });
+
+      const paymentIntent = await stripe.paymentIntents.create(
+        {
+          amount: Math.round(amountCents),
+          currency,
+          description: "Donation to Give Back Jojo",
+          statement_descriptor: "GIVE BACK JOJO", // eslint-disable-line camelcase
+          metadata: {
+            type: "donation",
+            donationId: donationRef.id,
+            userId: (request.auth?.uid || "guest").toString(),
+            donorEmail: (donorInfo.email || "").toString(),
+            frequency,
+          },
+          automatic_payment_methods: { enabled: true },
+        },
+        { idempotencyKey: `pi_donation_${donationRef.id}` }
+      );
+
+      await donationRef.update({ stripePaymentIntentId: paymentIntent.id });
+
+      return {
+        clientSecret: paymentIntent.client_secret,
+        donationId: donationRef.id,
+      };
+    }
+
+    // Confirm Donation Payment — verifies with Stripe and updates Firestore
+    if (endpoint === "confirmDonationPayment") {
+      const { donationId, paymentIntentId } = data;
+      if (!donationId || !paymentIntentId) {
+        throw new HttpsError("invalid-argument", "Missing donationId or paymentIntentId");
+      }
+
+      const db = admin.firestore();
+      const donationRef = db.collection("donations").doc(donationId);
+      const donationSnap = await donationRef.get();
+
+      if (!donationSnap.exists) {
+        throw new HttpsError("not-found", "Donation not found");
+      }
+
+      const donation = donationSnap.data();
+
+      // Only the donor or the backend can confirm
+      if (request.auth?.uid && donation.userId && donation.userId !== request.auth.uid) {
+        throw new HttpsError("permission-denied", "Unauthorized");
+      }
+
+      // Skip if already paid
+      if (donation.status === "paid") {
+        return { success: true, status: "paid" };
+      }
+
+      // Verify with Stripe that the payment actually succeeded
+      const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+      if (pi.status !== "succeeded") {
+        throw new HttpsError("failed-precondition", `Payment not complete. Status: ${pi.status}`);
+      }
+
+      await donationRef.update({
+        status: "paid",
+        stripePaymentIntentId: paymentIntentId,
+        paidAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      return { success: true, status: "paid" };
+    }
+
+    // Confirm Donation Checkout — verifies checkout session with Stripe and updates Firestore
+    if (endpoint === "confirmDonationCheckout") {
+      const { donationId, sessionId } = data;
+      if (!donationId) {
+        throw new HttpsError("invalid-argument", "Missing donationId");
+      }
+
+      const db = admin.firestore();
+      const donationRef = db.collection("donations").doc(donationId);
+      const donationSnap = await donationRef.get();
+
+      if (!donationSnap.exists) {
+        throw new HttpsError("not-found", "Donation not found");
+      }
+
+      const donation = donationSnap.data();
+
+      if (request.auth?.uid && donation.userId && donation.userId !== request.auth.uid) {
+        throw new HttpsError("permission-denied", "Unauthorized");
+      }
+
+      // Skip if already confirmed
+      if (["paid", "active"].includes(donation.status)) {
+        return { success: true, status: donation.status };
+      }
+
+      // Verify with Stripe if sessionId provided
+      const updateData = {
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        paidAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+
+      if (sessionId) {
+        const session = await stripe.checkout.sessions.retrieve(sessionId);
         if (session.payment_status !== "paid") {
           throw new HttpsError("failed-precondition", `Payment not complete. Status: ${session.payment_status}`);
         }
-      } else {
-        const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
-        if (pi.status !== "succeeded") {
-          throw new HttpsError("failed-precondition", `Payment not complete. Status: ${pi.status}`);
+        updateData.stripeSessionId = sessionId;
+        updateData.stripeCustomerId = session.customer || null;
+        if (session.subscription) {
+          updateData.stripeSubscriptionId = session.subscription;
+          updateData.status = "active";
+        } else {
+          updateData.status = "paid";
         }
+      } else {
+        updateData.status = donation.frequency === "monthly" ? "active" : "paid";
       }
+
+      await donationRef.update(updateData);
+
+      return { success: true, status: updateData.status };
     }
 
-    await orderRef.update({
-      status: "paid",
-      ...(paymentIntentId && { paymentId: paymentIntentId }),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+    // Create Donation Checkout Session
+    if (endpoint === "createDonationCheckoutSession") {
+      const { amountCents, currency = "usd", donorInfo = {}, frequency = "one_time", successUrl, cancelUrl } = data;
 
-    return { success: true, status: "paid" };
-  }
-
-  // Create Checkout Session
-  if (endpoint === "createCheckoutSession") {
-    const { lineItems, successUrl, cancelUrl, customerEmail, metadata = {} } = data;
-
-    // Validate URLs are from allowed domains
-    const isValidRedirectUrl = url => {
-      try {
-        const parsed = new URL(url);
-        return ALLOWED_REDIRECT_DOMAINS.some(domain => parsed.hostname === domain || parsed.hostname.endsWith(`.${domain}`));
-      } catch {
-        return false;
+      if (!amountCents || isNaN(amountCents) || amountCents < 100) {
+        throw new Error("Invalid amount. Minimum donation is $1.00");
       }
-    };
+      if (amountCents > 5000000) {
+        throw new Error("Amount exceeds maximum donation limit");
+      }
 
-    if (!isValidRedirectUrl(successUrl) || !isValidRedirectUrl(cancelUrl)) {
-      throw new Error("Invalid URL domain");
-    }
+      const isValidRedirectUrl = url => {
+        try {
+          const parsed = new URL(url);
+          return ALLOWED_REDIRECT_DOMAINS.some(domain => parsed.hostname === domain || parsed.hostname.endsWith(`.${domain}`));
+        } catch {
+          return false;
+        }
+      };
 
-    const idempotencyKey = metadata.orderId ?
-      `cs_order_${metadata.orderId}` :
-      `cs_${crypto.randomUUID()}`;
+      if (!isValidRedirectUrl(successUrl) || !isValidRedirectUrl(cancelUrl)) {
+        throw new Error("Invalid URL domain");
+      }
 
-    const session = await stripe.checkout.sessions.create(
-      {
-        payment_method_types: ["card"],
-        line_items: lineItems,
-        mode: "payment",
-        success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: cancelUrl,
-        customer_email: customerEmail,
-        metadata,
-        expires_at: Math.floor(Date.now() / 1000) + 1800, // 30 minutes
-      },
-      { idempotencyKey }
-    );
-
-    return {
-      id: session.id,
-      url: session.url,
-      expires: session.expires_at,
-    };
-  }
-
-  // Create Donation Payment Intent
-  if (endpoint === "createDonationPaymentIntent") {
-    const { amountCents, currency = "usd", donorInfo = {}, frequency = "one_time" } = data;
-
-    if (!amountCents || isNaN(amountCents) || amountCents < 100) {
-      throw new Error("Invalid amount. Minimum donation is $1.00");
-    }
-    if (amountCents > 5000000) {
-      throw new Error("Amount exceeds maximum donation limit");
-    }
-
-    const db = admin.firestore();
-    const donationRef = await db.collection("donations").add({
-      donorEmail: donorInfo.email || null,
-      donorName: donorInfo.firstName && donorInfo.lastName ?
-        `${donorInfo.firstName} ${donorInfo.lastName}` : null,
-      userId: request.auth?.uid || null,
-      amount: amountCents / 100,
-      amountCents,
-      currency,
-      frequency,
-      paymentMethod: "card",
-      stripePaymentIntentId: null,
-      stripeSessionId: null,
-      stripeSubscriptionId: null,
-      stripeCustomerId: null,
-      status: "pending",
-      tierDescription: donorInfo.tierDescription || null,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      paidAt: null,
-      cancelledAt: null,
-    });
-
-    const paymentIntent = await stripe.paymentIntents.create(
-      {
-        amount: Math.round(amountCents),
+      const db = admin.firestore();
+      const donationRef = await db.collection("donations").add({
+        donorEmail: donorInfo.email || null,
+        donorName: donorInfo.firstName && donorInfo.lastName ?
+          `${donorInfo.firstName} ${donorInfo.lastName}` : null,
+        userId: request.auth?.uid || null,
+        amount: amountCents / 100,
+        amountCents,
         currency,
+        frequency,
+        paymentMethod: "stripe_checkout",
+        stripePaymentIntentId: null,
+        stripeSessionId: null,
+        stripeSubscriptionId: null,
+        stripeCustomerId: null,
+        status: "pending",
+        tierDescription: donorInfo.tierDescription || null,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        paidAt: null,
+        cancelledAt: null,
+      });
+
+      const sessionParams = {
+        payment_method_types: ["card"],
+        customer_email: donorInfo.email || undefined,
         metadata: {
           type: "donation",
           donationId: donationRef.id,
           userId: (request.auth?.uid || "guest").toString(),
-          donorEmail: (donorInfo.email || "").toString(),
           frequency,
         },
-        automatic_payment_methods: { enabled: true },
-      },
-      { idempotencyKey: `pi_donation_${donationRef.id}` }
-    );
+        success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}&donation_id=${donationRef.id}`,
+        cancel_url: cancelUrl,
+        expires_at: Math.floor(Date.now() / 1000) + 1800,
+      };
 
-    await donationRef.update({ stripePaymentIntentId: paymentIntent.id });
-
-    return {
-      clientSecret: paymentIntent.client_secret,
-      donationId: donationRef.id,
-    };
-  }
-
-  // Confirm Donation Payment — verifies with Stripe and updates Firestore
-  if (endpoint === "confirmDonationPayment") {
-    const { donationId, paymentIntentId } = data;
-    if (!donationId || !paymentIntentId) {
-      throw new HttpsError("invalid-argument", "Missing donationId or paymentIntentId");
-    }
-
-    const db = admin.firestore();
-    const donationRef = db.collection("donations").doc(donationId);
-    const donationSnap = await donationRef.get();
-
-    if (!donationSnap.exists) {
-      throw new HttpsError("not-found", "Donation not found");
-    }
-
-    const donation = donationSnap.data();
-
-    // Only the donor or the backend can confirm
-    if (request.auth?.uid && donation.userId && donation.userId !== request.auth.uid) {
-      throw new HttpsError("permission-denied", "Unauthorized");
-    }
-
-    // Skip if already paid
-    if (donation.status === "paid") {
-      return { success: true, status: "paid" };
-    }
-
-    // Verify with Stripe that the payment actually succeeded
-    const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
-    if (pi.status !== "succeeded") {
-      throw new HttpsError("failed-precondition", `Payment not complete. Status: ${pi.status}`);
-    }
-
-    await donationRef.update({
-      status: "paid",
-      stripePaymentIntentId: paymentIntentId,
-      paidAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
-
-    return { success: true, status: "paid" };
-  }
-
-  // Confirm Donation Checkout — verifies checkout session with Stripe and updates Firestore
-  if (endpoint === "confirmDonationCheckout") {
-    const { donationId, sessionId } = data;
-    if (!donationId) {
-      throw new HttpsError("invalid-argument", "Missing donationId");
-    }
-
-    const db = admin.firestore();
-    const donationRef = db.collection("donations").doc(donationId);
-    const donationSnap = await donationRef.get();
-
-    if (!donationSnap.exists) {
-      throw new HttpsError("not-found", "Donation not found");
-    }
-
-    const donation = donationSnap.data();
-
-    if (request.auth?.uid && donation.userId && donation.userId !== request.auth.uid) {
-      throw new HttpsError("permission-denied", "Unauthorized");
-    }
-
-    // Skip if already confirmed
-    if (["paid", "active"].includes(donation.status)) {
-      return { success: true, status: donation.status };
-    }
-
-    // Verify with Stripe if sessionId provided
-    const updateData = {
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      paidAt: admin.firestore.FieldValue.serverTimestamp(),
-    };
-
-    if (sessionId) {
-      const session = await stripe.checkout.sessions.retrieve(sessionId);
-      if (session.payment_status !== "paid") {
-        throw new HttpsError("failed-precondition", `Payment not complete. Status: ${session.payment_status}`);
-      }
-      updateData.stripeSessionId = sessionId;
-      updateData.stripeCustomerId = session.customer || null;
-      if (session.subscription) {
-        updateData.stripeSubscriptionId = session.subscription;
-        updateData.status = "active";
-      } else {
-        updateData.status = "paid";
-      }
-    } else {
-      updateData.status = donation.frequency === "monthly" ? "active" : "paid";
-    }
-
-    await donationRef.update(updateData);
-
-    return { success: true, status: updateData.status };
-  }
-
-  // Create Donation Checkout Session
-  if (endpoint === "createDonationCheckoutSession") {
-    const { amountCents, currency = "usd", donorInfo = {}, frequency = "one_time", successUrl, cancelUrl } = data;
-
-    if (!amountCents || isNaN(amountCents) || amountCents < 100) {
-      throw new Error("Invalid amount. Minimum donation is $1.00");
-    }
-    if (amountCents > 5000000) {
-      throw new Error("Amount exceeds maximum donation limit");
-    }
-
-    const isValidRedirectUrl = url => {
-      try {
-        const parsed = new URL(url);
-        return ALLOWED_REDIRECT_DOMAINS.some(domain => parsed.hostname === domain || parsed.hostname.endsWith(`.${domain}`));
-      } catch {
-        return false;
-      }
-    };
-
-    if (!isValidRedirectUrl(successUrl) || !isValidRedirectUrl(cancelUrl)) {
-      throw new Error("Invalid URL domain");
-    }
-
-    const db = admin.firestore();
-    const donationRef = await db.collection("donations").add({
-      donorEmail: donorInfo.email || null,
-      donorName: donorInfo.firstName && donorInfo.lastName ?
-        `${donorInfo.firstName} ${donorInfo.lastName}` : null,
-      userId: request.auth?.uid || null,
-      amount: amountCents / 100,
-      amountCents,
-      currency,
-      frequency,
-      paymentMethod: "stripe_checkout",
-      stripePaymentIntentId: null,
-      stripeSessionId: null,
-      stripeSubscriptionId: null,
-      stripeCustomerId: null,
-      status: "pending",
-      tierDescription: donorInfo.tierDescription || null,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      paidAt: null,
-      cancelledAt: null,
-    });
-
-    const sessionParams = {
-      payment_method_types: ["card"],
-      customer_email: donorInfo.email || undefined,
-      metadata: {
-        type: "donation",
-        donationId: donationRef.id,
-        userId: (request.auth?.uid || "guest").toString(),
-        frequency,
-      },
-      success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}&donation_id=${donationRef.id}`,
-      cancel_url: cancelUrl,
-      expires_at: Math.floor(Date.now() / 1000) + 1800,
-    };
-
-    if (frequency === "monthly") {
+      if (frequency === "monthly") {
       // eslint-disable-next-line camelcase
-      const price = await stripe.prices.create(
-        {
-          unit_amount: Math.round(amountCents), // eslint-disable-line camelcase
-          currency,
-          recurring: { interval: "month" },
-          product_data: { // eslint-disable-line camelcase
-            name: `Monthly Donation - $${(amountCents / 100).toFixed(2)}`,
-            metadata: { type: "donation", donationId: donationRef.id },
+        const price = await stripe.prices.create(
+          {
+            unit_amount: Math.round(amountCents), // eslint-disable-line camelcase
+            currency,
+            recurring: { interval: "month" },
+            product_data: { // eslint-disable-line camelcase
+              name: `Monthly Donation - $${(amountCents / 100).toFixed(2)}`,
+              metadata: { type: "donation", donationId: donationRef.id },
+            },
           },
-        },
-        { idempotencyKey: `price_donation_${donationRef.id}` }
+          { idempotencyKey: `price_donation_${donationRef.id}` }
+        );
+
+        sessionParams.mode = "subscription";
+        sessionParams.line_items = [{ price: price.id, quantity: 1 }];
+        sessionParams.subscription_data = { // eslint-disable-line camelcase
+          metadata: {
+            type: "donation",
+            donationId: donationRef.id,
+            userId: (request.auth?.uid || "guest").toString(),
+          },
+        };
+      } else {
+        sessionParams.mode = "payment";
+        sessionParams.line_items = [{
+          price_data: { // eslint-disable-line camelcase
+            currency,
+            unit_amount: Math.round(amountCents), // eslint-disable-line camelcase
+            product_data: { // eslint-disable-line camelcase
+              name: `One-Time Donation - $${(amountCents / 100).toFixed(2)}`,
+              metadata: { type: "donation", donationId: donationRef.id },
+            },
+          },
+          quantity: 1,
+        }];
+      }
+
+      const session = await stripe.checkout.sessions.create(
+        sessionParams,
+        { idempotencyKey: `cs_donation_${donationRef.id}` }
       );
 
-      sessionParams.mode = "subscription";
-      sessionParams.line_items = [{ price: price.id, quantity: 1 }];
-      sessionParams.subscription_data = { // eslint-disable-line camelcase
-        metadata: {
-          type: "donation",
-          donationId: donationRef.id,
-          userId: (request.auth?.uid || "guest").toString(),
-        },
+      await donationRef.update({ stripeSessionId: session.id });
+
+      return {
+        id: session.id,
+        url: session.url,
+        donationId: donationRef.id,
       };
-    } else {
-      sessionParams.mode = "payment";
-      sessionParams.line_items = [{
-        price_data: { // eslint-disable-line camelcase
-          currency,
-          unit_amount: Math.round(amountCents), // eslint-disable-line camelcase
-          product_data: { // eslint-disable-line camelcase
-            name: `One-Time Donation - $${(amountCents / 100).toFixed(2)}`,
-            metadata: { type: "donation", donationId: donationRef.id },
-          },
-        },
-        quantity: 1,
-      }];
     }
 
-    const session = await stripe.checkout.sessions.create(
-      sessionParams,
-      { idempotencyKey: `cs_donation_${donationRef.id}` }
-    );
-
-    await donationRef.update({ stripeSessionId: session.id });
-
-    return {
-      id: session.id,
-      url: session.url,
-      donationId: donationRef.id,
-    };
-  }
-
-  // Cancel Donation Subscription
-  if (endpoint === "cancelDonationSubscription") {
-    if (!request.auth?.uid) {
-      throw new Error("Authentication required");
-    }
-
-    const { donationId } = data;
-    if (!donationId) throw new Error("Missing donationId");
-
-    const db = admin.firestore();
-    const donationRef = db.collection("donations").doc(donationId);
-    const donationSnap = await donationRef.get();
-
-    if (!donationSnap.exists) {
-      throw new Error("Donation not found");
-    }
-
-    const donation = donationSnap.data();
-
-    if (donation.userId !== request.auth.uid) {
-      throw new Error("Unauthorized");
-    }
-
-    if (!donation.stripeSubscriptionId) {
-      throw new Error("No active subscription found for this donation");
-    }
-
-    const subscription = await stripe.subscriptions.cancel(
-      donation.stripeSubscriptionId,
-      { idempotencyKey: `cancel_${donationId}` }
-    );
-
-    await donationRef.update({
-      status: "cancelled",
-      cancelledAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
-
-    return {
-      success: true,
-      status: subscription.status,
-    };
-  }
-
-  // Request Refund (user-facing)
-  if (endpoint === "requestRefund") {
-    if (!request.auth?.uid) {
-      throw new HttpsError("unauthenticated", "Authentication required");
-    }
-
-    const { orderId, reason, returnItems } = data;
-    if (!orderId) throw new HttpsError("invalid-argument", "Missing orderId");
-
-    const db = admin.firestore();
-    const orderRef = db.collection("orders").doc(orderId);
-    const orderSnap = await orderRef.get();
-
-    if (!orderSnap.exists) {
-      throw new HttpsError("not-found", "Order not found");
-    }
-
-    const order = orderSnap.data();
-
-    if (order.userId !== request.auth.uid) {
-      throw new HttpsError("permission-denied", "Unauthorized");
-    }
-
-    if (!["paid", "shipped"].includes(order.status)) {
-      throw new HttpsError("failed-precondition", "This order is not eligible for a return");
-    }
-
-    // Determine which items are being returned
-    const items = order.items || [];
-    let selectedIndices = returnItems;
-
-    if (!Array.isArray(selectedIndices) || selectedIndices.length === 0) {
-      // Default to all items (backwards compatible)
-      selectedIndices = items.map((_, i) => i);
-    }
-
-    // Validate all indices
-    for (const idx of selectedIndices) {
-      if (typeof idx !== "number" || idx < 0 || idx >= items.length || !Number.isInteger(idx)) {
-        throw new HttpsError("invalid-argument", `Invalid item index: ${idx}`);
+    // Cancel Donation Subscription
+    if (endpoint === "cancelDonationSubscription") {
+      if (!request.auth?.uid) {
+        throw new Error("Authentication required");
       }
+
+      const { donationId } = data;
+      if (!donationId) throw new Error("Missing donationId");
+
+      const db = admin.firestore();
+      const donationRef = db.collection("donations").doc(donationId);
+      const donationSnap = await donationRef.get();
+
+      if (!donationSnap.exists) {
+        throw new Error("Donation not found");
+      }
+
+      const donation = donationSnap.data();
+
+      if (donation.userId !== request.auth.uid) {
+        throw new Error("Unauthorized");
+      }
+
+      if (!donation.stripeSubscriptionId) {
+        throw new Error("No active subscription found for this donation");
+      }
+
+      const subscription = await stripe.subscriptions.cancel(
+        donation.stripeSubscriptionId,
+        { idempotencyKey: `cancel_${donationId}` }
+      );
+
+      await donationRef.update({
+        status: "cancelled",
+        cancelledAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      return {
+        success: true,
+        status: subscription.status,
+      };
     }
 
-    // Calculate refund amount
-    const refundAmount = selectedIndices.reduce((sum, idx) => {
-      const item = items[idx];
-      return sum + (item.price || 0) * (item.quantity || 1);
-    }, 0);
+    // Request Refund (user-facing)
+    if (endpoint === "requestRefund") {
+      if (!request.auth?.uid) {
+        throw new HttpsError("unauthenticated", "Authentication required");
+      }
 
-    await orderRef.update({
-      status: "refund_requested",
-      refundReason: reason || "No reason provided",
-      returnItems: selectedIndices,
-      refundAmount,
-      refundRequestedAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+      const { orderId, reason, returnItems } = data;
+      if (!orderId) throw new HttpsError("invalid-argument", "Missing orderId");
 
-    return { success: true, message: "Return request submitted" };
-  }
+      const db = admin.firestore();
+      const orderRef = db.collection("orders").doc(orderId);
+      const orderSnap = await orderRef.get();
 
-  // Approve Return (admin-facing) — marks as return_approved, NO Stripe refund yet
-  if (endpoint === "approveRefund") {
-    if (!request.auth?.uid) {
-      throw new HttpsError("unauthenticated", "Authentication required");
-    }
-    await requireAdmin(request.auth.uid);
+      if (!orderSnap.exists) {
+        throw new HttpsError("not-found", "Order not found");
+      }
 
-    const { orderId } = data;
-    if (!orderId) throw new HttpsError("invalid-argument", "Missing orderId");
+      const order = orderSnap.data();
 
-    const db = admin.firestore();
-    const orderRef = db.collection("orders").doc(orderId);
-    const orderSnap = await orderRef.get();
+      if (order.userId !== request.auth.uid) {
+        throw new HttpsError("permission-denied", "Unauthorized");
+      }
 
-    if (!orderSnap.exists) {
-      throw new HttpsError("not-found", "Order not found");
-    }
+      if (!["paid", "shipped"].includes(order.status)) {
+        throw new HttpsError("failed-precondition", "This order is not eligible for a return");
+      }
 
-    const order = orderSnap.data();
+      // Determine which items are being returned
+      const items = order.items || [];
+      let selectedIndices = returnItems;
 
-    if (order.status !== "refund_requested") {
-      throw new HttpsError("failed-precondition", "This order does not have a pending refund request");
-    }
+      if (!Array.isArray(selectedIndices) || selectedIndices.length === 0) {
+      // Default to all items (backwards compatible)
+        selectedIndices = items.map((_, i) => i);
+      }
 
-    await orderRef.update({
-      status: "return_approved",
-      returnApprovedAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
-
-    return { success: true, message: "Return approved — awaiting item" };
-  }
-
-  // Process Refund (admin-facing) — triggers Stripe refund after item is received
-  if (endpoint === "processRefund") {
-    if (!request.auth?.uid) {
-      throw new HttpsError("unauthenticated", "Authentication required");
-    }
-    await requireAdmin(request.auth.uid);
-
-    const { orderId } = data;
-    if (!orderId) throw new HttpsError("invalid-argument", "Missing orderId");
-
-    const db = admin.firestore();
-    const orderRef = db.collection("orders").doc(orderId);
-    const orderSnap = await orderRef.get();
-
-    if (!orderSnap.exists) {
-      throw new HttpsError("not-found", "Order not found");
-    }
-
-    const order = orderSnap.data();
-    console.log("Processing refund for order:", orderId, "paymentId:", order.paymentId, "status:", order.status);
-
-    if (order.status !== "return_approved") {
-      throw new HttpsError("failed-precondition", "This order must be in 'return_approved' status to process a refund");
-    }
-
-    // Resolve the payment intent ID
-    let paymentIntentId = null;
-
-    try {
-      if (order.paymentId) {
-        if (order.paymentId.startsWith("pi_")) {
-          paymentIntentId = order.paymentId;
-        } else if (order.paymentId.startsWith("cs_")) {
-          // Checkout session — retrieve the payment intent from it
-          const session = await stripe.checkout.sessions.retrieve(order.paymentId);
-          paymentIntentId = session.payment_intent;
-        } else {
-          // Try treating it as a payment intent directly
-          paymentIntentId = order.paymentId;
+      // Validate all indices
+      for (const idx of selectedIndices) {
+        if (typeof idx !== "number" || idx < 0 || idx >= items.length || !Number.isInteger(idx)) {
+          throw new HttpsError("invalid-argument", `Invalid item index: ${idx}`);
         }
       }
 
-      // Fallback: search Stripe for the payment if paymentId is missing or didn't resolve
-      if (!paymentIntentId) {
-        console.log("No paymentId on order, searching Stripe for orderId:", orderId);
+      // Calculate refund amount
+      const refundAmount = selectedIndices.reduce((sum, idx) => {
+        const item = items[idx];
+        return sum + (item.price || 0) * (item.quantity || 1);
+      }, 0);
 
-        // Search payment intents by order metadata
-        const piSearch = await stripe.paymentIntents.search({
-          query: `metadata['orderId']:'${orderId}'`,
-          limit: 1,
-        });
+      await orderRef.update({
+        status: "refund_requested",
+        refundReason: reason || "No reason provided",
+        returnItems: selectedIndices,
+        refundAmount,
+        refundRequestedAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
 
-        if (piSearch.data.length > 0) {
-          paymentIntentId = piSearch.data[0].id;
-          console.log("Found payment intent via search:", paymentIntentId);
-        } else {
-          // Search checkout sessions by order metadata
-          const csSearch = await stripe.checkout.sessions.search({
+      return { success: true, message: "Return request submitted" };
+    }
+
+    // Approve Return (admin-facing) — marks as return_approved, NO Stripe refund yet
+    if (endpoint === "approveRefund") {
+      if (!request.auth?.uid) {
+        throw new HttpsError("unauthenticated", "Authentication required");
+      }
+      await requireAdmin(request.auth.uid);
+
+      const { orderId } = data;
+      if (!orderId) throw new HttpsError("invalid-argument", "Missing orderId");
+
+      const db = admin.firestore();
+      const orderRef = db.collection("orders").doc(orderId);
+      const orderSnap = await orderRef.get();
+
+      if (!orderSnap.exists) {
+        throw new HttpsError("not-found", "Order not found");
+      }
+
+      const order = orderSnap.data();
+
+      if (order.status !== "refund_requested") {
+        throw new HttpsError("failed-precondition", "This order does not have a pending refund request");
+      }
+
+      await orderRef.update({
+        status: "return_approved",
+        returnApprovedAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      return { success: true, message: "Return approved — awaiting item" };
+    }
+
+    // Process Refund (admin-facing) — triggers Stripe refund after item is received
+    if (endpoint === "processRefund") {
+      if (!request.auth?.uid) {
+        throw new HttpsError("unauthenticated", "Authentication required");
+      }
+      await requireAdmin(request.auth.uid);
+
+      const { orderId } = data;
+      if (!orderId) throw new HttpsError("invalid-argument", "Missing orderId");
+
+      const db = admin.firestore();
+      const orderRef = db.collection("orders").doc(orderId);
+      const orderSnap = await orderRef.get();
+
+      if (!orderSnap.exists) {
+        throw new HttpsError("not-found", "Order not found");
+      }
+
+      const order = orderSnap.data();
+      console.log("Processing refund for order:", orderId, "paymentId:", order.paymentId, "status:", order.status);
+
+      if (order.status !== "return_approved") {
+        throw new HttpsError("failed-precondition", "This order must be in 'return_approved' status to process a refund");
+      }
+
+      // Resolve the payment intent ID
+      let paymentIntentId = null;
+
+      try {
+        if (order.paymentId) {
+          if (order.paymentId.startsWith("pi_")) {
+            paymentIntentId = order.paymentId;
+          } else if (order.paymentId.startsWith("cs_")) {
+          // Checkout session — retrieve the payment intent from it
+            const session = await stripe.checkout.sessions.retrieve(order.paymentId);
+            paymentIntentId = session.payment_intent;
+          } else {
+          // Try treating it as a payment intent directly
+            paymentIntentId = order.paymentId;
+          }
+        }
+
+        // Fallback: search Stripe for the payment if paymentId is missing or didn't resolve
+        if (!paymentIntentId) {
+          console.log("No paymentId on order, searching Stripe for orderId:", orderId);
+
+          // Search payment intents by order metadata
+          const piSearch = await stripe.paymentIntents.search({
             query: `metadata['orderId']:'${orderId}'`,
             limit: 1,
           });
 
-          if (csSearch.data.length > 0 && csSearch.data[0].payment_intent) {
-            paymentIntentId = csSearch.data[0].payment_intent;
-            console.log("Found payment intent via checkout session search:", paymentIntentId);
+          if (piSearch.data.length > 0) {
+            paymentIntentId = piSearch.data[0].id;
+            console.log("Found payment intent via search:", paymentIntentId);
+          } else {
+          // Search checkout sessions by order metadata
+            const csSearch = await stripe.checkout.sessions.search({
+              query: `metadata['orderId']:'${orderId}'`,
+              limit: 1,
+            });
+
+            if (csSearch.data.length > 0 && csSearch.data[0].payment_intent) {
+              paymentIntentId = csSearch.data[0].payment_intent;
+              console.log("Found payment intent via checkout session search:", paymentIntentId);
+            }
+          }
+
+          // Save the resolved paymentId for future use
+          if (paymentIntentId) {
+            await orderRef.update({ paymentId: paymentIntentId });
           }
         }
 
-        // Save the resolved paymentId for future use
-        if (paymentIntentId) {
-          await orderRef.update({ paymentId: paymentIntentId });
+        if (!paymentIntentId) {
+          throw new HttpsError("failed-precondition", "No payment found for this order. Cannot process refund.");
         }
+
+        console.log("Refunding payment intent:", paymentIntentId);
+
+        // Partial refund: if refundAmount exists and is less than order total, pass amount in cents
+        const refundParams = { payment_intent: paymentIntentId };
+        if (order.refundAmount && order.refundAmount < order.total) {
+          refundParams.amount = Math.round(order.refundAmount * 100);
+          console.log("Partial refund amount (cents):", refundParams.amount);
+        }
+
+        await stripe.refunds.create(
+          refundParams,
+          { idempotencyKey: `refund_${orderId}` }
+        );
+      } catch (stripeError) {
+        console.error("Stripe refund error:", stripeError);
+        if (stripeError instanceof HttpsError) throw stripeError;
+        throw new HttpsError("internal", "Refund could not be processed. Please try again or contact support.");
       }
 
-      if (!paymentIntentId) {
-        throw new HttpsError("failed-precondition", "No payment found for this order. Cannot process refund.");
+      await orderRef.update({
+        status: "refunded",
+        refundAmount: order.refundAmount || order.total,
+        refundedAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      return { success: true, message: "Refund processed successfully" };
+    }
+
+    // Archive Orders (admin-facing)
+    if (endpoint === "archiveOrders") {
+      if (!request.auth?.uid) {
+        throw new HttpsError("unauthenticated", "Authentication required");
+      }
+      await requireAdmin(request.auth.uid);
+
+      const { orderIds } = data;
+      if (!Array.isArray(orderIds) || orderIds.length === 0) {
+        throw new HttpsError("invalid-argument", "orderIds must be a non-empty array");
+      }
+      if (orderIds.length > 500) {
+        throw new HttpsError("invalid-argument", "Cannot archive more than 500 orders at once");
       }
 
-      console.log("Refunding payment intent:", paymentIntentId);
+      const db = admin.firestore();
+      const batch = db.batch();
+      let archivedCount = 0;
 
-      // Partial refund: if refundAmount exists and is less than order total, pass amount in cents
-      const refundParams = { payment_intent: paymentIntentId };
-      if (order.refundAmount && order.refundAmount < order.total) {
-        refundParams.amount = Math.round(order.refundAmount * 100);
-        console.log("Partial refund amount (cents):", refundParams.amount);
+      for (const orderId of orderIds) {
+        const orderRef = db.collection("orders").doc(orderId);
+        const orderSnap = await orderRef.get();
+
+        if (!orderSnap.exists) continue;
+
+        const orderData = orderSnap.data();
+        const archivedRef = db.collection("archivedOrders").doc(orderId);
+
+        batch.set(archivedRef, {
+          ...orderData,
+          archivedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        batch.delete(orderRef);
+        archivedCount++;
       }
 
-      await stripe.refunds.create(
-        refundParams,
-        { idempotencyKey: `refund_${orderId}` }
-      );
-    } catch (stripeError) {
-      console.error("Stripe refund error:", stripeError);
-      if (stripeError instanceof HttpsError) throw stripeError;
-      throw new HttpsError("internal", "Refund could not be processed. Please try again or contact support.");
+      if (archivedCount > 0) {
+        await batch.commit();
+      }
+
+      return { success: true, archivedCount };
     }
 
-    await orderRef.update({
-      status: "refunded",
-      refundAmount: order.refundAmount || order.total,
-      refundedAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+    // Deny Refund (admin-facing)
+    if (endpoint === "denyRefund") {
+      if (!request.auth?.uid) {
+        throw new HttpsError("unauthenticated", "Authentication required");
+      }
+      await requireAdmin(request.auth.uid);
 
-    return { success: true, message: "Refund processed successfully" };
-  }
+      const { orderId, denyReason } = data;
+      if (!orderId) throw new HttpsError("invalid-argument", "Missing orderId");
 
-  // Archive Orders (admin-facing)
-  if (endpoint === "archiveOrders") {
-    if (!request.auth?.uid) {
-      throw new HttpsError("unauthenticated", "Authentication required");
-    }
-    await requireAdmin(request.auth.uid);
-
-    const { orderIds } = data;
-    if (!Array.isArray(orderIds) || orderIds.length === 0) {
-      throw new HttpsError("invalid-argument", "orderIds must be a non-empty array");
-    }
-    if (orderIds.length > 500) {
-      throw new HttpsError("invalid-argument", "Cannot archive more than 500 orders at once");
-    }
-
-    const db = admin.firestore();
-    const batch = db.batch();
-    let archivedCount = 0;
-
-    for (const orderId of orderIds) {
+      const db = admin.firestore();
       const orderRef = db.collection("orders").doc(orderId);
       const orderSnap = await orderRef.get();
 
-      if (!orderSnap.exists) continue;
+      if (!orderSnap.exists) {
+        throw new HttpsError("not-found", "Order not found");
+      }
 
-      const orderData = orderSnap.data();
-      const archivedRef = db.collection("archivedOrders").doc(orderId);
+      const order = orderSnap.data();
 
-      batch.set(archivedRef, {
-        ...orderData,
-        archivedAt: admin.firestore.FieldValue.serverTimestamp(),
+      if (order.status !== "refund_requested") {
+        throw new HttpsError("failed-precondition", "This order does not have a pending refund request");
+      }
+
+      await orderRef.update({
+        status: "paid",
+        refundDeniedReason: denyReason || "Request denied",
+        refundDeniedAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
-      batch.delete(orderRef);
-      archivedCount++;
+
+      return { success: true, message: "Refund request denied" };
     }
 
-    if (archivedCount > 0) {
-      await batch.commit();
+    // Get pickup location details — only returned for paid pickup orders
+    if (endpoint === "getPickupDetails") {
+      const { orderId } = data;
+      if (!orderId) throw new HttpsError("invalid-argument", "Missing orderId");
+
+      const db = admin.firestore();
+      const orderSnap = await db.collection("orders").doc(orderId).get();
+      if (!orderSnap.exists) throw new HttpsError("not-found", "Order not found");
+
+      const order = orderSnap.data();
+      if (order.fulfillmentType !== "pickup") {
+        throw new HttpsError("failed-precondition", "Not a pickup order");
+      }
+
+      const paidStatuses = ["paid", "shipped", "refund_requested", "return_approved", "refunded"];
+      if (!paidStatuses.includes(order.status)) {
+        throw new HttpsError("failed-precondition", "Order must be paid before pickup details are available");
+      }
+
+      const pickupSnap = await db.collection("settings").doc("pickup").get();
+      if (!pickupSnap.exists) {
+        return { address: null, hours: null, instructions: null };
+      }
+      return pickupSnap.data();
     }
 
-    return { success: true, archivedCount };
-  }
-
-  // Deny Refund (admin-facing)
-  if (endpoint === "denyRefund") {
-    if (!request.auth?.uid) {
-      throw new HttpsError("unauthenticated", "Authentication required");
-    }
-    await requireAdmin(request.auth.uid);
-
-    const { orderId, denyReason } = data;
-    if (!orderId) throw new HttpsError("invalid-argument", "Missing orderId");
-
-    const db = admin.firestore();
-    const orderRef = db.collection("orders").doc(orderId);
-    const orderSnap = await orderRef.get();
-
-    if (!orderSnap.exists) {
-      throw new HttpsError("not-found", "Order not found");
-    }
-
-    const order = orderSnap.data();
-
-    if (order.status !== "refund_requested") {
-      throw new HttpsError("failed-precondition", "This order does not have a pending refund request");
-    }
-
-    await orderRef.update({
-      status: "paid",
-      refundDeniedReason: denyReason || "Request denied",
-      refundDeniedAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    throw new Error(`Unknown endpoint: ${endpoint}`);
+  } catch (error) {
+    const paymentEndpoints = [
+      "createPaymentIntent", "createDonationPaymentIntent",
+      "confirmOrderPayment", "confirmDonationPayment",
+      "createCheckoutSession", "createDonationCheckoutSession",
+      "confirmDonationCheckout",
+    ];
+    Sentry.captureException(error, {
+      tags: { endpoint: endpoint || "unknown", domain: paymentEndpoints.includes(endpoint) ? "payment" : "api" },
     });
-
-    return { success: true, message: "Refund request denied" };
+    if (paymentEndpoints.includes(endpoint) && !(error instanceof HttpsError && error.code === "permission-denied")) {
+      await notifyDiscord(
+        "Payment API Error",
+        `\`${endpoint}\` threw an error: ${error.message || "Unknown error"}`,
+        [{ name: "Endpoint", value: endpoint, inline: true }]
+      );
+    }
+    throw error;
   }
-
-  throw new Error(`Unknown endpoint: ${endpoint}`);
 });

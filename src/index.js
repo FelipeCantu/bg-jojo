@@ -8,6 +8,16 @@ import { ThemeProvider, studioTheme } from '@sanity/ui';
 import { BrowserRouter } from 'react-router-dom';
 import { CartProvider } from './CartContext';
 import { HelmetProvider } from 'react-helmet-async';
+import * as Sentry from '@sentry/react';
+
+Sentry.init({
+  dsn: process.env.REACT_APP_SENTRY_DSN,
+  environment: process.env.NODE_ENV,
+  integrations: [Sentry.browserTracingIntegration()],
+  tracesSampleRate: 0.1,
+  // Only send errors in production to avoid noise during development
+  enabled: process.env.NODE_ENV === 'production',
+});
 
 // Unregister any stale service workers from previous builds.
 // A leftover SW was intercepting Firebase auth network requests and breaking login.
@@ -38,6 +48,7 @@ class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     console.error("Error caught by ErrorBoundary:", error, errorInfo);
+    Sentry.captureException(error, { contexts: { react: errorInfo } });
   }
 
   handleFullReload = () => {

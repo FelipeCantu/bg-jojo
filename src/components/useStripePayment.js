@@ -129,7 +129,7 @@ const useStripePayment = () => {
    * @param {Object} [params.auth] - Optional auth object
    * @returns {Promise<Object>} Checkout result
    */
-  const handleCheckout = async ({ formData, items, orderId, auth = {} }) => {
+  const handleCheckout = async ({ formData, items, orderId, auth = {}, fulfillmentType = 'shipping' }) => {
     setLoading(true);
     setError(null);
     
@@ -164,20 +164,25 @@ const useStripePayment = () => {
         metadata: {
           orderId: orderId.toString(),
           userId: (auth.currentUser?.uid || 'guest').toString(),
+          fulfillmentType,
           shippingInfo: JSON.stringify({
             name: `${formData.firstName} ${formData.lastName}`,
-            address: formData.address,
-            city: formData.city,
-            zipCode: formData.zipCode,
-            country: formData.country,
+            ...(fulfillmentType === 'shipping' && {
+              address: formData.address,
+              city: formData.city,
+              zipCode: formData.zipCode,
+              country: formData.country,
+            }),
             ...(formData.phone && { phone: formData.phone })
           })
         },
         // Additional options for Checkout
         billingAddressCollection: 'required',
-        shippingAddressCollection: {
-          allowedCountries: ['US', 'CA', 'GB', 'AU'] // Customize as needed
-        },
+        ...(fulfillmentType === 'shipping' && {
+          shippingAddressCollection: {
+            allowedCountries: ['US', 'CA', 'GB', 'AU']
+          }
+        }),
         mode: 'payment',
         allowPromotionCodes: true
       });

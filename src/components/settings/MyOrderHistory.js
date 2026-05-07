@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import styled from 'styled-components';
 import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
 import { getApp } from 'firebase/app';
@@ -16,6 +16,8 @@ const MyOrderHistory = () => {
   const [returnReason, setReturnReason] = useState('');
   const [returnItems, setReturnItems] = useState(new Set());
   const [submittingReturn, setSubmittingReturn] = useState(false);
+  const [pickupDetailsMap, setPickupDetailsMap] = useState({});
+  const fetchedPickupIds = useRef(new Set());
 
   const fetchOrders = useCallback(async () => {
     if (!currentUser?.uid) {
@@ -209,7 +211,55 @@ const MyOrderHistory = () => {
               </ItemsSection>
             )}
 
-            {order.shippingInfo && (
+            {order.fulfillmentType === 'pickup' ? (
+              <>
+                <ToggleButton onClick={async () => {
+                  const next = expandedId === order.id ? null : order.id;
+                  setExpandedId(next);
+                  const paidStatuses = ['paid', 'shipped', 'refund_requested', 'return_approved', 'refunded'];
+                  if (next && paidStatuses.includes(order.status) && !fetchedPickupIds.current.has(order.id)) {
+                    fetchedPickupIds.current.add(order.id);
+                    try {
+                      const api = httpsCallable(getFunctions(getApp(), 'us-central1'), 'api');
+                      const { data } = await api({ endpoint: 'getPickupDetails', orderId: order.id });
+                      setPickupDetailsMap(prev => ({ ...prev, [order.id]: data }));
+                    } catch (e) {
+                      console.error('Could not fetch pickup details', e);
+                    }
+                  }
+                }}>
+                  {expandedId === order.id ? 'Hide' : 'Show'} Pickup Details
+                </ToggleButton>
+                {expandedId === order.id && (
+                  <ShippingSection>
+                    {pickupDetailsMap[order.id]?.address ? (
+                      <>
+                        <DetailRow>
+                          <DetailLabel>Location</DetailLabel>
+                          <DetailValue>{pickupDetailsMap[order.id].address}</DetailValue>
+                        </DetailRow>
+                        {pickupDetailsMap[order.id].hours && (
+                          <DetailRow>
+                            <DetailLabel>Hours</DetailLabel>
+                            <DetailValue>{pickupDetailsMap[order.id].hours}</DetailValue>
+                          </DetailRow>
+                        )}
+                        {pickupDetailsMap[order.id].instructions && (
+                          <DetailRow>
+                            <DetailLabel>Notes</DetailLabel>
+                            <DetailValue>{pickupDetailsMap[order.id].instructions}</DetailValue>
+                          </DetailRow>
+                        )}
+                      </>
+                    ) : (
+                      <DetailRow>
+                        <DetailValue>We'll contact you when your order is ready for pickup.</DetailValue>
+                      </DetailRow>
+                    )}
+                  </ShippingSection>
+                )}
+              </>
+            ) : order.shippingInfo && (
               <>
                 <ToggleButton onClick={() => setExpandedId(expandedId === order.id ? null : order.id)}>
                   {expandedId === order.id ? 'Hide' : 'Show'} Shipping Info

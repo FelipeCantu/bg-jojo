@@ -11,7 +11,28 @@ import {
   updateProfile,
 } from "firebase/auth";
 import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
-import { firestore, auth } from "../firebaseconfig";
+import { firestore, auth, app } from "../firebaseconfig";
+import * as Sentry from "@sentry/react";
+import { getFunctions, httpsCallable } from "firebase/functions";
+
+// Auth error codes caused by the user — don't spam Discord with these
+const USER_CAUSED_ERRORS = new Set([
+  "auth/wrong-password", "auth/invalid-credential", "auth/user-not-found",
+  "auth/invalid-email", "auth/email-already-in-use", "auth/weak-password",
+  "auth/user-disabled", "auth/too-many-requests", "auth/popup-closed-by-user",
+  "auth/popup-blocked", "auth/cancelled-popup-request", "auth/requires-recent-login",
+  "auth/account-exists-with-different-credential",
+]);
+
+const notifyDiscordAuthError = async (error, method) => {
+  if (USER_CAUSED_ERRORS.has(error.code)) return; // skip expected user errors
+  try {
+    const fn = httpsCallable(getFunctions(app), "reportError");
+    await fn({ title: "Login Error", message: error.message, method, code: error.code || "unknown" });
+  } catch {
+    // fire-and-forget — never block the auth flow
+  }
+};
 
 const SITE_URL = process.env.REACT_APP_SITE_URL || "https://givebackjojo.org";
 
@@ -36,10 +57,12 @@ const registerWithEmail = async (email, password, displayName) => {
     return { success: true, user };
   } catch (error) {
     console.error("Registration error:", error);
-    return { 
-      success: false, 
+    Sentry.captureException(error, { tags: { domain: "auth", method: "registerWithEmail" } });
+    await notifyDiscordAuthError(error, "registerWithEmail");
+    return {
+      success: false,
       error: error.message,
-      code: error.code 
+      code: error.code
     };
   }
 };
@@ -50,8 +73,10 @@ const loginWithEmail = async (email, password) => {
     return { success: true, user: userCredential.user };
   } catch (error) {
     console.error("Login error:", error);
-    return { 
-      success: false, 
+    Sentry.captureException(error, { tags: { domain: "auth", method: "loginWithEmail" } });
+    await notifyDiscordAuthError(error, "loginWithEmail");
+    return {
+      success: false,
       error: error.message,
       code: error.code
     };
@@ -75,6 +100,8 @@ const signInWithProvider = async (provider) => {
       return { success: true, redirecting: true };
     }
     console.error("Social sign-in error:", error.code, error.message);
+    Sentry.captureException(error, { tags: { domain: "auth", method: "signInWithProvider" } });
+    await notifyDiscordAuthError(error, "signInWithProvider");
     return { success: false, error: error.message, code: error.code };
   }
 };
@@ -122,6 +149,8 @@ const signInWithFacebook = async () => {
       return { success: true, redirecting: true };
     }
     console.error("Facebook sign-in error:", error.code, error.message);
+    Sentry.captureException(error, { tags: { domain: "auth", method: "signInWithFacebook" } });
+    await notifyDiscordAuthError(error, "signInWithFacebook");
     return { success: false, error: error.message, code: error.code };
   }
 };
@@ -169,6 +198,8 @@ const handleRedirectResult = async () => {
     return null;
   } catch (error) {
     console.error("Redirect result error:", error);
+    Sentry.captureException(error, { tags: { domain: "auth", method: "handleRedirectResult" } });
+    await notifyDiscordAuthError(error, "handleRedirectResult");
     return { success: false, error: error.message, code: error.code };
   }
 };

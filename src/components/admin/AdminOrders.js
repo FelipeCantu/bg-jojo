@@ -291,18 +291,28 @@ const AdminOrders = () => {
                   <InfoValue>${(order.total || 0).toFixed(2)}</InfoValue>
                 </InfoRow>
                 <InfoRow>
+                  <InfoLabel>Fulfillment</InfoLabel>
+                  <InfoValue>
+                    {order.fulfillmentType === 'pickup'
+                      ? <FulfillmentBadge $pickup>Local Pickup</FulfillmentBadge>
+                      : <FulfillmentBadge>Shipping</FulfillmentBadge>}
+                  </InfoValue>
+                </InfoRow>
+                <InfoRow>
                   <InfoLabel>Address</InfoLabel>
                   <InfoValue>
-                    {order.shippingInfo
-                      ? [
-                          order.shippingInfo.address,
-                          order.shippingInfo.addressLine2,
-                          order.shippingInfo.city,
-                          order.shippingInfo.state,
-                          order.shippingInfo.zipCode,
-                          order.shippingInfo.country,
-                        ].filter(Boolean).join(', ')
-                      : '-'}
+                    {order.fulfillmentType === 'pickup'
+                      ? 'N/A — Local Pickup'
+                      : order.shippingInfo
+                        ? [
+                            order.shippingInfo.address,
+                            order.shippingInfo.addressLine2,
+                            order.shippingInfo.city,
+                            order.shippingInfo.state,
+                            order.shippingInfo.zipCode,
+                            order.shippingInfo.country,
+                          ].filter(Boolean).join(', ') || '-'
+                        : '-'}
                   </InfoValue>
                 </InfoRow>
               </CardBody>
@@ -904,6 +914,17 @@ const RefundAmountRow = styled.div`
   font-size: 0.85rem;
   color: #333;
   text-align: right;
+`;
+
+const FulfillmentBadge = styled.span`
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  background: ${props => props.$pickup ? '#fff3e0' : '#e8f5e9'};
+  color: ${props => props.$pickup ? '#e65100' : '#2e7d32'};
+  border: 1px solid ${props => props.$pickup ? '#ffb74d' : '#81c784'};
 `;
 
 export default AdminOrders;
