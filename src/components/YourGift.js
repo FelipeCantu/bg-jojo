@@ -35,8 +35,7 @@ const YourGift = () => {
           {giftOptions.map((gift, index) => (
             <GiftItem key={index}>
               <GiftAmount>
-                {gift.icon} {/* Insert icon here */}
-                {gift.amount}
+                {gift.icon}
               </GiftAmount>
               <GiftTitle>
                 {gift.title}

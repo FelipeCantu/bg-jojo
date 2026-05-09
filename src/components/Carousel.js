@@ -70,45 +70,52 @@ const StyledSlider = styled(Slider)`
     padding-bottom: 1rem;
   }
 
+  /* Dots */
+  .slick-dots li button::before {
+    font-size: 10px;
+    color: #f48fb1;
+    opacity: 0.5;
+  }
+
+  .slick-dots li.slick-active button::before {
+    color: #e91e8c;
+    opacity: 1;
+  }
+
+  /* Arrow buttons */
   .slick-prev,
   .slick-next {
-    background-color: transparent;
-    width: 50px; /* Arrow width */
-    height: 50px; /* Arrow height */
-    border-radius: 50%; /* Circular button for the arrow */
+    background-color: #f48fb1;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
     z-index: 1;
-  }
-
-  .slick-prev::before,
-  .slick-next::before {
-    font-size: 30px; /* Larger size for arrows */
-    color: white; /* White arrows */
-    content: ''; /* Disable default arrow content */
-  }
-
-  .slick-prev {
-    left: -50px; /* Adjust left position */
-  }
-
-  .slick-next {
-    right: -50px; /* Adjust right position */
+    box-shadow: 0 2px 8px rgba(233, 30, 140, 0.3);
+    transition: background-color 0.2s ease, transform 0.2s ease;
   }
 
   .slick-prev:hover,
   .slick-next:hover {
-    background-color: transparent;
+    background-color: #e91e8c;
+    transform: scale(1.1);
+  }
+
+  .slick-prev {
+    left: -52px;
+  }
+
+  .slick-next {
+    right: -52px;
   }
 
   .slick-prev::before {
-    content: '←'; /* Left arrow */
-    font-size: 40px; /* Adjust arrow size */
-    color: black; /* Arrow color */
+    content: '🌸';
+    font-size: 22px;
   }
 
   .slick-next::before {
-    content: '→'; /* Right arrow */
-    font-size: 40px; /* Adjust arrow size */
-    color: black; /* Arrow color */
+    content: '🌸';
+    font-size: 22px;
   }
 `;
 
@@ -133,20 +140,22 @@ const CarouselImage = styled.img`
   width: 100%;
   height: auto;
   border-radius: 0;
-  border: 4px solid rgba(255, 255, 255, 0.9);
+  border: 4px solid #f8bbd0;
   border-bottom: none;
   display: block;
 `;
 
 const Text = styled.div`
-  color: #333;
+  color: #880e4f;
   font-size: 1.25rem;
-  background-color: rgba(255, 255, 255, 0.9);
-  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #fce4ec, #f8bbd0);
+  padding: 0.6rem 1rem;
   border-radius: 0;
-  border: 4px solid rgba(255, 255, 255, 0.9);
+  border: 4px solid #f8bbd0;
   border-top: none;
   width: 100%;
   box-sizing: border-box;
+  font-weight: 500;
+  letter-spacing: 0.01em;
 `;
 export default CarouselComponent;

@@ -6,6 +6,7 @@ import withReactContent from "sweetalert2-react-content";
 import CustomSelect from "./CustomSelect";
 import { FaFacebookF, FaInstagram } from 'react-icons/fa';
 import SEO from './SEO';
+import Sponsorship from './Sponsorship';
 
 const MySwal = withReactContent(Swal);
 
@@ -56,6 +57,8 @@ const VolunteerForm = () => {
       commitment: ""
     }
   ];
+
+  const [showForm, setShowForm] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -226,135 +229,138 @@ const VolunteerForm = () => {
       <HeaderImage />
 
       <ContentWrapper>
-        {/* Form Container positioned over the header image */}
-        <FormContainer>
-          <Title>Contact</Title>
-          <Description>
-            Get in touch so we can start working together.
-          </Description>
-          <SocialIconsContainer>
-            <SocialIcon
-              href="https://www.facebook.com/profile.php?id=61564086892164"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Facebook"
-            >
-              <FaFacebookF />
-            </SocialIcon>
-            <SocialIcon
-              href="https://www.instagram.com/givebackjojo/"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Instagram"
-            >
-              <FaInstagram />
-            </SocialIcon>
-          </SocialIconsContainer>
-          <Form onSubmit={sendEmail}>
-            {/* First Name */}
-            <InputGroup>
-              <Label htmlFor="firstName" required>First Name</Label>
-              <Input
-                type="text"
-                id="firstName"
-                name="firstName"
-                placeholder="Enter your first name"
-                value={formData.firstName}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                error={errors.firstName}
-                required
-              />
-              {errors.firstName && touched.firstName && (
-                <ErrorMessage>Please enter your first name</ErrorMessage>
-              )}
-            </InputGroup>
+        {/* Jojo's Generosity sponsorship section — pulled up to overlap the header image */}
+        <SponsorshipWrapper>
+          <Sponsorship onStartToday={() => setShowForm(true)} />
+        </SponsorshipWrapper>
 
-            {/* Last Name */}
-            <InputGroup>
-              <Label htmlFor="lastName" required>Last Name</Label>
-              <Input
-                type="text"
-                id="lastName"
-                name="lastName"
-                placeholder="Enter your last name"
-                value={formData.lastName}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                error={errors.lastName}
-                required
-              />
-              {errors.lastName && touched.lastName && (
-                <ErrorMessage>Please enter your last name</ErrorMessage>
-              )}
-            </InputGroup>
+        {/* Form Modal */}
+        {showForm && (
+          <ModalOverlay onClick={() => setShowForm(false)}>
+            <FormContainer onClick={e => e.stopPropagation()}>
+              <CloseButton onClick={() => setShowForm(false)} aria-label="Close">&times;</CloseButton>
+              <Title>Get Involved</Title>
+              <Description>
+                Here's how you can make a difference.
+              </Description>
+              <SocialIconsContainer>
+                <SocialIcon
+                  href="https://www.facebook.com/profile.php?id=61564086892164"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Facebook"
+                >
+                  <FaFacebookF />
+                </SocialIcon>
+                <SocialIcon
+                  href="https://www.instagram.com/givebackjojo/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Instagram"
+                >
+                  <FaInstagram />
+                </SocialIcon>
+              </SocialIconsContainer>
+              <Form onSubmit={sendEmail}>
+                <InputGroup>
+                  <Label htmlFor="firstName" required>First Name</Label>
+                  <Input
+                    type="text"
+                    id="firstName"
+                    name="firstName"
+                    placeholder="Enter your first name"
+                    value={formData.firstName}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={errors.firstName}
+                    required
+                  />
+                  {errors.firstName && touched.firstName && (
+                    <ErrorMessage>Please enter your first name</ErrorMessage>
+                  )}
+                </InputGroup>
 
-            {/* Email */}
-            <InputGroup>
-              <Label htmlFor="email" required>Email</Label>
-              <Input
-                type="email"
-                id="email"
-                name="email"
-                placeholder="Enter your email address"
-                value={formData.email}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                error={errors.email}
-                required
-              />
-              {errors.email && touched.email && (
-                <ErrorMessage>Please enter a valid email address</ErrorMessage>
-              )}
-            </InputGroup>
+                <InputGroup>
+                  <Label htmlFor="lastName" required>Last Name</Label>
+                  <Input
+                    type="text"
+                    id="lastName"
+                    name="lastName"
+                    placeholder="Enter your last name"
+                    value={formData.lastName}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={errors.lastName}
+                    required
+                  />
+                  {errors.lastName && touched.lastName && (
+                    <ErrorMessage>Please enter your last name</ErrorMessage>
+                  )}
+                </InputGroup>
 
-            {/* Phone (optional) */}
-            <InputGroup>
-              <Label htmlFor="phone">Phone Number</Label>
-              <Input
-                type="tel"
-                id="phone"
-                name="phone"
-                placeholder="Enter your phone number (optional)"
-                value={formData.phone}
-                onChange={handleChange}
-              />
-            </InputGroup>
+                <InputGroup>
+                  <Label htmlFor="email" required>Email</Label>
+                  <Input
+                    type="email"
+                    id="email"
+                    name="email"
+                    placeholder="Enter your email address"
+                    value={formData.email}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={errors.email}
+                    required
+                  />
+                  {errors.email && touched.email && (
+                    <ErrorMessage>Please enter a valid email address</ErrorMessage>
+                  )}
+                </InputGroup>
 
-            {/* Volunteer Role (optional) */}
-            {/* Volunteer Role (optional) */}
-            <InputGroup>
-              <Label htmlFor="role">Preferred Volunteer Role</Label>
-              <CustomSelect
-                name="role"
-                options={volunteerRoles}
-                value={formData.role}
-                onChange={handleChange}
-              />
-            </InputGroup>
+                <InputGroup>
+                  <Label htmlFor="phone">Phone Number</Label>
+                  <Input
+                    type="tel"
+                    id="phone"
+                    name="phone"
+                    placeholder="Enter your phone number (optional)"
+                    value={formData.phone}
+                    onChange={handleChange}
+                  />
+                </InputGroup>
 
-            {/* Message */}
-            <InputGroup>
-              <Label htmlFor="message" required>Your Message</Label>
-              <TextArea
-                id="message"
-                name="message"
-                placeholder="Tell us about your experience, skills, and why you're interested in volunteering with us"
-                rows="6"
-                value={formData.message}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                error={errors.message}
-                required
-              />
-              {errors.message && touched.message && (
-                <ErrorMessage>Please tell us about yourself</ErrorMessage>
-              )}
-            </InputGroup>
+                <InputGroup>
+                  <Label htmlFor="role">Preferred Volunteer Role</Label>
+                  <CustomSelect
+                    name="role"
+                    options={volunteerRoles}
+                    value={formData.role}
+                    onChange={handleChange}
+                  />
+                </InputGroup>
 
-            <Button type="submit">Send</Button>
-          </Form>
-        </FormContainer>
+                <InputGroup>
+                  <Label htmlFor="message" required>Your Message</Label>
+                  <TextArea
+                    id="message"
+                    name="message"
+                    placeholder="Tell us about your experience, skills, and why you're interested in volunteering with us"
+                    rows="6"
+                    value={formData.message}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={errors.message}
+                    required
+                  />
+                  {errors.message && touched.message && (
+                    <ErrorMessage>Please tell us about yourself</ErrorMessage>
+                  )}
+                </InputGroup>
+
+                <Button type="submit">Send</Button>
+              </Form>
+            </FormContainer>
+          </ModalOverlay>
+        )}
 
         <RolesTitle>Volunteer Roles</RolesTitle>
 
@@ -387,8 +393,21 @@ const PageContainer = styled.div`
 
 const HeaderImage = styled.div`
   background: url('https://static.wixstatic.com/media/08854068a2e04004a83a1b525ba62365.jpg/v1/crop/x_0,y_235,w_5472,h_1966/fill/w_980,h_352,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/Flamingos%20and%20Macaroons.jpg') no-repeat center top/cover;
-  height: 200px;
+  height: 280px;
   width: 100%;
+`;
+
+const SponsorshipWrapper = styled.div`
+  width: 90%;
+  max-width: 1100px;
+  margin-top: -80px;
+  position: relative;
+  z-index: 2;
+
+  @media (max-width: 768px) {
+    width: 100%;
+    margin-top: -40px;
+  }
 `;
 
 const ContentWrapper = styled.div`
@@ -396,29 +415,48 @@ const ContentWrapper = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-top: 20px;
   background-color: #fce4ec;
+`;
+
+const ModalOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
 `;
 
 const FormContainer = styled.div`
   background-color: white;
   padding: 2rem;
   border-radius: 0.5rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  width: 90%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  width: 100%;
   max-width: 600px;
-  margin: -50px auto 0;
+  max-height: 90vh;
+  overflow-y: auto;
   position: relative;
-  z-index: 1;
 
   @media (max-width: 768px) {
-    width: 100%;
-    margin: -50px 0 0;
-    border-radius: 0;
     padding: 1.5rem;
-    box-sizing: border-box;
-    max-width: 100vw;
+    max-height: 95vh;
   }
+`;
+
+const CloseButton = styled.button`
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.75rem;
+  line-height: 1;
+  cursor: pointer;
+  color: #666;
+  &:hover { color: #000; }
 `;
 
 const BottomSection = styled.div`

@@ -1,16 +1,36 @@
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // -------------------------------------------------------------------------
+    // Helper function — avoids repeating the admin get() check across rules.
+    // NOTE: Each call to isAdmin() consumes one Firestore read from the
+    // 10-read-per-request limit. Avoid calling it more than once per operation.
+    // -------------------------------------------------------------------------
+    function isAdmin() {
+      return request.auth != null
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // -------------------------------------------------------------------------
     // Articles
+    // -------------------------------------------------------------------------
     match /articles/{articleId} {
       allow read: if true;
 
+      // Enforce an initial field allowlist and seed counters to zero on create.
       allow create: if request.auth != null
-        && request.resource.data.authorId == request.auth.uid;
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.keys().hasOnly([
+            'authorId', 'title', 'content', 'createdAt', 'updatedAt',
+            'likes', 'likedBy', 'views', 'tags'
+        ])
+        && request.resource.data.likes == 0
+        && request.resource.data.likedBy.size() == 0
+        && request.resource.data.views == 0;
 
-      // Allow authors to update their own articles, or anyone authenticated to like
       allow update: if request.auth != null
         && (
-          // Like: only likes and likedBy, likes increments by 1, user adds themselves to likedBy
+          // Like: caller adds themselves to likedBy, likes increments by exactly 1
           (
             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'likedBy'])
             && request.resource.data.likes == resource.data.likes + 1
@@ -19,7 +39,7 @@ service cloud.firestore {
             && request.auth.uid in request.resource.data.likedBy
             && !(request.auth.uid in resource.data.likedBy)
           )
-          // Unlike: likes decrements by 1, user removes themselves from likedBy
+          // Unlike: caller removes themselves from likedBy, likes decrements by exactly 1
           || (
             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'likedBy'])
             && request.resource.data.likes == resource.data.likes - 1
@@ -28,78 +48,233 @@ service cloud.firestore {
             && !(request.auth.uid in request.resource.data.likedBy)
             && request.auth.uid in resource.data.likedBy
           )
-          // Author can update their own article
-          || request.auth.uid == resource.data.authorId
+          // Views: any authenticated user may increment the view counter by exactly 1
+          || (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views'])
+            && request.resource.data.views == resource.data.views + 1
+          )
+          // Author edits: can change content fields, but cannot touch likes/likedBy/views/authorId
+          || (
+            request.auth.uid == resource.data.authorId
+            && !request.resource.data.diff(resource.data).affectedKeys()
+                .hasAny(['likes', 'likedBy', 'authorId', 'views'])
+          )
         );
 
       allow delete: if request.auth != null && request.auth.uid == resource.data.authorId;
 
-      // Comments subcollection — enforce content is a non-empty string, max 2000 chars
+      // Comments subcollection
       match /comments/{commentId} {
         allow read: if true;
+
         allow create: if request.auth != null
+          && request.resource.data.keys().hasOnly([
+              'userId', 'userName', 'userImage', 'comment',
+              'timestamp', 'notificationCreated'
+          ])
           && request.resource.data.userId == request.auth.uid
           && request.resource.data.comment is string
           && request.resource.data.comment.size() >= 1
           && request.resource.data.comment.size() <= 2000;
+
+        allow update: if false;
         allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
       }
     }
 
+    // -------------------------------------------------------------------------
     // Orders
+    // -------------------------------------------------------------------------
     match /orders/{orderId} {
-      allow read: if request.auth != null &&
-        (request.auth.uid == resource.data.userId ||
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+      // get: owner or admin can read a single order document.
+      allow get: if request.auth != null
+        && (request.auth.uid == resource.data.userId || isAdmin());
+
+      // list: admin-only query access.
+      allow list: if isAdmin();
+
+      // create: user creates their own order in pending state.
+      // Financial fields (taxAmount, shippingCost, total) must NOT be set by the
+      // client — they are computed and written server-side by Cloud Functions.
       allow create: if request.auth != null
         && request.resource.data.userId == request.auth.uid
-        && request.resource.data.status == 'pending';
-      allow update: if request.auth != null &&
-        (request.auth.uid == resource.data.userId ||
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+        && request.resource.data.status == 'pending'
+        && !('shippingCost' in request.resource.data)
+        && !('taxAmount' in request.resource.data)
+        && !('total' in request.resource.data);
+
+      // update: clients may only mark a pending order as failed (the card payment
+      // error path in CheckoutPage.js). All other transitions are via Cloud Functions.
+      allow update: if request.auth != null
+        && request.auth.uid == resource.data.userId
+        && resource.data.status == 'pending'
+        && request.resource.data.status == 'failed'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt'])
+        && request.resource.data.updatedAt is timestamp;
+
+      // delete: never from the client — archiving is a Cloud Function operation.
+      allow delete: if false;
     }
 
+    // -------------------------------------------------------------------------
+    // Archived Orders — written exclusively by Cloud Functions (Admin SDK).
+    // -------------------------------------------------------------------------
+    match /archivedOrders/{orderId} {
+      allow get, list: if isAdmin();
+      allow write: if false;
+    }
+
+    // -------------------------------------------------------------------------
     // Donations
+    // -------------------------------------------------------------------------
     match /donations/{donationId} {
-      allow create: if request.auth != null
-        && request.resource.data.userId == request.auth.uid
-        && request.resource.data.status == 'pending';
-      allow read: if request.auth != null && request.auth.uid == resource.data.userId;
-      // Users can only cancel — paid/active/failed are set by Cloud Functions (admin SDK bypasses rules)
+      // Donations are created by Cloud Functions via Admin SDK.
+      allow create: if false;
+
+      // get: owner can read their own donation document.
+      allow get: if request.auth != null && request.auth.uid == resource.data.userId;
+
+      // list: authenticated users may query; app code always filters by
+      // where('userId', '==', uid). Rules cannot verify query parameters.
+      allow list: if request.auth != null;
+
+      // Users may only cancel their own active or pending donations.
       allow update: if request.auth != null
         && request.auth.uid == resource.data.userId
         && request.resource.data.status == 'cancelled'
-        && resource.data.status in ['active', 'pending'];
+        && resource.data.status in ['active', 'pending']
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt'])
+        && request.resource.data.updatedAt is timestamp;
+
+      allow delete: if false;
     }
 
-    // Events — only admins can create; attendees list update open to any authenticated user
+    // -------------------------------------------------------------------------
+    // Events
+    // -------------------------------------------------------------------------
     match /events/{eventId} {
       allow read: if true;
-      allow create: if request.auth != null
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow create: if isAdmin();
+
       allow update: if request.auth != null
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['attendees']);
+        && (
+          // Join: user adds only themselves; attendees list grows by exactly 1
+          (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['attendees'])
+            && request.resource.data.attendees.hasAll(resource.data.attendees)
+            && request.resource.data.attendees.size() == resource.data.attendees.size() + 1
+            && request.auth.uid in request.resource.data.attendees
+            && !(request.auth.uid in resource.data.attendees)
+          )
+          // Leave: user removes only themselves; attendees list shrinks by exactly 1
+          || (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['attendees'])
+            && resource.data.attendees.hasAll(request.resource.data.attendees)
+            && request.resource.data.attendees.size() == resource.data.attendees.size() - 1
+            && !(request.auth.uid in request.resource.data.attendees)
+            && request.auth.uid in resource.data.attendees
+          )
+          // Admins may update any event fields
+          || isAdmin()
+        );
+
+      allow delete: if isAdmin();
     }
 
+    // -------------------------------------------------------------------------
     // Notifications
+    // -------------------------------------------------------------------------
     match /notifications/{notificationId} {
-      allow read: if request.auth != null && request.auth.uid == resource.data.receiverId;
+      // get: receiver may fetch a single notification by ID.
+      allow get: if request.auth != null && request.auth.uid == resource.data.receiverId;
+
+      // list: any authenticated user may query; app code always filters by
+      // where('receiverId', '==', uid). Rules cannot verify query parameters.
+      allow list: if request.auth != null;
+
       allow create: if request.auth != null
-        && request.resource.data.senderId == request.auth.uid;
+        && request.resource.data.senderId == request.auth.uid
+        && request.resource.data.keys().hasOnly([
+            'senderId', 'receiverId', 'message', 'type', 'read', 'createdAt'
+        ])
+        && request.resource.data.receiverId is string
+        && request.resource.data.receiverId.size() > 0
+        && request.resource.data.message is string
+        && request.resource.data.message.size() >= 1
+        && request.resource.data.message.size() <= 1000
+        && request.resource.data.type is string
+        && request.resource.data.read == false;
+
+      // Receiver may mark a notification read (and record when).
       allow update: if request.auth != null
         && request.auth.uid == resource.data.receiverId
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'readAt'])
+        && request.resource.data.read is bool;
+
       allow delete: if request.auth != null && request.auth.uid == resource.data.receiverId;
     }
 
+    // -------------------------------------------------------------------------
     // User Profiles
+    // -------------------------------------------------------------------------
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null && request.auth.uid == userId;
 
-      // Payment Methods subcollection
+      // On create, block the role field to prevent privilege escalation.
+      // A user who includes role:'admin' on first sign-in would pass isAdmin()
+      // checks everywhere, so we must reject it at the create gate.
+      allow create: if request.auth != null
+        && request.auth.uid == userId
+        && !('role' in request.resource.data);
+
+      // On update, block any attempt to change the role field.
+      // Role assignment must go through a Cloud Function that calls requireAdmin().
+      allow update: if request.auth != null
+        && request.auth.uid == userId
+        && !('role' in request.resource.data.diff(resource.data).affectedKeys());
+
+      // Account deletion must go through a Cloud Function to clean up associated data.
+      allow delete: if false;
+
       match /paymentMethods/{methodId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
     }
+
+    // -------------------------------------------------------------------------
+    // Site-wide Settings (shipping rates, pickup location, etc.)
+    // Rates are public-read: visitors should see shipping costs before logging in.
+    // Only admins may write. Uses create+update (NOT write) so that allow delete:if false
+    // is effective — allow write would supersede the delete deny in Firestore rules.
+    // -------------------------------------------------------------------------
+    match /settings/{settingId} {
+      allow read: if true;
+
+      allow create, update: if isAdmin()
+        && (
+          settingId != 'shipping'
+          || (
+            request.resource.data.keys().hasOnly([
+              'enabled', 'freeShippingThreshold', 'flatRate',
+              'currency', 'updatedAt', 'updatedBy'
+            ])
+            && request.resource.data.enabled is bool
+            && request.resource.data.flatRate is number
+            && request.resource.data.flatRate >= 0
+            && (
+              request.resource.data.freeShippingThreshold == null
+              || (
+                request.resource.data.freeShippingThreshold is number
+                && request.resource.data.freeShippingThreshold > 0
+              )
+            )
+            && request.resource.data.currency is string
+            && request.resource.data.updatedBy == request.auth.uid
+          )
+        );
+
+      allow delete: if false;
+    }
+
   }
 }

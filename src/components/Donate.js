@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import Sponsorship from './Sponsorship';
 import { Link } from 'react-router-dom';
 import DonationCheckout from './DonationCheckout';
 import SEO from './SEO';
@@ -37,8 +36,6 @@ const Donate = () => {
           </AltPaymentLink>
           <LearnMore to="/YourGift">Learn More</LearnMore>
         </LinksStack>
-        <Divider />
-        <Sponsorship />
       </Container>
     </BackgroundWrapper>
   );

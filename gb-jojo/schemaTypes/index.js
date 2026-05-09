@@ -9,6 +9,7 @@ import { notification } from './notification';
 import { comment } from './comment';
 import { product } from './product';
 import { sponsorshipLevel } from './sponsorshipLevel';
+import { legalDocument } from './legalDocument';
 
 export const schemaTypes = [
   tribute,
@@ -21,4 +22,5 @@ export const schemaTypes = [
   comment,
   product,
   sponsorshipLevel,
+  legalDocument,
 ];

@@ -1,6 +1,76 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
+import { PortableText } from '@portabletext/react';
+import { client } from '../sanityClient';
 import SEO from './SEO';
+
+const portableTextComponents = {
+  block: {
+    h1: ({ children }) => <Heading1>{children}</Heading1>,
+    h2: ({ children }) => <Heading2>{children}</Heading2>,
+    h3: ({ children }) => <Heading3>{children}</Heading3>,
+    normal: ({ children }) => <Paragraph>{children}</Paragraph>,
+    blockquote: ({ children }) => <Blockquote>{children}</Blockquote>,
+  },
+  list: {
+    bullet: ({ children }) => <BulletList>{children}</BulletList>,
+    number: ({ children }) => <NumberList>{children}</NumberList>,
+  },
+  listItem: {
+    bullet: ({ children }) => <li>{children}</li>,
+    number: ({ children }) => <li>{children}</li>,
+  },
+  marks: {
+    strong: ({ children }) => <strong>{children}</strong>,
+    em: ({ children }) => <em>{children}</em>,
+    code: ({ children }) => <code>{children}</code>,
+    link: ({ value, children }) => (
+      <ExternalLink href={value?.href} target="_blank" rel="noopener noreferrer">
+        {children}
+      </ExternalLink>
+    ),
+  },
+};
+
+const PrivacyPolicy = () => {
+  const [doc, setDoc] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    client
+      .fetch(`*[_type == "legalDocument" && docType == "privacy"][0]{ title, lastUpdated, content }`)
+      .then(data => setDoc(data))
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  return (
+    <BackgroundWrapper>
+      <PrivacyContainer>
+        <SEO
+          title="Privacy Policy"
+          description="Read our privacy policy to understand how we collect, use, and protect your personal information on givebackjojo.org."
+          path="/privacy"
+        />
+        {loading ? (
+          <Paragraph>Loading...</Paragraph>
+        ) : doc ? (
+          <>
+            <Heading1>{doc.title}</Heading1>
+            {doc.lastUpdated && (
+              <LastUpdated>
+                Last updated: {new Date(doc.lastUpdated).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+              </LastUpdated>
+            )}
+            <PortableText value={doc.content} components={portableTextComponents} />
+          </>
+        ) : (
+          <Paragraph>Privacy Policy not found. Please check back soon.</Paragraph>
+        )}
+      </PrivacyContainer>
+    </BackgroundWrapper>
+  );
+};
 
 // Styled Components
 const BackgroundWrapper = styled.div`
@@ -36,10 +106,6 @@ const LastUpdated = styled.p`
   margin-bottom: 2rem;
 `;
 
-const Section = styled.section`
-  margin-bottom: 2.5rem;
-`;
-
 const Heading1 = styled.h1`
   font-size: 2.5rem;
   color: var(--text-color);
@@ -64,7 +130,15 @@ const Paragraph = styled.p`
   margin-bottom: 1rem;
 `;
 
-const DefinitionList = styled.ul`
+const Blockquote = styled.blockquote`
+  border-left: 3px solid var(--border-color);
+  margin: 1rem 0;
+  padding-left: 1rem;
+  color: var(--text-light);
+  font-style: italic;
+`;
+
+const BulletList = styled.ul`
   margin: 1rem 0;
   padding-left: 1.5rem;
   list-style-type: none;
@@ -83,89 +157,23 @@ const DefinitionList = styled.ul`
   }
 `;
 
+const NumberList = styled.ol`
+  margin: 1rem 0;
+  padding-left: 2rem;
+
+  li {
+    margin-bottom: 0.8rem;
+  }
+`;
+
 const ExternalLink = styled.a`
   color: var(--info-color);
   text-decoration: none;
   transition: color 0.2s;
 
   &:hover {
-    color: var(--info-color);
     text-decoration: underline;
   }
 `;
-
-const NestedList = styled.ul`
-  margin: 0.5rem 0;
-  padding-left: 1.5rem;
-  list-style-type: disc;
-`;
-
-// Component
-const PrivacyPolicy = () => {
-  return (
-    <BackgroundWrapper>
-    <PrivacyContainer>
-      <SEO
-        title="Privacy Policy"
-        description="Read our privacy policy to understand how we collect, use, and protect your personal information on givebackjojo.org."
-        path="/privacy"
-      />
-      <Heading1>Privacy Policy</Heading1>
-      <LastUpdated>Last updated: May 16, 2025</LastUpdated>
-
-      <Section>
-        <Paragraph>
-          This Privacy Policy describes Our policies and procedures on the collection,
-          use and disclosure of Your information when You use the Service and tells
-          You about Your privacy rights and how the law protects You.
-        </Paragraph>
-        <Paragraph>
-          We use Your Personal data to provide and improve the Service. By using the Service,
-          You agree to the collection and use of information in accordance with this Privacy Policy.
-
-        </Paragraph>
-      </Section>
-
-      <Section>
-        <Heading2>Interpretation and Definitions</Heading2>
-        <Heading3>Interpretation</Heading3>
-        <Paragraph>
-          The words of which the initial letter is capitalized have meanings defined under the following conditions.
-          The following definitions shall have the same meaning regardless of whether they appear in singular or in plural.
-        </Paragraph>
-
-        <Heading3>Definitions</Heading3>
-        <Paragraph>For the purposes of this Privacy Policy:</Paragraph>
-        <DefinitionList>
-          <li><strong>Account</strong> means a unique account created for You to access our Service or parts of our Service.</li>
-          <li><strong>Affiliate</strong> means an entity that controls, is controlled by or is under common control with a party, where "control" means ownership of 50% or more of the shares, equity interest or other securities entitled to vote for election of directors or other managing authority.</li>
-          <li><strong>Company</strong> (referred to as either "the Company", "We", "Us" or "Our" in this Agreement) refers to givebackjojo.</li>
-          <li><strong>Cookies</strong> are small files that are placed on Your computer, mobile device or any other device by a website, containing the details of Your browsing history on that website among its many uses.</li>
-          <li><strong>Country</strong> refers to: Utah, United States</li>
-          <li><strong>Device</strong> means any device that can access the Service such as a computer, a cellphone or a digital tablet.</li>
-          <li><strong>Personal Data</strong> is any information that relates to an identified or identifiable individual.</li>
-          <li><strong>Service</strong> refers to the Website.</li>
-          <li><strong>Service Provider</strong> means any natural or legal person who processes the data on behalf of the Company. It refers to third-party companies or individuals employed by the Company to facilitate the Service, to provide the Service on behalf of the Company, to perform services related to the Service or to assist the Company in analyzing how the Service is used.</li>
-          <li><strong>Third-party Social Media Service</strong> refers to any website or any social network website through which a User can log in or create an account to use the Service.</li>
-          <li><strong>Usage Data</strong> refers to data collected automatically, either generated by the use of the Service or from the Service infrastructure itself (for example, the duration of a page visit).</li>
-          <li><strong>Website</strong> refers to givebackjojo, accessible from <ExternalLink href="givebackjojo.org" rel="external nofollow noopener" target="_blank">givebackjojo.org</ExternalLink></li>
-          <li><strong>You</strong> means the individual accessing or using the Service, or the company, or other legal entity on behalf of which such individual is accessing or using the Service, as applicable.</li>
-        </DefinitionList>
-      </Section>
-
-      {/* Continue with the rest of your privacy policy sections */}
-      {/* Each section would follow the same pattern with appropriate styled components */}
-
-      <Section>
-        <Heading2>Contact Us</Heading2>
-        <Paragraph>If you have any questions about this Privacy Policy, You can contact us:</Paragraph>
-        <NestedList>
-          <li>By visiting this page on our website: <ExternalLink href="givebackjojo.org/GetInvolved" rel="external nofollow noopener" target="_blank">givebackjojo.org/contact</ExternalLink></li>
-        </NestedList>
-      </Section>
-    </PrivacyContainer>
-    </BackgroundWrapper>
-  );
-};
 
 export default PrivacyPolicy;

@@ -298,10 +298,11 @@ app.post("/webhook", express.raw({ type: "application/json" }), async (req, res)
           const orderRef = db.collection("orders").doc(session.metadata.orderId);
           const orderSnap = await orderRef.get();
           if (orderSnap.exists && orderSnap.data().status !== "paid") {
-            const order = orderSnap.data();
             await orderRef.update({
               status: "paid",
               paymentId: session.id,
+              total: (session.amount_total || 0) / 100,
+              taxAmount: (session.total_details?.amount_tax || 0) / 100,
               updatedAt: admin.firestore.FieldValue.serverTimestamp(),
             });
           }
@@ -368,14 +369,69 @@ app.post("/webhook", express.raw({ type: "application/json" }), async (req, res)
         const charge = event.data.object;
         const paymentIntentId = charge.payment_intent;
         if (paymentIntentId) {
-          const ordersSnap = await db.collection("orders")
-            .where("paymentId", "==", paymentIntentId)
-            .limit(1)
-            .get();
-          if (!ordersSnap.empty) {
-            await ordersSnap.docs[0].ref.update({
+          // Orders paid via card store paymentId as pi_...; orders via Checkout store cs_...
+          // Search both to ensure refunds update correctly regardless of payment method.
+          const [byPi, byCs] = await Promise.all([
+            db.collection("orders").where("paymentId", "==", paymentIntentId).limit(1).get(),
+            (async () => {
+              // Resolve the checkout session ID from the payment intent, if any
+              try {
+                const pi = await stripe.paymentIntents.retrieve(paymentIntentId, {
+                  expand: ["latest_charge"],
+                });
+                const sessionId = pi.metadata?.sessionId || null;
+                if (!sessionId) return { empty: true, docs: [] };
+                return db.collection("orders").where("paymentId", "==", sessionId).limit(1).get();
+              } catch {
+                return { empty: true, docs: [] };
+              }
+            })(),
+          ]);
+
+          const orderDoc = !byPi.empty ? byPi.docs[0] : !byCs.empty ? byCs.docs[0] : null;
+          if (orderDoc) {
+            await orderDoc.ref.update({
               status: "refunded",
               refundedAt: admin.firestore.FieldValue.serverTimestamp(),
+              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+          }
+        }
+        break;
+      }
+      case "charge.dispute.created": {
+        const dispute = event.data.object;
+        const disputePaymentIntentId = dispute.payment_intent;
+        Sentry.captureEvent({
+          message: "Stripe chargeback dispute opened",
+          level: "error",
+          extra: { disputeId: dispute.id, paymentIntentId: disputePaymentIntentId, reason: dispute.reason, amount: dispute.amount },
+        });
+        await notifyDiscord(
+          "⚠️ Chargeback Dispute Opened",
+          `A dispute was filed. You must respond before the deadline or it will be automatically lost.`,
+          [
+            { name: "Dispute ID", value: dispute.id, inline: false },
+            { name: "Payment Intent", value: disputePaymentIntentId || "N/A", inline: false },
+            { name: "Amount", value: `$${((dispute.amount || 0) / 100).toFixed(2)}`, inline: true },
+            { name: "Reason", value: dispute.reason || "unknown", inline: true },
+            { name: "Due By", value: dispute.evidence_details?.due_by
+              ? new Date(dispute.evidence_details.due_by * 1000).toUTCString()
+              : "Check Stripe Dashboard", inline: false },
+          ],
+          15158332 // red
+        );
+        // Mark the order as disputed in Firestore if we can find it
+        if (disputePaymentIntentId) {
+          const disputeOrderSnap = await db.collection("orders")
+            .where("paymentId", "==", disputePaymentIntentId)
+            .limit(1)
+            .get();
+          if (!disputeOrderSnap.empty) {
+            await disputeOrderSnap.docs[0].ref.update({
+              status: "disputed",
+              disputeId: dispute.id,
+              disputeReason: dispute.reason,
               updatedAt: admin.firestore.FieldValue.serverTimestamp(),
             });
           }
@@ -435,7 +491,7 @@ exports.reportError = onCall({}, async request => {
 exports.httpApi = onRequest({
   minInstances: CONFIG.minInstances,
   invoker: "public",
-  cors: true,
+  cors: false, // CORS is handled by Express corsOptions middleware — do not override with true
   secrets: ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"],
 }, app);
 
@@ -457,17 +513,50 @@ exports.api = onCall({
 
   try {
   // Create Payment Intent
+    // Calculate tax for an order (used for display in the card payment flow)
+    if (endpoint === "calculateTax") {
+      const { items, shippingAddress } = data;
+      if (!items?.length) throw new HttpsError("invalid-argument", "No items provided");
+      if (!shippingAddress?.country) throw new HttpsError("invalid-argument", "Shipping address required");
+
+      const lineItems = items.map(item => ({
+        amount: Math.round(item.price * item.quantity * 100),
+        reference: String(item.id || item.name).substring(0, 500),
+        tax_behavior: "exclusive",
+      }));
+
+      const calculation = await stripe.tax.calculations.create({
+        currency: "usd",
+        line_items: lineItems,
+        customer_details: {
+          address: {
+            line1: shippingAddress.address || "",
+            city: shippingAddress.city || "",
+            state: shippingAddress.state || "",
+            postal_code: shippingAddress.zipCode || "",
+            country: shippingAddress.country,
+          },
+          address_source: "shipping",
+        },
+      });
+
+      return {
+        calculationId: calculation.id,
+        taxAmount: calculation.tax_amount_exclusive / 100,
+      };
+    }
+
     if (endpoint === "createPaymentIntent") {
       const { amount, currency = "usd", metadata = {}, receipt_email } = data;
 
       if (!amount || isNaN(amount) || amount < 50) {
-        throw new Error("Invalid amount");
+        throw new HttpsError("invalid-argument", "Invalid amount");
       }
 
       let verifiedAmount = Math.round(amount);
+      let taxCalculationId = null;
 
-      // Server-side amount verification: when an orderId is provided,
-      // use the order's total from Firestore instead of trusting the client
+      // Server-side verification: recalculate tax authoritatively for shipped orders
       if (metadata.orderId) {
         const db = admin.firestore();
         const orderSnap = await db.collection("orders").doc(metadata.orderId).get();
@@ -475,18 +564,67 @@ exports.api = onCall({
           throw new HttpsError("not-found", "Order not found");
         }
         const order = orderSnap.data();
-        const expectedAmount = Math.round(order.total * 100); // total is in dollars, convert to cents
-        if (verifiedAmount !== expectedAmount) {
+
+        const subtotalCents = order.items.reduce(
+          (sum, item) => sum + Math.round(item.price * item.quantity * 100), 0
+        );
+        let expectedAmount = subtotalCents;
+        const taxUpdate = { subtotal: subtotalCents / 100 };
+
+        if (order.fulfillmentType === "shipping" && order.shippingInfo?.country) {
+          try {
+            const taxCalc = await stripe.tax.calculations.create({
+              currency: "usd",
+              line_items: order.items.map(item => ({
+                amount: Math.round(item.price * item.quantity * 100),
+                reference: String(item.id || item.name).substring(0, 500),
+                tax_behavior: "exclusive",
+              })),
+              customer_details: {
+                address: {
+                  line1: order.shippingInfo.address || "",
+                  city: order.shippingInfo.city || "",
+                  state: order.shippingInfo.state || "",
+                  postal_code: order.shippingInfo.zipCode || "",
+                  country: order.shippingInfo.country,
+                },
+                address_source: "shipping",
+              },
+            });
+            const taxCents = taxCalc.tax_amount_exclusive;
+            expectedAmount = subtotalCents + taxCents;
+            taxUpdate.taxAmount = taxCents / 100;
+            taxUpdate.taxCalculationId = taxCalc.id;
+            taxCalculationId = taxCalc.id;
+          } catch (taxErr) {
+            console.warn("Stripe Tax unavailable, charging subtotal only:", taxErr.message);
+            // Fall back to subtotal only — do NOT trust client-supplied order.total
+            expectedAmount = subtotalCents;
+          }
+        }
+
+        // Allow ±1 cent tolerance to absorb floating-point rounding in subtotal+tax arithmetic
+        if (Math.abs(verifiedAmount - expectedAmount) > 1) {
           console.error(`Amount mismatch for order ${metadata.orderId}: client sent ${verifiedAmount}, expected ${expectedAmount}`);
           throw new HttpsError("invalid-argument", "Payment amount does not match order total");
         }
+
+        await db.collection("orders").doc(metadata.orderId).update({
+          ...taxUpdate,
+          total: expectedAmount / 100,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
         verifiedAmount = expectedAmount;
       }
 
+      // Link the Stripe Tax calculation to this payment intent so it appears in tax reports
       const intentParams = {
         amount: verifiedAmount,
         currency,
-        metadata,
+        metadata: taxCalculationId
+          ? { ...metadata, tax_calculation: taxCalculationId }
+          : metadata,
         automatic_payment_methods: { enabled: true },
       };
       if (receipt_email) {
@@ -560,7 +698,9 @@ exports.api = onCall({
 
     // Create Checkout Session
     if (endpoint === "createCheckoutSession") {
-      const { lineItems, successUrl, cancelUrl, customerEmail, metadata = {} } = data;
+      const { items, successUrl, cancelUrl, customerEmail, metadata = {} } = data;
+
+      if (!items?.length) throw new HttpsError("invalid-argument", "No items provided");
 
       // Validate URLs are from allowed domains
       const isValidRedirectUrl = url => {
@@ -580,10 +720,24 @@ exports.api = onCall({
         `cs_order_${metadata.orderId}` :
         `cs_${crypto.randomUUID()}`;
 
+      const lineItems = items.map(item => ({
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: item.name,
+            ...(item.size && item.size !== "N/A" && { description: `Size: ${item.size}` }),
+          },
+          unit_amount: Math.round(item.price * 100),
+          tax_behavior: "exclusive",
+        },
+        quantity: item.quantity,
+      }));
+
       const session = await stripe.checkout.sessions.create(
         {
           payment_method_types: ["card"],
           line_items: lineItems,
+          automatic_tax: { enabled: true },
           mode: "payment",
           success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
           cancel_url: cancelUrl,

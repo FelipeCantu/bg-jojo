@@ -36,6 +36,7 @@ import {
   EmailVerification,
   PrivacyPolicy,
   TermsOfService,
+  Contact,
 } from './components';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
@@ -160,6 +161,7 @@ function App() {
           <Route path="/donation-success" element={<SlideUpRoute noPadding><DonationSuccess /></SlideUpRoute>} />
           <Route path="/privacy" element={<SlideUpRoute noPadding><PrivacyPolicy /></SlideUpRoute>} />
           <Route path="/terms" element={<SlideUpRoute noPadding><TermsOfService /></SlideUpRoute>} />
+          <Route path="/contact" element={<SlideUpRoute noPadding><Contact /></SlideUpRoute>} />
           <Route
             path="/account-settings/*"
             element={

@@ -35,6 +35,32 @@
   --font-code: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }
 
+/* Pink scrollbar — Webkit (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #fce4ec;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #f48fb1;
+  border-radius: 10px;
+  border: 2px solid #fce4ec;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #e91e8c;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #f48fb1 #fce4ec;
+}
+
 /* Reset and base styles */
 * {
   box-sizing: border-box;

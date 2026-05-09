@@ -14,7 +14,7 @@ import SEO from './SEO';
 
 // DO NOT initialize Stripe here - we'll use the instance from useStripePayment
 
-const StripeCardForm = ({ onSubmit, isSubmitting, total, error, setError }) => {
+const StripeCardForm = ({ onSubmit, isSubmitting, taxLoading, total, error, setError }) => {
   const stripe = useStripe();
   const elements = useElements();
 
@@ -45,12 +45,17 @@ const StripeCardForm = ({ onSubmit, isSubmitting, total, error, setError }) => {
       <SubmitButton
         type="button"
         onClick={handleSubmit}
-        disabled={!stripe || isSubmitting}
+        disabled={!stripe || isSubmitting || taxLoading}
       >
         {isSubmitting ? (
           <>
             <LoadingSpinner />
             Processing...
+          </>
+        ) : taxLoading ? (
+          <>
+            <LoadingSpinner />
+            Calculating tax...
           </>
         ) : `Pay $${total.toFixed(2)}`}
       </SubmitButton>
@@ -125,9 +130,12 @@ const CheckoutPage = () => {
   const [isSuccess, setIsSuccess] = useState(false);
   const [orderId, setOrderId] = useState(null);
   const [pickupDetails, setPickupDetails] = useState(null);
+  const [taxAmount, setTaxAmount] = useState(0);
+  const [taxLoading, setTaxLoading] = useState(false);
 
-  const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const isBelowMinimum = total < 0.50;
+  const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const total = subtotal + taxAmount;
+  const isBelowMinimum = subtotal < 0.50;
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -137,6 +145,51 @@ const CheckoutPage = () => {
     });
     return unsubscribe;
   }, [auth]);
+
+  // Calculate tax for card payment when address is filled in
+  useEffect(() => {
+    if (
+      formData.paymentMethod !== 'card' ||
+      formData.fulfillmentType !== 'shipping' ||
+      !formData.zipCode ||
+      !formData.country ||
+      !formData.city
+    ) {
+      setTaxAmount(0);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setTaxLoading(true);
+      try {
+        const api = httpsCallable(getFunctions(getApp(), 'us-central1'), 'api');
+        const { data: result } = await api({
+          endpoint: 'calculateTax',
+          items: items.map(item => ({
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+          })),
+          shippingAddress: {
+            address: formData.address,
+            city: formData.city,
+            state: formData.state,
+            zipCode: formData.zipCode,
+            country: formData.country,
+          },
+        });
+        setTaxAmount(result.taxAmount || 0);
+      } catch (err) {
+        console.warn('Tax calculation unavailable:', err.message);
+        setTaxAmount(0);
+      } finally {
+        setTaxLoading(false);
+      }
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [formData.zipCode, formData.state, formData.country, formData.city, formData.paymentMethod, formData.fulfillmentType, items]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -161,7 +214,9 @@ const CheckoutPage = () => {
 
     const orderData = {
       items: orderItems,
-      total,
+      subtotal,
+      // taxAmount, shippingCost, and total are computed server-side by Cloud Functions
+      // and written back to this document via Admin SDK after payment intent creation.
       status,
       paymentMethod,
       fulfillmentType: formData.fulfillmentType,
@@ -528,6 +583,7 @@ const CheckoutPage = () => {
                   <StripeCardForm
                     onSubmit={handleCardFormSubmit}
                     isSubmitting={paymentLoading}
+                    taxLoading={taxLoading}
                     total={total}
                     error={paymentError}
                     setError={setPaymentError}
@@ -547,9 +603,34 @@ const CheckoutPage = () => {
                     <div>${(item.price * item.quantity).toFixed(2)}</div>
                   </OrderItem>
                 ))}
+                <OrderSubtotal>
+                  <div>Subtotal</div>
+                  <div>${subtotal.toFixed(2)}</div>
+                </OrderSubtotal>
+                <OrderTaxLine>
+                  <div>Tax</div>
+                  <div>
+                    {formData.fulfillmentType === 'pickup'
+                      ? 'N/A'
+                      : formData.paymentMethod === 'card'
+                        ? taxLoading
+                          ? 'Calculating...'
+                          : taxAmount > 0
+                            ? `$${taxAmount.toFixed(2)}`
+                            : formData.zipCode && formData.city
+                              ? '$0.00'
+                              : 'Enter address'
+                        : 'Calculated at checkout'}
+                  </div>
+                </OrderTaxLine>
                 <OrderTotal>
                   <div>Total</div>
-                  <div>${total.toFixed(2)}</div>
+                  <div>
+                    ${total.toFixed(2)}
+                    {formData.paymentMethod === 'stripe_checkout' && formData.fulfillmentType === 'shipping' && (
+                      <TaxNote> + tax</TaxNote>
+                    )}
+                  </div>
                 </OrderTotal>
 
                 {isBelowMinimum && (
@@ -690,14 +771,37 @@ const OrderItem = styled.div`
   border-bottom: 1px solid #eee;
 `;
 
+const OrderSubtotal = styled.div`
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  border-top: 1px solid #eee;
+  font-size: 0.95rem;
+  color: #555;
+`;
+
+const OrderTaxLine = styled.div`
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  font-size: 0.95rem;
+  color: #555;
+  border-bottom: 1px solid #eee;
+`;
+
 const OrderTotal = styled.div`
   display: flex;
   justify-content: space-between;
   padding: 1rem 0;
   font-weight: bold;
   font-size: 1.1rem;
-  border-top: 2px solid #eee;
-  margin-top: 0.5rem;
+  margin-top: 0.25rem;
+`;
+
+const TaxNote = styled.span`
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #888;
 `;
 
 const SubmitButton = styled.button`

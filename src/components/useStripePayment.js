@@ -142,14 +142,15 @@ const useStripePayment = () => {
       const stripe = await stripePromise;
       if (!stripe) throw new Error('Stripe failed to initialize');
 
-      // Prepare line items
-      const lineItems = items.map(item => ({
-        price: item.stripePriceId,
-        quantity: item.quantity,
-        adjustable_quantity: { enabled: false }
-      }));
+      if (!items.length) throw new Error('No items in cart');
 
-      if (!lineItems.length) throw new Error('No items in cart');
+      // Prepare items for the backend (which builds price_data with tax_behavior)
+      const checkoutItems = items.map(item => ({
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        size: item.selectedSize || 'N/A',
+      }));
 
       // Create checkout session - FIXED: Use proper function name and endpoint
       // OLD: const createCheckoutSession = httpsCallable(getCloudFunctions(), 'api-createCheckoutSession');
@@ -157,7 +158,7 @@ const useStripePayment = () => {
 
       const { data } = await api({
         endpoint: 'createCheckoutSession', // Specify which endpoint to call
-        lineItems,
+        items: checkoutItems,
         customerEmail: formData.email,
         successUrl: `${window.location.origin}/success?session_id={CHECKOUT_SESSION_ID}&order_id=${orderId}`,
         cancelUrl: `${window.location.origin}/checkout?canceled=true&order_id=${orderId}`,

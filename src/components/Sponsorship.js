@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { useNavigate } from 'react-router-dom';
 import sponsorship1 from '../assets/sponsorship-1.png';
 import sponsorship2 from '../assets/sponsorship-2.png';
 import { client } from '../sanityClient';
@@ -84,8 +83,7 @@ const FALLBACK_LEVELS = [
   },
 ];
 
-const Sponsorship = () => {
-  const navigate = useNavigate();
+const Sponsorship = ({ onStartToday }) => {
   const [sponsorshipLevels, setSponsorshipLevels] = useState(FALLBACK_LEVELS);
 
   useEffect(() => {
@@ -100,7 +98,7 @@ const Sponsorship = () => {
   }, []);
 
   const handleStartToday = () => {
-    navigate('/getinvolved');
+    if (onStartToday) onStartToday();
   };
 
   return (
