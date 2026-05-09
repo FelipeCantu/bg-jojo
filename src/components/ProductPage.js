@@ -447,7 +447,11 @@ export default function ProductPage() {
               stock
             },
             colors,
-            images[]{asset->{url}}
+            images[]{asset->{url}},
+            weightOz,
+            lengthIn,
+            widthIn,
+            heightIn
           }`,
           { slug }
         );
@@ -508,7 +512,11 @@ export default function ProductPage() {
       stripePriceId: stripePriceId,
       colors: product.colors,
       material: product.material,
-      category: product.category
+      category: product.category,
+      weightOz: product.weightOz,
+      lengthIn: product.lengthIn,
+      widthIn: product.widthIn,
+      heightIn: product.heightIn
     });
   };
 

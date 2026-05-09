@@ -405,7 +405,10 @@ app.post("/webhook", express.raw({ type: "application/json" }), async (req, res)
         Sentry.captureEvent({
           message: "Stripe chargeback dispute opened",
           level: "error",
-          extra: { disputeId: dispute.id, paymentIntentId: disputePaymentIntentId, reason: dispute.reason, amount: dispute.amount },
+          extra: {
+            disputeId: dispute.id, paymentIntentId: disputePaymentIntentId,
+            reason: dispute.reason, amount: dispute.amount,
+          },
         });
         await notifyDiscord(
           "⚠️ Chargeback Dispute Opened",
@@ -415,9 +418,9 @@ app.post("/webhook", express.raw({ type: "application/json" }), async (req, res)
             { name: "Payment Intent", value: disputePaymentIntentId || "N/A", inline: false },
             { name: "Amount", value: `$${((dispute.amount || 0) / 100).toFixed(2)}`, inline: true },
             { name: "Reason", value: dispute.reason || "unknown", inline: true },
-            { name: "Due By", value: dispute.evidence_details?.due_by
-              ? new Date(dispute.evidence_details.due_by * 1000).toUTCString()
-              : "Check Stripe Dashboard", inline: false },
+            { name: "Due By", value: dispute.evidence_details?.due_by ?
+              new Date(dispute.evidence_details.due_by * 1000).toUTCString() :
+              "Check Stripe Dashboard", inline: false },
           ],
           15158332 // red
         );
@@ -512,13 +515,78 @@ exports.api = onCall({
   const { endpoint, ...data } = request.data;
 
   try {
-  // Create Payment Intent
+  // Get real-time USPS shipping rates via ShipStation
+    if (endpoint === "getShippingRates") {
+      const { items, toAddress } = data;
+      if (!items?.length) throw new HttpsError("invalid-argument", "No items provided");
+      if (!toAddress?.zipCode) throw new HttpsError("invalid-argument", "Destination address required");
+
+      const DEFAULT_WEIGHT_OZ = 8;
+      const DEFAULT_LENGTH = 12;
+      const DEFAULT_WIDTH = 9;
+      const DEFAULT_HEIGHT = 4;
+
+      const totalWeight = items.reduce(
+        (sum, item) => sum + ((item.weightOz || DEFAULT_WEIGHT_OZ) * item.quantity), 0
+      );
+      const maxLength = Math.max(...items.map(i => i.lengthIn || DEFAULT_LENGTH));
+      const maxWidth = Math.max(...items.map(i => i.widthIn || DEFAULT_WIDTH));
+      const maxHeight = Math.max(...items.map(i => i.heightIn || DEFAULT_HEIGHT));
+
+      const auth = Buffer.from(
+        `${process.env.SHIPSTATION_API_KEY}:${process.env.SHIPSTATION_SECRET_KEY}`
+      ).toString("base64");
+
+      const ssResponse = await fetch("https://ssapi.shipstation.com/shipments/getrates", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Basic ${auth}`,
+        },
+        body: JSON.stringify({
+          carrierCode: "stamps_com",
+          serviceCode: null,
+          packageCode: null,
+          fromPostalCode: "84045",
+          toState: toAddress.state,
+          toCountry: toAddress.country || "US",
+          toPostalCode: toAddress.zipCode,
+          toCity: toAddress.city,
+          weight: { value: totalWeight, units: "ounces" },
+          dimensions: { units: "inches", length: maxLength, width: maxWidth, height: maxHeight },
+          confirmation: "none",
+          residential: true,
+        }),
+      });
+
+      if (!ssResponse.ok) {
+        const err = await ssResponse.text();
+        console.error("ShipStation rates error:", err);
+        throw new HttpsError("internal", "Could not fetch shipping rates");
+      }
+
+      const ssRates = await ssResponse.json();
+
+      const rates = (Array.isArray(ssRates) ? ssRates : [])
+        .map(r => ({
+          id: r.serviceCode,
+          service: r.serviceName,
+          carrier: "USPS",
+          rate: r.shipmentCost + (r.otherCost || 0),
+          deliveryDays: r.days || null,
+        }))
+        .sort((a, b) => a.rate - b.rate);
+
+      return { rates };
+    }
+
     // Calculate tax for an order (used for display in the card payment flow)
     if (endpoint === "calculateTax") {
-      const { items, shippingAddress } = data;
+      const { items, shippingAddress, shippingCost } = data;
       if (!items?.length) throw new HttpsError("invalid-argument", "No items provided");
       if (!shippingAddress?.country) throw new HttpsError("invalid-argument", "Shipping address required");
 
+      /* eslint-disable camelcase */
       const lineItems = items.map(item => ({
         amount: Math.round(item.price * item.quantity * 100),
         reference: String(item.id || item.name).substring(0, 500),
@@ -528,6 +596,9 @@ exports.api = onCall({
       const calculation = await stripe.tax.calculations.create({
         currency: "usd",
         line_items: lineItems,
+        ...(shippingCost > 0 && {
+          shipping_cost: { amount: Math.round(shippingCost * 100), tax_behavior: "exclusive" },
+        }),
         customer_details: {
           address: {
             line1: shippingAddress.address || "",
@@ -539,6 +610,7 @@ exports.api = onCall({
           address_source: "shipping",
         },
       });
+      /* eslint-enable camelcase */
 
       return {
         calculationId: calculation.id,
@@ -571,8 +643,14 @@ exports.api = onCall({
         let expectedAmount = subtotalCents;
         const taxUpdate = { subtotal: subtotalCents / 100 };
 
-        if (order.fulfillmentType === "shipping" && order.shippingInfo?.country) {
+        const needsTax =
+          (order.fulfillmentType === "shipping" && order.shippingInfo?.country) ||
+          (order.fulfillmentType === "pickup" && order.shippingInfo?.country);
+
+        if (needsTax) {
           try {
+            /* eslint-disable camelcase */
+            const shippingCostCents = Math.round((order.shippingCost || 0) * 100);
             const taxCalc = await stripe.tax.calculations.create({
               currency: "usd",
               line_items: order.items.map(item => ({
@@ -580,6 +658,9 @@ exports.api = onCall({
                 reference: String(item.id || item.name).substring(0, 500),
                 tax_behavior: "exclusive",
               })),
+              ...(shippingCostCents > 0 && {
+                shipping_cost: { amount: shippingCostCents, tax_behavior: "exclusive" },
+              }),
               customer_details: {
                 address: {
                   line1: order.shippingInfo.address || "",
@@ -591,6 +672,7 @@ exports.api = onCall({
                 address_source: "shipping",
               },
             });
+            /* eslint-enable camelcase */
             const taxCents = taxCalc.tax_amount_exclusive;
             expectedAmount = subtotalCents + taxCents;
             taxUpdate.taxAmount = taxCents / 100;
@@ -601,6 +683,13 @@ exports.api = onCall({
             // Fall back to subtotal only — do NOT trust client-supplied order.total
             expectedAmount = subtotalCents;
           }
+        }
+
+        // Add shipping cost for shipped orders
+        if (order.fulfillmentType === "shipping" && order.shippingCost > 0) {
+          const shippingCents = Math.round(order.shippingCost * 100);
+          expectedAmount += shippingCents;
+          taxUpdate.shippingCost = order.shippingCost;
         }
 
         // Allow ±1 cent tolerance to absorb floating-point rounding in subtotal+tax arithmetic
@@ -622,9 +711,9 @@ exports.api = onCall({
       const intentParams = {
         amount: verifiedAmount,
         currency,
-        metadata: taxCalculationId
-          ? { ...metadata, tax_calculation: taxCalculationId }
-          : metadata,
+        metadata: taxCalculationId ?
+          { ...metadata, tax_calculation: taxCalculationId } : // eslint-disable-line camelcase
+          metadata,
         automatic_payment_methods: { enabled: true },
       };
       if (receipt_email) {
@@ -720,6 +809,7 @@ exports.api = onCall({
         `cs_order_${metadata.orderId}` :
         `cs_${crypto.randomUUID()}`;
 
+      /* eslint-disable camelcase */
       const lineItems = items.map(item => ({
         price_data: {
           currency: "usd",
@@ -748,6 +838,7 @@ exports.api = onCall({
         { idempotencyKey }
       );
 
+      /* eslint-enable camelcase */
       return {
         id: session.id,
         url: session.url,

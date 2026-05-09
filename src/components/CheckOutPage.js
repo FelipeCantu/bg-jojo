@@ -4,7 +4,7 @@ import { useCart } from '../CartContext';
 import { ArrowLeftIcon, CheckCircleIcon, ExclamationCircleIcon, LockClosedIcon, CreditCardIcon, TruckIcon, BuildingStorefrontIcon } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { getFirestore, collection, addDoc, serverTimestamp, updateDoc, doc } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, serverTimestamp, updateDoc, doc, getDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getApp } from 'firebase/app';
@@ -130,11 +130,16 @@ const CheckoutPage = () => {
   const [isSuccess, setIsSuccess] = useState(false);
   const [orderId, setOrderId] = useState(null);
   const [pickupDetails, setPickupDetails] = useState(null);
+  const [pickupAddress, setPickupAddress] = useState(null);
   const [taxAmount, setTaxAmount] = useState(0);
   const [taxLoading, setTaxLoading] = useState(false);
+  const [shippingRates, setShippingRates] = useState([]);
+  const [shippingRatesLoading, setShippingRatesLoading] = useState(false);
+  const [selectedShippingRate, setSelectedShippingRate] = useState(null);
 
   const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const total = subtotal + taxAmount;
+  const shippingCost = selectedShippingRate?.rate || 0;
+  const total = subtotal + taxAmount + shippingCost;
   const isBelowMinimum = subtotal < 0.50;
 
   useEffect(() => {
@@ -146,18 +151,39 @@ const CheckoutPage = () => {
     return unsubscribe;
   }, [auth]);
 
+  // Fetch pickup location address for tax calculation
+  useEffect(() => {
+    const db = getFirestore(getApp());
+    getDoc(doc(db, 'settings', 'pickup')).then(snap => {
+      if (snap.exists()) setPickupAddress(snap.data());
+    }).catch(() => {});
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Calculate tax for card payment when address is filled in
   useEffect(() => {
-    if (
-      formData.paymentMethod !== 'card' ||
-      formData.fulfillmentType !== 'shipping' ||
-      !formData.zipCode ||
-      !formData.country ||
-      !formData.city
-    ) {
+    const isPickup = formData.fulfillmentType === 'pickup';
+    const isShipping = formData.fulfillmentType === 'shipping';
+
+    if (formData.paymentMethod !== 'card') {
       setTaxAmount(0);
       return;
     }
+    if (isPickup && !pickupAddress) {
+      setTaxAmount(0);
+      return;
+    }
+    if (isShipping && (!formData.zipCode || !formData.country || !formData.city)) {
+      setTaxAmount(0);
+      return;
+    }
+    if (!isPickup && !isShipping) {
+      setTaxAmount(0);
+      return;
+    }
+
+    const taxAddress = isPickup
+      ? { address: pickupAddress.address, city: 'Saratoga Springs', state: 'UT', zipCode: '84045', country: 'US' }
+      : { address: formData.address, city: formData.city, state: formData.state, zipCode: formData.zipCode, country: formData.country };
 
     const timer = setTimeout(async () => {
       setTaxLoading(true);
@@ -171,13 +197,8 @@ const CheckoutPage = () => {
             price: item.price,
             quantity: item.quantity,
           })),
-          shippingAddress: {
-            address: formData.address,
-            city: formData.city,
-            state: formData.state,
-            zipCode: formData.zipCode,
-            country: formData.country,
-          },
+          shippingAddress: taxAddress,
+          ...(isShipping && shippingCost > 0 && { shippingCost }),
         });
         setTaxAmount(result.taxAmount || 0);
       } catch (err) {
@@ -189,7 +210,56 @@ const CheckoutPage = () => {
     }, 600);
 
     return () => clearTimeout(timer);
-  }, [formData.zipCode, formData.state, formData.country, formData.city, formData.paymentMethod, formData.fulfillmentType, items]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [formData.zipCode, formData.state, formData.country, formData.city, formData.paymentMethod, formData.fulfillmentType, items, pickupAddress, selectedShippingRate]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Fetch real-time USPS shipping rates when shipping address is filled in
+  useEffect(() => {
+    if (
+      formData.fulfillmentType !== 'shipping' ||
+      !formData.address ||
+      !formData.city ||
+      !formData.state ||
+      !formData.zipCode
+    ) {
+      setShippingRates([]);
+      setSelectedShippingRate(null);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setShippingRatesLoading(true);
+      try {
+        const api = httpsCallable(getFunctions(getApp(), 'us-central1'), 'api');
+        const { data: result } = await api({
+          endpoint: 'getShippingRates',
+          items: items.map(item => ({
+            weightOz: item.weightOz,
+            lengthIn: item.lengthIn,
+            widthIn: item.widthIn,
+            heightIn: item.heightIn,
+            quantity: item.quantity,
+          })),
+          toAddress: {
+            address: formData.address,
+            city: formData.city,
+            state: formData.state,
+            zipCode: formData.zipCode,
+            country: formData.country,
+          },
+        });
+        setShippingRates(result.rates || []);
+        if (result.rates?.length > 0) setSelectedShippingRate(result.rates[0]);
+      } catch (err) {
+        console.warn('Shipping rates unavailable:', err.message);
+        setShippingRates([]);
+        setSelectedShippingRate(null);
+      } finally {
+        setShippingRatesLoading(false);
+      }
+    }, 800);
+
+    return () => clearTimeout(timer);
+  }, [formData.address, formData.city, formData.state, formData.zipCode, formData.country, formData.fulfillmentType, items]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -232,8 +302,21 @@ const CheckoutPage = () => {
           state: formData.state,
           zipCode: formData.zipCode,
           country: formData.country
+        }),
+        ...(formData.fulfillmentType === 'pickup' && pickupAddress && {
+          address: pickupAddress.address,
+          city: 'Saratoga Springs',
+          state: 'UT',
+          zipCode: '84045',
+          country: 'US'
         })
       },
+      ...(formData.fulfillmentType === 'shipping' && selectedShippingRate && {
+        shippingCost: selectedShippingRate.rate,
+        shippingService: selectedShippingRate.service,
+        shippingCarrier: selectedShippingRate.carrier,
+        shippingRateId: selectedShippingRate.id,
+      }),
       createdAt: now,
       updatedAt: now,
       ...(user && { userId: user.uid }),
@@ -258,6 +341,11 @@ const CheckoutPage = () => {
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       window.scrollTo(0, 0);
+      return;
+    }
+
+    if (formData.fulfillmentType === 'shipping' && !selectedShippingRate) {
+      setPaymentError('Please select a shipping method before continuing.');
       return;
     }
 
@@ -519,6 +607,35 @@ const CheckoutPage = () => {
                     </FormGroup>
                   </>
                 )}
+
+                {formData.fulfillmentType === 'shipping' && (formData.address && formData.city && formData.state && formData.zipCode) && (
+                  <FormGroup>
+                    <Label>Shipping Method</Label>
+                    {shippingRatesLoading ? (
+                      <div style={{ color: '#888', fontSize: '0.9rem', padding: '0.5rem 0' }}>Fetching rates...</div>
+                    ) : shippingRates.length > 0 ? (
+                      shippingRates.map(rate => (
+                        <label key={rate.id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.5rem', cursor: 'pointer', fontSize: '0.95rem' }}>
+                          <input
+                            type="radio"
+                            name="shippingRate"
+                            value={rate.id}
+                            checked={selectedShippingRate?.id === rate.id}
+                            onChange={() => setSelectedShippingRate(rate)}
+                          />
+                          <span>
+                            {rate.carrier} {rate.service}
+                            {rate.deliveryDays ? ` · ${rate.deliveryDays} day${rate.deliveryDays !== 1 ? 's' : ''}` : ''}
+                            {' · '}
+                            <strong>${rate.rate.toFixed(2)}</strong>
+                          </span>
+                        </label>
+                      ))
+                    ) : (
+                      <div style={{ color: '#888', fontSize: '0.9rem' }}>No rates available for this address.</div>
+                    )}
+                  </FormGroup>
+                )}
               </Section>
 
               <Section>
@@ -607,20 +724,34 @@ const CheckoutPage = () => {
                   <div>Subtotal</div>
                   <div>${subtotal.toFixed(2)}</div>
                 </OrderSubtotal>
+                {formData.fulfillmentType === 'shipping' && (
+                  <OrderTaxLine>
+                    <div>Shipping</div>
+                    <div>
+                      {shippingRatesLoading
+                        ? 'Calculating...'
+                        : selectedShippingRate
+                          ? `$${selectedShippingRate.rate.toFixed(2)}`
+                          : formData.address && formData.city && formData.state && formData.zipCode
+                            ? 'Select a rate above'
+                            : 'Enter address'}
+                    </div>
+                  </OrderTaxLine>
+                )}
                 <OrderTaxLine>
                   <div>Tax</div>
                   <div>
-                    {formData.fulfillmentType === 'pickup'
-                      ? 'N/A'
-                      : formData.paymentMethod === 'card'
-                        ? taxLoading
-                          ? 'Calculating...'
-                          : taxAmount > 0
-                            ? `$${taxAmount.toFixed(2)}`
+                    {formData.paymentMethod === 'card'
+                      ? taxLoading
+                        ? 'Calculating...'
+                        : taxAmount > 0
+                          ? `$${taxAmount.toFixed(2)}`
+                          : formData.fulfillmentType === 'pickup'
+                            ? '$0.00'
                             : formData.zipCode && formData.city
                               ? '$0.00'
                               : 'Enter address'
-                        : 'Calculated at checkout'}
+                      : 'Calculated at checkout'}
                   </div>
                 </OrderTaxLine>
                 <OrderTotal>

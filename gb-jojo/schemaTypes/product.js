@@ -142,6 +142,30 @@ export const product = defineType({
       type: 'number',
       description: 'Leave blank if not tracked',
     }),
+    defineField({
+      name: 'weightOz',
+      title: 'Weight (oz)',
+      type: 'number',
+      description: 'Shipping weight in ounces (e.g. 8 for a t-shirt)',
+    }),
+    defineField({
+      name: 'lengthIn',
+      title: 'Length (in)',
+      type: 'number',
+      description: 'Package length in inches',
+    }),
+    defineField({
+      name: 'widthIn',
+      title: 'Width (in)',
+      type: 'number',
+      description: 'Package width in inches',
+    }),
+    defineField({
+      name: 'heightIn',
+      title: 'Height (in)',
+      type: 'number',
+      description: 'Package height in inches',
+    }),
   ],
   preview: {
     select: {
