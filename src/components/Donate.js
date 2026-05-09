@@ -184,16 +184,5 @@ const AltPaymentLink = styled(Link)`
   }
 `;
 
-const Divider = styled.div`
-  width: 100%;
-  height: 2px;
-  background: rgba(0, 0, 0, 0.1);
-  margin: 2rem auto;
-  max-width: 800px;
-
-  @media (min-width: 768px) {
-    margin: 4rem auto;
-  }
-`;
 
 export default Donate;
