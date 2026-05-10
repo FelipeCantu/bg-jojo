@@ -93,11 +93,13 @@ service cloud.firestore {
       // list: admin-only query access.
       allow list: if isAdmin();
 
-      // create: user creates their own order in pending state.
+      // create: signed-in users attach their uid; guests omit userId entirely.
       // Financial fields (taxAmount, shippingCost, total) must NOT be set by the
       // client — they are computed and written server-side by Cloud Functions.
-      allow create: if request.auth != null
-        && request.resource.data.userId == request.auth.uid
+      allow create: if (
+          (request.auth != null && request.resource.data.userId == request.auth.uid)
+          || (request.auth == null && !('userId' in request.resource.data))
+        )
         && request.resource.data.status == 'pending'
         && !('shippingCost' in request.resource.data)
         && !('taxAmount' in request.resource.data)

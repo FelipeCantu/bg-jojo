@@ -232,7 +232,6 @@ const CheckoutPage = () => {
 
   const saveOrderToFirestore = async (status, paymentMethod, paymentId = null) => {
     const user = auth.currentUser;
-    if (!user) throw new Error('You must be signed in to complete a purchase.');
     const now = serverTimestamp();
     
     const orderItems = items.map(item => ({
@@ -273,7 +272,7 @@ const CheckoutPage = () => {
           country: 'US'
         })
       },
-      userId: user.uid,
+      ...(user && { userId: user.uid }),
       createdAt: now,
       updatedAt: now,
       ...(paymentId && { paymentId })
@@ -353,7 +352,7 @@ const CheckoutPage = () => {
       setPaymentError(error.message || 'Payment failed. Please try again.');
       
       if (localOrderId) {
-        await updateOrderStatus(localOrderId, 'failed');
+        try { await updateOrderStatus(localOrderId, 'failed'); } catch (_) {}
       }
     }
   };
