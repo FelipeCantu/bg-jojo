@@ -812,7 +812,9 @@ exports.api = onCall({
 
     // Create Checkout Session
     if (endpoint === "createCheckoutSession") {
-      const { items, successUrl, cancelUrl, customerEmail, metadata = {}, fulfillmentType } = data;
+      const { items, successUrl, cancelUrl, customerEmail, metadata = {} } = data;
+      // fulfillmentType may be top-level or nested inside metadata (frontend sends it both ways)
+      const fulfillmentType = data.fulfillmentType || metadata.fulfillmentType;
 
       if (!items?.length) throw new HttpsError("invalid-argument", "No items provided");
 
@@ -867,12 +869,21 @@ exports.api = onCall({
         line_items: lineItems,
         automatic_tax: { enabled: true },
         mode: "payment",
-        success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
+        // successUrl already contains ?session_id={CHECKOUT_SESSION_ID}&order_id=... — do not append again
+        success_url: successUrl,
         cancel_url: cancelUrl,
         customer_email: customerEmail,
         metadata,
         expires_at: Math.floor(Date.now() / 1000) + 1800, // 30 minutes
+        billing_address_collection: "required",
+        allow_promotion_codes: true,
       };
+
+      if (fulfillmentType === "shipping") {
+        sessionParams.shipping_address_collection = {
+          allowed_countries: ["US", "CA", "GB", "AU"],
+        };
+      }
 
       if (shippingAmountCents > 0) {
         sessionParams.shipping_options = [{

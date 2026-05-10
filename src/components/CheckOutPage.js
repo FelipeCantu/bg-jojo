@@ -165,8 +165,11 @@ const CheckoutPage = () => {
       if (snap.exists()) setPickupAddress(snap.data());
     }).catch(() => {});
     getDoc(doc(db, 'settings', 'shipping')).then(snap => {
-      if (snap.exists()) setShippingSettings(snap.data());
-    }).catch(() => {});
+      setShippingSettings(snap.exists() ? snap.data() : {});
+    }).catch((err) => {
+      console.warn('Could not load shipping settings:', err);
+      setShippingSettings({});
+    });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Calculate tax for card payment when address is filled in
@@ -182,7 +185,7 @@ const CheckoutPage = () => {
       setTaxAmount(0);
       return;
     }
-    if (isShipping && (!formData.zipCode || !formData.country || !formData.city)) {
+    if (isShipping && (!formData.zipCode || !formData.country || !formData.city || !formData.state)) {
       setTaxAmount(0);
       return;
     }
