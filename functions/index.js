@@ -302,6 +302,7 @@ app.post("/webhook", express.raw({ type: "application/json" }), async (req, res)
               paymentId: session.id,
               total: (session.amount_total || 0) / 100,
               taxAmount: (session.total_details?.amount_tax || 0) / 100,
+              shippingCost: (session.total_details?.amount_shipping || 0) / 100,
               updatedAt: admin.firestore.FieldValue.serverTimestamp(),
             });
           }
@@ -659,6 +660,8 @@ exports.api = onCall({
           (order.fulfillmentType === "shipping" && order.shippingInfo?.country) ||
           (order.fulfillmentType === "pickup" && order.shippingInfo?.country);
 
+        let taxAvailable = false;
+
         if (needsTax) {
           try {
             /* eslint-disable camelcase */
@@ -690,9 +693,9 @@ exports.api = onCall({
             taxUpdate.taxAmount = taxCents / 100;
             taxUpdate.taxCalculationId = taxCalc.id;
             taxCalculationId = taxCalc.id;
+            taxAvailable = true;
           } catch (taxErr) {
-            console.warn("Stripe Tax unavailable, charging subtotal only:", taxErr.message);
-            // Fall back to subtotal only — do NOT trust client-supplied order.total
+            console.warn("Stripe Tax unavailable, will accept client amount if ≥ subtotal + shipping:", taxErr.message);
             expectedAmount = subtotalCents;
           }
         }
@@ -704,10 +707,20 @@ exports.api = onCall({
           taxUpdate.shippingCost = computedShippingCost;
         }
 
-        // Allow ±1 cent tolerance to absorb floating-point rounding in subtotal+tax arithmetic
-        if (Math.abs(verifiedAmount - expectedAmount) > 1) {
-          console.error(`Amount mismatch for order ${metadata.orderId}: client sent ${verifiedAmount}, expected ${expectedAmount}`);
-          throw new HttpsError("invalid-argument", "Payment amount does not match order total");
+        if (taxAvailable) {
+          // Allow ±1 cent tolerance to absorb floating-point rounding in subtotal+tax arithmetic
+          if (Math.abs(verifiedAmount - expectedAmount) > 1) {
+            console.error(`Amount mismatch for order ${metadata.orderId}: client sent ${verifiedAmount}, expected ${expectedAmount}`);
+            throw new HttpsError("invalid-argument", "Payment amount does not match order total");
+          }
+        } else {
+          // Stripe Tax was unavailable — verify client is paying at least subtotal + shipping
+          if (verifiedAmount < expectedAmount - 1) {
+            console.error(`Underpayment for order ${metadata.orderId}: client sent ${verifiedAmount}, minimum ${expectedAmount}`);
+            throw new HttpsError("invalid-argument", "Payment amount is less than the order total");
+          }
+          // Use client-supplied amount (includes their previously calculated tax estimate)
+          expectedAmount = verifiedAmount;
         }
 
         await db.collection("orders").doc(metadata.orderId).update({
@@ -799,7 +812,7 @@ exports.api = onCall({
 
     // Create Checkout Session
     if (endpoint === "createCheckoutSession") {
-      const { items, successUrl, cancelUrl, customerEmail, metadata = {} } = data;
+      const { items, successUrl, cancelUrl, customerEmail, metadata = {}, fulfillmentType } = data;
 
       if (!items?.length) throw new HttpsError("invalid-argument", "No items provided");
 
@@ -821,6 +834,20 @@ exports.api = onCall({
         `cs_order_${metadata.orderId}` :
         `cs_${crypto.randomUUID()}`;
 
+      // Compute flat-rate shipping for shipped orders
+      let shippingAmountCents = 0;
+      if (fulfillmentType === "shipping") {
+        const db = admin.firestore();
+        const shippingSnap = await db.collection("settings").doc("shipping").get();
+        const shippingSettings = shippingSnap.exists ? shippingSnap.data() : null;
+        if (shippingSettings?.enabled) {
+          const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+          const belowThreshold = !shippingSettings.freeShippingThreshold ||
+            subtotal < shippingSettings.freeShippingThreshold;
+          shippingAmountCents = belowThreshold ? Math.round((shippingSettings.flatRate || 0) * 100) : 0;
+        }
+      }
+
       /* eslint-disable camelcase */
       const lineItems = items.map(item => ({
         price_data: {
@@ -835,20 +862,39 @@ exports.api = onCall({
         quantity: item.quantity,
       }));
 
-      const session = await stripe.checkout.sessions.create(
-        {
-          payment_method_types: ["card"],
-          line_items: lineItems,
-          automatic_tax: { enabled: true },
-          mode: "payment",
-          success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
-          cancel_url: cancelUrl,
-          customer_email: customerEmail,
-          metadata,
-          expires_at: Math.floor(Date.now() / 1000) + 1800, // 30 minutes
-        },
-        { idempotencyKey }
-      );
+      const sessionParams = {
+        payment_method_types: ["card"],
+        line_items: lineItems,
+        automatic_tax: { enabled: true },
+        mode: "payment",
+        success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: cancelUrl,
+        customer_email: customerEmail,
+        metadata,
+        expires_at: Math.floor(Date.now() / 1000) + 1800, // 30 minutes
+      };
+
+      if (shippingAmountCents > 0) {
+        sessionParams.shipping_options = [{
+          shipping_rate_data: {
+            type: "fixed_amount",
+            fixed_amount: { amount: shippingAmountCents, currency: "usd" },
+            display_name: "Standard Shipping",
+            tax_behavior: "exclusive",
+          },
+        }];
+      }
+
+      const session = await stripe.checkout.sessions.create(sessionParams, { idempotencyKey });
+
+      // Write shippingCost to the order doc so it's available before the webhook fires
+      if (metadata.orderId && shippingAmountCents > 0) {
+        const db = admin.firestore();
+        await db.collection("orders").doc(metadata.orderId).update({
+          shippingCost: shippingAmountCents / 100,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      }
 
       /* eslint-enable camelcase */
       return {
@@ -1461,6 +1507,11 @@ exports.api = onCall({
       if (!orderSnap.exists) throw new HttpsError("not-found", "Order not found");
 
       const order = orderSnap.data();
+
+      if (request.auth?.uid && order.userId && order.userId !== request.auth.uid) {
+        throw new HttpsError("permission-denied", "Unauthorized");
+      }
+
       if (order.fulfillmentType !== "pickup") {
         throw new HttpsError("failed-precondition", "Not a pickup order");
       }
