@@ -14,7 +14,7 @@ import SEO from './SEO';
 
 // DO NOT initialize Stripe here - we'll use the instance from useStripePayment
 
-const StripeCardForm = ({ onSubmit, isSubmitting, taxLoading, total, error, setError }) => {
+const StripeCardForm = ({ onSubmit, isSubmitting, taxLoading, total, error, setError, authReady }) => {
   const stripe = useStripe();
   const elements = useElements();
 
@@ -45,7 +45,7 @@ const StripeCardForm = ({ onSubmit, isSubmitting, taxLoading, total, error, setE
       <SubmitButton
         type="button"
         onClick={handleSubmit}
-        disabled={!stripe || isSubmitting || taxLoading}
+        disabled={!stripe || !authReady || isSubmitting || taxLoading}
       >
         {isSubmitting ? (
           <>
@@ -126,6 +126,7 @@ const CheckoutPage = () => {
     fulfillmentType: 'shipping'
   });
   
+  const [authReady, setAuthReady] = useState(false);
   const [formErrors, setFormErrors] = useState({});
   const [isSuccess, setIsSuccess] = useState(false);
   const [orderId, setOrderId] = useState(null);
@@ -152,6 +153,7 @@ const CheckoutPage = () => {
       if (user?.email) {
         setFormData(prev => ({ ...prev, email: user.email }));
       }
+      setAuthReady(true);
     });
     return unsubscribe;
   }, [auth]);
@@ -230,6 +232,7 @@ const CheckoutPage = () => {
 
   const saveOrderToFirestore = async (status, paymentMethod, paymentId = null) => {
     const user = auth.currentUser;
+    if (!user) throw new Error('You must be signed in to complete a purchase.');
     const now = serverTimestamp();
     
     const orderItems = items.map(item => ({
@@ -270,9 +273,9 @@ const CheckoutPage = () => {
           country: 'US'
         })
       },
+      userId: user.uid,
       createdAt: now,
       updatedAt: now,
-      ...(user && { userId: user.uid }),
       ...(paymentId && { paymentId })
     };
 
@@ -621,6 +624,7 @@ const CheckoutPage = () => {
                     total={total}
                     error={paymentError}
                     setError={setPaymentError}
+                    authReady={authReady}
                   />
                 )}
               </Section>
@@ -686,7 +690,7 @@ const CheckoutPage = () => {
                 {formData.paymentMethod === 'stripe_checkout' && (
                   <SubmitButton
                     onClick={handleStripeCheckout}
-                    disabled={paymentLoading || items.length === 0 || isBelowMinimum}
+                    disabled={!authReady || paymentLoading || items.length === 0 || isBelowMinimum}
                   >
                     {paymentLoading ? (
                       <>
