@@ -591,6 +591,7 @@ exports.api = onCall({
         amount: Math.round(item.price * item.quantity * 100),
         reference: String(item.id || item.name).substring(0, 500),
         tax_behavior: "exclusive",
+        tax_code: "txcd_00000000", // non-taxable — only shipping is taxed
       }));
 
       const calculation = await stripe.tax.calculations.create({
@@ -672,6 +673,7 @@ exports.api = onCall({
                 amount: Math.round(item.price * item.quantity * 100),
                 reference: String(item.id || item.name).substring(0, 500),
                 tax_behavior: "exclusive",
+                tax_code: "txcd_00000000", // non-taxable — only shipping is taxed
               })),
               ...(shippingCostCents > 0 && {
                 shipping_cost: { amount: shippingCostCents, tax_behavior: "exclusive" },
@@ -857,6 +859,7 @@ exports.api = onCall({
           product_data: {
             name: item.name,
             ...(item.size && item.size !== "N/A" && { description: `Size: ${item.size}` }),
+            tax_code: "txcd_00000000", // non-taxable — only shipping is taxed
           },
           unit_amount: Math.round(item.price * 100),
           tax_behavior: "exclusive",
