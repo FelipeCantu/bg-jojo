@@ -307,9 +307,6 @@ const CheckoutPage = () => {
       const result = await paymentHandler(localOrderId);
       
       if (result.success) {
-        if (formData.paymentMethod === 'card') {
-          await updateOrderStatus(localOrderId, 'paid', result.paymentId);
-        }
         clearCart();
         if (formData.fulfillmentType === 'pickup') {
           try {
