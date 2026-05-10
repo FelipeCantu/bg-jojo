@@ -17,8 +17,7 @@ if (process.env.FUNCTIONS_EMULATOR === "true") {
 
   // Validate required environment variables
   if (!process.env.STRIPE_SECRET_KEY) {
-    console.error("❌ Missing STRIPE_SECRET_KEY in environment variables");
-    process.exit(1);
+    console.warn("⚠️  Missing STRIPE_SECRET_KEY — payment endpoints will be unavailable");
   }
 }
 
@@ -643,6 +642,19 @@ exports.api = onCall({
         let expectedAmount = subtotalCents;
         const taxUpdate = { subtotal: subtotalCents / 100 };
 
+        // Compute shipping cost authoritatively from settings (flat-rate)
+        let computedShippingCost = 0;
+        if (order.fulfillmentType === "shipping") {
+          const shippingSettingsSnap = await db.collection("settings").doc("shipping").get();
+          const shippingSettings = shippingSettingsSnap.exists ? shippingSettingsSnap.data() : null;
+          if (shippingSettings?.enabled) {
+            const subtotal = subtotalCents / 100;
+            const belowThreshold = !shippingSettings.freeShippingThreshold ||
+              subtotal < shippingSettings.freeShippingThreshold;
+            computedShippingCost = belowThreshold ? (shippingSettings.flatRate || 0) : 0;
+          }
+        }
+
         const needsTax =
           (order.fulfillmentType === "shipping" && order.shippingInfo?.country) ||
           (order.fulfillmentType === "pickup" && order.shippingInfo?.country);
@@ -650,7 +662,7 @@ exports.api = onCall({
         if (needsTax) {
           try {
             /* eslint-disable camelcase */
-            const shippingCostCents = Math.round((order.shippingCost || 0) * 100);
+            const shippingCostCents = Math.round(computedShippingCost * 100);
             const taxCalc = await stripe.tax.calculations.create({
               currency: "usd",
               line_items: order.items.map(item => ({
@@ -686,10 +698,10 @@ exports.api = onCall({
         }
 
         // Add shipping cost for shipped orders
-        if (order.fulfillmentType === "shipping" && order.shippingCost > 0) {
-          const shippingCents = Math.round(order.shippingCost * 100);
+        if (computedShippingCost > 0) {
+          const shippingCents = Math.round(computedShippingCost * 100);
           expectedAmount += shippingCents;
-          taxUpdate.shippingCost = order.shippingCost;
+          taxUpdate.shippingCost = computedShippingCost;
         }
 
         // Allow ±1 cent tolerance to absorb floating-point rounding in subtotal+tax arithmetic
