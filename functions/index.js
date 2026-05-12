@@ -374,12 +374,13 @@ app.post("/webhook", express.raw({ type: "application/json" }), async (req, res)
           const [byPi, byCs] = await Promise.all([
             db.collection("orders").where("paymentId", "==", paymentIntentId).limit(1).get(),
             (async () => {
-              // Resolve the checkout session ID from the payment intent, if any
+              // Resolve the checkout session ID from the payment intent via Stripe API
               try {
-                const pi = await stripe.paymentIntents.retrieve(paymentIntentId, {
-                  expand: ["latest_charge"],
+                const sessions = await stripe.checkout.sessions.list({
+                  payment_intent: paymentIntentId,
+                  limit: 1,
                 });
-                const sessionId = pi.metadata?.sessionId || null;
+                const sessionId = sessions.data[0]?.id || null;
                 if (!sessionId) return { empty: true, docs: [] };
                 return db.collection("orders").where("paymentId", "==", sessionId).limit(1).get();
               } catch {
@@ -425,13 +426,38 @@ app.post("/webhook", express.raw({ type: "application/json" }), async (req, res)
           15158332 // red
         );
         // Mark the order as disputed in Firestore if we can find it
+        // Search both pi_... (card payment) and cs_... (Checkout) paymentId forms.
         if (disputePaymentIntentId) {
-          const disputeOrderSnap = await db.collection("orders")
+          let disputeOrderDoc = null;
+
+          const byPi = await db.collection("orders")
             .where("paymentId", "==", disputePaymentIntentId)
             .limit(1)
             .get();
-          if (!disputeOrderSnap.empty) {
-            await disputeOrderSnap.docs[0].ref.update({
+
+          if (!byPi.empty) {
+            disputeOrderDoc = byPi.docs[0];
+          } else {
+            try {
+              const sessions = await stripe.checkout.sessions.list({
+                payment_intent: disputePaymentIntentId,
+                limit: 1,
+              });
+              const sessionId = sessions.data[0]?.id || null;
+              if (sessionId) {
+                const byCs = await db.collection("orders")
+                  .where("paymentId", "==", sessionId)
+                  .limit(1)
+                  .get();
+                if (!byCs.empty) disputeOrderDoc = byCs.docs[0];
+              }
+            } catch (err) {
+              console.error("Failed to resolve session for dispute order lookup:", err.message);
+            }
+          }
+
+          if (disputeOrderDoc) {
+            await disputeOrderDoc.ref.update({
               status: "disputed",
               disputeId: dispute.id,
               disputeReason: dispute.reason,

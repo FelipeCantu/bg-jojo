@@ -191,11 +191,8 @@ const useStripePayment = () => {
       if (!data?.id) throw new Error('No session ID received');
 
       // Redirect to Stripe Checkout
-      const result = await stripe.redirectToCheckout({ 
-        sessionId: data.id 
-      });
-
-      if (result.error) throw result.error;
+      if (!data.url) throw new Error('No checkout URL received');
+      window.location.href = data.url;
       return { success: true };
     } catch (err) {
       const errorMessage = err.message || 'Checkout failed';

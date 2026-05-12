@@ -127,11 +127,9 @@ const useDonationPayment = () => {
         cancelUrl: `${window.location.origin}/donate`,
       });
 
-      if (!data?.id) throw new Error('No session ID received');
+      if (!data?.url) throw new Error('No checkout URL received');
 
-      const result = await stripe.redirectToCheckout({ sessionId: data.id });
-
-      if (result.error) throw result.error;
+      window.location.href = data.url;
       return { success: true, donationId: data.donationId };
     } catch (err) {
       const errorMessage = err.message || 'Donation checkout failed';
