@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import styled, { keyframes } from "styled-components";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { getApp } from "firebase/app";
-import client, { realtimeClient } from "../sanityClient";
+import { realtimeClient } from "../sanityClient";
 import useCurrentUser from "../hook/useCurrentUser";
 
 const CommentSection = ({ articleId }) => {

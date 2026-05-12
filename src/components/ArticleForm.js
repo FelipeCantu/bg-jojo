@@ -271,21 +271,6 @@ const ArticleForm = ({ onArticleSubmitted }) => {
     if (!user) return;
 
     try {
-      let imageAsset;
-      if (user.photoURL) {
-        const response = await fetch(user.photoURL);
-        const blob = await response.blob();
-        const file = new File([blob], 'profile.jpg', { type: blob.type });
-        const result = await mediaAPI.upload(file);
-        imageAsset = {
-          _type: 'image',
-          asset: {
-            _type: 'reference',
-            _ref: result.asset._ref
-          }
-        };
-      }
-
       const functions = getFunctions(getApp(), 'us-central1');
       const api = httpsCallable(functions, 'api');
       await api({
