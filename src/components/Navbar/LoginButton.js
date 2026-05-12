@@ -62,7 +62,8 @@ const LoginButton = ({ hideInNavbar, closeSidebar }) => {
               src={user.photoURL || '/default-user.png'} 
               alt="User" 
               onError={(e) => {
-                e.target.src = '/default-user.png';
+                e.target.onerror = null;
+                e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Ccircle cx='64' cy='64' r='64' fill='%23e0e0e0'/%3E%3Ccircle cx='64' cy='50' r='22' fill='%23bdbdbd'/%3E%3Cellipse cx='64' cy='106' rx='36' ry='28' fill='%23bdbdbd'/%3E%3C/svg%3E";
               }}
             />
             <UserName>{user.displayName || 'User'}</UserName>

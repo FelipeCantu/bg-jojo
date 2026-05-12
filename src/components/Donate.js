@@ -34,7 +34,7 @@ const Donate = () => {
           <AltPaymentLink to="/supporting-givebackjojo">
             Prefer Venmo or Zelle?
           </AltPaymentLink>
-          <LearnMore to="/YourGift">Learn More</LearnMore>
+          <LearnMore to="/yourgift">Learn More</LearnMore>
         </LinksStack>
       </Container>
     </BackgroundWrapper>

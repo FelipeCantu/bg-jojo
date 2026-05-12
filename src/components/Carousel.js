@@ -27,10 +27,14 @@ const CarouselComponent = () => {
         }`
       )
       .then((data) => {
-        setCarouselItems(data.map((item) => ({
-          image: item.image.asset.url,
-          text: item.text,
-        })));
+        setCarouselItems(
+          data
+            .filter((item) => item.image?.asset?.url)
+            .map((item) => ({
+              image: item.image.asset.url,
+              text: item.text,
+            }))
+        );
       })
       .catch(console.error);
   }, []);

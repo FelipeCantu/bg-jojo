@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { getApp } from 'firebase/app';
 import { client, urlFor } from '../sanityClient';
 import TextEditor from '../components/TextEditor';
 import styled from 'styled-components';
@@ -154,22 +156,19 @@ const EditArticle = () => {
       const portableContent = await convertHtmlToPortableText(htmlContent);
       const updatedReadingTime = calculateReadingTime(portableContent);
 
-      const patch = client.patch(articleId)
-        .set({
+      const functions = getFunctions(getApp(), 'us-central1');
+      const api = httpsCallable(functions, 'api');
+      await api({
+        endpoint: 'sanity/article.update',
+        articleId,
+        updates: {
           title: formTitle,
           content: portableContent,
           readingTime: updatedReadingTime,
-          updatedAt: new Date().toISOString(),
           isAnonymous: isAnonymous,
           ...(formMainImage ? { mainImage: formMainImage } : {}),
-        });
-
-      // If image was removed, unset it from the document
-      if (!formMainImage) {
-        patch.unset(['mainImage']);
-      }
-
-      await patch.commit();
+        },
+      });
 
       toast.success('Article updated successfully');
       setHasUnsavedChanges(false);

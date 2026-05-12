@@ -1,15 +1,23 @@
 import { createClient } from "@sanity/client";
 import imageUrlBuilder from "@sanity/image-url";
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { getApp } from 'firebase/app';
 import { DEFAULT_ANONYMOUS_AVATAR } from "./constants";
 
-// Initialize Sanity client
+// All Sanity writes go through Cloud Functions — the write token never ships in the browser bundle
+const callSanityWrite = async (operation, params = {}) => {
+  const functions = getFunctions(getApp(), 'us-central1');
+  const api = httpsCallable(functions, 'api');
+  const { data } = await api({ endpoint: `sanity/${operation}`, ...params });
+  return data;
+};
+
+// Initialize Sanity client (read-only — no write token)
 export const client = createClient({
   projectId: process.env.REACT_APP_SANITY_PROJECT_ID,
   dataset: process.env.REACT_APP_SANITY_DATASET || "production",
   useCdn: process.env.NODE_ENV === 'production',
   apiVersion: "2023-05-03",
-  token: process.env.REACT_APP_SANITY_API_TOKEN,
-  ignoreBrowserTokenWarning: true,
 });
 
 // Non-CDN client for real-time critical queries (notifications, etc.)
@@ -131,7 +139,7 @@ export const articleAPI = {
   },
 
   /**
-   * Create new article with validation
+   * Create new article with validation — proxied through Cloud Function
    */
   create: async (articleData, userId) => {
     if (!userId) throw new Error("Authentication required");
@@ -139,31 +147,16 @@ export const articleAPI = {
       throw new Error("Title and content are required");
     }
 
-    const doc = {
-      _type: 'article',
-      title: articleData.title,
-      slug: { current: articleData.slug || articleData.title
-        .toLowerCase()
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // strip accents
-        .replace(/[^a-z0-9\s-]/g, '')  // remove special characters
-        .trim()
-        .replace(/\s+/g, '-')          // spaces to hyphens
-        .replace(/-+/g, '-')           // collapse consecutive hyphens
-      },
-      content: articleData.content,
-      mainImage: articleData.mainImage,
-      author: { _type: 'reference', _ref: userId },
-      isAnonymous: Boolean(articleData.isAnonymous),
-      publishedDate: articleData.publishedDate || new Date().toISOString(),
-      readingTime: articleData.readingTime || 5,
-      likes: 0,
-      views: 0,
-      lastViewDate: null
-    };
-
     try {
-      await userAPI.ensureExists(userId);
-      return await client.create(doc);
+      return await callSanityWrite('article.create', {
+        title: articleData.title,
+        slug: articleData.slug || null,
+        content: articleData.content,
+        mainImage: articleData.mainImage || null,
+        isAnonymous: Boolean(articleData.isAnonymous),
+        publishedDate: articleData.publishedDate || new Date().toISOString(),
+        readingTime: articleData.readingTime || 5,
+      });
     } catch (error) {
       console.error("Error creating article:", error);
       throw new Error("Failed to create article");
@@ -171,17 +164,11 @@ export const articleAPI = {
   },
 
   /**
-   * Update existing article
+   * Update existing article — proxied through Cloud Function
    */
   update: async (id, updates) => {
     try {
-      return await client
-        .patch(id)
-        .set({
-          ...updates,
-          _updatedAt: new Date().toISOString()
-        })
-        .commit();
+      return await callSanityWrite('article.update', { articleId: id, updates });
     } catch (error) {
       console.error(`Error updating article ${id}:`, error);
       throw new Error("Failed to update article");
@@ -189,18 +176,11 @@ export const articleAPI = {
   },
 
   /**
-   * Delete article and all its references
+   * Delete article and all its references — proxied through Cloud Function
    */
   delete: async (id) => {
     try {
-      // First delete all comments
-      await client.delete({
-        query: `*[_type == "comment" && references($id)]`,
-        params: { id }
-      });
-
-      // Then delete the article
-      return await client.delete(id);
+      return await callSanityWrite('article.delete', { articleId: id });
     } catch (error) {
       console.error(`Error deleting article ${id}:`, error);
       throw new Error("Failed to delete article");
@@ -208,18 +188,11 @@ export const articleAPI = {
   },
 
   /**
-   * Increment article view count with daily tracking
+   * Increment article view count — proxied through Cloud Function
    */
-  // Add this to your articleAPI methods
   incrementViews: async (id) => {
     try {
-      // Simply increment without any checks
-      const result = await client
-        .patch(id)
-        .setIfMissing({ views: 0 })
-        .inc({ views: 1 })
-        .commit();
-
+      const result = await callSanityWrite('article.incrementViews', { articleId: id });
       return result.views;
     } catch (error) {
       console.error("View count increment failed:", error);
@@ -228,55 +201,11 @@ export const articleAPI = {
   },
 
   /**
-   * Toggle like on article
+   * Toggle like on article — proxied through Cloud Function
    */
   toggleLike: async (articleId, userId) => {
     try {
-      const article = await client.getDocument(articleId);
-      const isLiked = article.likedBy?.some(ref => ref._ref === userId);
-
-      const patch = client
-        .patch(articleId)
-        .setIfMissing({ likedBy: [], likes: 0 });
-
-      if (isLiked) {
-        patch
-          .insert('replace', 'likedBy[ref($userId)]', [])
-          .dec({ likes: 1 });
-      } else {
-        patch
-          .insert('after', 'likedBy[-1]', [{
-            _type: 'reference',
-            _ref: userId
-          }])
-          .inc({ likes: 1 });
-      }
-
-      const result = await patch.commit({ userId });
-
-      // Create notification if liked
-      if (!isLiked && article.author?._ref && article.author._ref !== userId) {
-        await client.create({
-          _type: "notification",
-          user: {
-            _type: "reference",
-            _ref: article.author._ref
-          },
-          sender: {
-            _type: "reference",
-            _ref: userId
-          },
-          type: "like",
-          article: {
-            _type: "reference",
-            _ref: articleId
-          },
-          seen: false,
-          createdAt: new Date().toISOString()
-        });
-      }
-
-      return result;
+      return await callSanityWrite('article.toggleLike', { articleId });
     } catch (error) {
       console.error(`Error toggling like for article ${articleId}:`, error);
       throw new Error("Failed to toggle like");
@@ -287,29 +216,23 @@ export const articleAPI = {
 // User Operations
 export const userAPI = {
   /**
-   * Ensure user exists in Sanity (sync from auth provider)
+   * Ensure user exists in Sanity (sync from auth provider) — writes proxied through Cloud Function
    */
   ensureExists: async (uid, userData = {}) => {
     try {
-      let user = await client.getDocument(uid).catch(() => null);
+      // Read check can stay on the browser — read-only, no token needed
+      const existing = await client.getDocument(uid).catch(() => null);
+      if (existing) return existing;
 
-      if (!user) {
-        user = await client.create({
-          _type: 'user',
-          _id: uid,
-          uid: uid,
-          name: userData.name || 'Anonymous',
-          email: userData.email || '',
-          photoURL: userData.photoURL || DEFAULT_ANONYMOUS_AVATAR,
-          role: 'user',
-          providerData: userData.providerData || [],
-          primaryProvider: userData.primaryProvider || 'password',
-          emailVerified: Boolean(userData.emailVerified),
-          lastLogin: new Date().toISOString()
-        });
-      }
-
-      return user;
+      // User doesn't exist yet — create via CF
+      return await callSanityWrite('user.sync', {
+        uid,
+        name: userData.name || 'Anonymous',
+        email: userData.email || null,
+        photoURL: userData.photoURL || DEFAULT_ANONYMOUS_AVATAR,
+        authProvider: userData.primaryProvider || userData.authProvider || 'password',
+        emailVerified: Boolean(userData.emailVerified),
+      });
     } catch (error) {
       console.error(`Error ensuring user ${uid} exists:`, error);
       throw new Error("Failed to sync user");
@@ -347,17 +270,11 @@ export const userAPI = {
   },
 
   /**
-   * Update user profile
+   * Update user profile — proxied through Cloud Function
    */
   update: async (uid, updates) => {
     try {
-      return await client
-        .patch(uid)
-        .set({
-          ...updates,
-          _updatedAt: new Date().toISOString()
-        })
-        .commit();
+      return await callSanityWrite('user.sync', { uid, ...updates });
     } catch (error) {
       console.error(`Error updating user ${uid}:`, error);
       throw new Error("Failed to update profile");
@@ -368,21 +285,13 @@ export const userAPI = {
 // Comment Operations
 export const commentAPI = {
   /**
-   * Add comment to article
+   * Add comment to article — proxied through Cloud Function
    */
   create: async (articleId, userId, content) => {
     if (!content?.trim()) throw new Error("Comment text required");
 
     try {
-      await userAPI.ensureExists(userId);
-
-      return await client.create({
-        _type: 'comment',
-        article: { _type: 'reference', _ref: articleId },
-        author: { _type: 'reference', _ref: userId },
-        content: content.trim(),
-        _createdAt: new Date().toISOString()
-      });
+      return await callSanityWrite('comment.create', { articleId, content });
     } catch (error) {
       console.error("Error creating comment:", error);
       throw new Error("Failed to post comment");
@@ -390,11 +299,11 @@ export const commentAPI = {
   },
 
   /**
-   * Delete comment
+   * Delete comment — proxied through Cloud Function
    */
   delete: async (commentId) => {
     try {
-      return await client.delete(commentId);
+      return await callSanityWrite('comment.delete', { commentId });
     } catch (error) {
       console.error(`Error deleting comment ${commentId}:`, error);
       throw new Error("Failed to delete comment");
@@ -405,7 +314,7 @@ export const commentAPI = {
 // Media Operations
 export const mediaAPI = {
   /**
-   * Upload image with validation
+   * Upload image with validation — proxied through Cloud Function
    */
   upload: async (file) => {
     if (!file) throw new Error("No file provided");
@@ -422,18 +331,21 @@ export const mediaAPI = {
     }
 
     try {
-      const result = await client.assets.upload('image', file, {
+      // Convert File to base64 for CF transport
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const result = await callSanityWrite('media.upload', {
+        base64,
         filename: file.name,
         contentType: file.type,
       });
 
-      return {
-        _type: "image",
-        asset: {
-          _type: "reference",
-          _ref: result._id
-        }
-      };
+      return result.asset;
     } catch (error) {
       console.error("Image upload failed:", error);
       throw new Error("Failed to upload image");

@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import styled from "styled-components";
+import { getFunctions, httpsCallable } from "firebase/functions";
+import { getApp } from "firebase/app";
 import { client, urlFor } from "../../sanityClient";
 import useCurrentUser from "../../hook/useCurrentUser";
 import ArticleCounters from "../ArticleCounters";
@@ -82,97 +84,23 @@ const UserArticles = () => {
     };
   }, [openDropdownId]);
 
- const forceDeleteArticle = async (articleId) => {
-  setIsDeleting(true);
-  try {
-    // Step 1: First find ALL documents that reference this article
-    const referencingDocuments = await client.fetch(
-      `*[references($articleId)]{_id, _type}`,
-      { articleId }
-    );
-
-    if (referencingDocuments.length > 0) {
-      // Inform the user about referenced documents
-      const confirmProceed = window.confirm(
-        `This article is referenced by ${referencingDocuments.length} document(s).\n` +
-        `All references will be deleted first to allow article deletion.\n\n` +
-        `Continue with deletion?`
-      );
-
-      if (!confirmProceed) {
-        setIsDeleting(false);
-        return;
-      }
-
-      // Step 2: Delete all referencing documents FIRST
-      for (const doc of referencingDocuments) {
-        try {
-          await client.delete(doc._id);
-        } catch (refDeleteError) {
-          console.error(`Failed to delete reference ${doc._id}:`, refDeleteError);
-          // We continue trying to delete other references
-        }
-      }
+  const forceDeleteArticle = async (articleId) => {
+    setIsDeleting(true);
+    try {
+      const functions = getFunctions(getApp(), 'us-central1');
+      const api = httpsCallable(functions, 'api');
+      await api({ endpoint: 'sanity/article.delete', articleId });
+      setArticles(prev => prev.filter(a => a._id !== articleId));
+      setConfirmDelete(null);
+      setArticleToDelete(null);
+      showToast('Article deleted.', 'success');
+    } catch (err) {
+      console.error('Delete failed:', err);
+      showToast('Failed to delete article. Please try again.', 'error');
+    } finally {
+      setIsDeleting(false);
     }
-
-    // Step 3: Now try to delete the article itself
-    await client.delete(articleId);
-    
-    // Update UI
-    setArticles((prev) => prev.filter((a) => a._id !== articleId));
-    setConfirmDelete(false);
-    setArticleToDelete(null);
-    
-    // Show success message
-    showToast('Article deleted successfully', 'success');
-  } catch (error) {
-    console.error("Force delete error:", error);
-    
-    // If we still get a reference error, try a transaction approach
-    if (error.message && error.message.includes("references to it")) {
-      const confirmTransaction = window.confirm(
-        `Standard deletion failed. Would you like to try an advanced deletion method?`
-      );
-      
-      if (confirmTransaction) {
-        try {
-          // Get ALL references again (some might have been added in meantime)
-          const allRefs = await client.fetch(
-            `*[references($articleId)]{_id}`,
-            { articleId }
-          );
-          
-          // Create a transaction that deletes all references and then the article
-          const transaction = client.transaction();
-          
-          // Add all reference deletions to transaction
-          allRefs.forEach(ref => {
-            transaction.delete(ref._id);
-          });
-          
-          // Add article deletion to transaction
-          transaction.delete(articleId);
-          
-          // Commit the transaction
-          await transaction.commit();
-          
-          // Update UI on success
-          setArticles((prev) => prev.filter((a) => a._id !== articleId));
-          setConfirmDelete(false);
-          setArticleToDelete(null);
-          showToast('Article deleted successfully', 'success');
-        } catch (transactionError) {
-          console.error("Transaction delete failed:", transactionError);
-          showToast(`Could not delete article: ${transactionError.message}`, 'error');
-        }
-      }
-    } else {
-      showToast(`Error deleting article: ${error.message}`, 'error');
-    }
-  } finally {
-    setIsDeleting(false);
-  }
-};
+  };
 
   const openConfirmDelete = (articleId) => {
     setArticleToDelete(articleId);

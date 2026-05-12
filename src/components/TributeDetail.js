@@ -45,7 +45,7 @@ const TributeDetail = () => {
         path={`/tribute/${slug}`}
         image={tribute.image ? urlFor(tribute.image).url() : undefined}
       />
-      <Image src={urlFor(tribute.image).url()} alt={tribute.name} />
+      {tribute.image && <Image src={urlFor(tribute.image).url()} alt={tribute.name} />}
       <Name>{tribute.name}</Name>
       <TributeDate>{formattedDate}</TributeDate>
       <Bio>{tribute.bio || "No biography available."}</Bio>

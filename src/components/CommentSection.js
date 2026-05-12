@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import styled, { keyframes } from "styled-components";
+import { getFunctions, httpsCallable } from "firebase/functions";
+import { getApp } from "firebase/app";
 import client, { realtimeClient } from "../sanityClient";
 import useCurrentUser from "../hook/useCurrentUser";
 
@@ -82,42 +84,14 @@ const CommentSection = ({ articleId }) => {
       setIsSubmittingComment(true);
       setError(null);
 
-      const newCommentData = {
-        _type: "comment",
+      const functions = getFunctions(getApp(), 'us-central1');
+      const api = httpsCallable(functions, 'api');
+      const result = await api({
+        endpoint: 'sanity/comment.create',
+        articleId,
         content: trimmedComment,
-        article: {
-          _type: "reference",
-          _ref: articleId,
-        },
-        author: {
-          _type: "reference",
-          _ref: currentUser.sanityId,
-        },
-      };
-
-      const createdComment = await client.create(newCommentData);
-
-      // Update the article's comments array
-      await client
-        .patch(articleId)
-        .setIfMissing({ comments: [] })
-        .append('comments', [{ _type: "reference", _ref: createdComment._id }])
-        .commit();
-
-      // Create notification if needed
-      const article = await client.getDocument(articleId);
-      if (article?.author?._ref && article.author._ref !== currentUser.sanityId) {
-        await client.create({
-          _type: "notification",
-          user: { _type: "reference", _ref: article.author._ref },
-          type: "comment",
-          message: `${currentUser.name} commented on your article "${article.title || ''}"`,
-          link: `/article/${articleId}`,
-          seen: false,
-          sender: { _type: "reference", _ref: currentUser.sanityId },
-          article: { _type: "reference", _ref: articleId }
-        });
-      }
+      });
+      const createdComment = result.data.comment;
 
       setNewComment("");
       setIsCommentBoxExpanded(false);
@@ -152,12 +126,9 @@ const CommentSection = ({ articleId }) => {
         throw new Error("Unauthorized deletion attempt");
       }
 
-      await client
-        .patch(articleId)
-        .unset([`comments[_ref=="${commentId}"]`])
-        .commit();
-
-      await client.delete(commentId);
+      const functions = getFunctions(getApp(), 'us-central1');
+      const api = httpsCallable(functions, 'api');
+      await api({ endpoint: 'sanity/comment.delete', commentId });
       setComments(prev => prev.filter(c => c._id !== commentId));
     } catch (err) {
       setError("Failed to delete comment");

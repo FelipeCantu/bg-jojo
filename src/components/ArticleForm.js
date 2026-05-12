@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import styled from 'styled-components';
-import { articleAPI, mediaAPI, client } from '../sanityClient';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { getApp } from 'firebase/app';
+import { articleAPI, mediaAPI } from '../sanityClient';
 import { db } from '../firestore';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
@@ -284,16 +286,16 @@ const ArticleForm = ({ onArticleSubmitted }) => {
         };
       }
 
-      await client.createOrReplace({
-        _type: 'user',
-        _id: user.uid,
+      const functions = getFunctions(getApp(), 'us-central1');
+      const api = httpsCallable(functions, 'api');
+      await api({
+        endpoint: 'sanity/user.sync',
+        uid: user.uid,
         name: user.displayName || user.email?.split('@')[0] || 'User',
-        email: user.email || '',
+        email: user.email || null,
         photoURL: user.photoURL || DEFAULT_ANONYMOUS_AVATAR,
-        image: imageAsset,
-        role: 'user',
-        providerData: user.providerData?.map(p => p.providerId) || [],
-        lastLogin: new Date().toISOString()
+        authProvider: user.providerData?.[0]?.providerId || 'password',
+        emailVerified: user.emailVerified || false,
       });
     } catch (error) {
       console.error('User sync error:', error);

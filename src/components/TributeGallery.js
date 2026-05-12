@@ -43,7 +43,7 @@ const TributeGallery = () => {
 
       <GalleryContainer>
         {tributes.length === 0 && <NoTributesText>No tributes found.</NoTributesText>}
-        {tributes.map((tribute) => {
+        {tributes.filter((tribute) => tribute.slug?.current).map((tribute) => {
           const imageUrl = tribute.image?.asset
             ? urlFor(tribute.image).url()
             : "/images/logo192.png";

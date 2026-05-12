@@ -263,12 +263,12 @@ const MySettings = () => {
         await reauthenticateWithCredential(user, credential);
       }
 
+      // Delete Firebase Auth account first — if this fails, Firestore data is still intact
+      await deleteUser(user);
+
       // Delete user doc from Firestore
       const db = getFirestore();
       await deleteDoc(doc(db, "users", currentUser.uid));
-
-      // Delete Firebase Auth account
-      await deleteUser(user);
       toast.success("Account deleted successfully");
     } catch (err) {
       if (err.code === "auth/wrong-password") {

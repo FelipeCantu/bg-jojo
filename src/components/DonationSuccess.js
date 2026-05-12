@@ -13,10 +13,14 @@ export default function DonationSuccess() {
   const donationId = searchParams.get('donation_id');
 
   const [donation, setDonation] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const confirmDonation = async () => {
-      if (!donationId) return;
+      if (!donationId || !sessionId) {
+        setError('Missing donation information. Your payment may still have been processed — please check your email for a receipt.');
+        return;
+      }
 
       try {
         const db = getFirestore();
@@ -34,7 +38,7 @@ export default function DonationSuccess() {
             await api({
               endpoint: 'confirmDonationCheckout',
               donationId,
-              sessionId: sessionId || null,
+              sessionId,
             });
             // Update local state
             setDonation(prev => ({
@@ -42,9 +46,12 @@ export default function DonationSuccess() {
               status: data.frequency === 'monthly' ? 'active' : 'paid',
             }));
           }
+        } else {
+          setError('Donation record not found. If you completed a payment, please contact us.');
         }
       } catch (error) {
         console.error('Error confirming donation:', error);
+        setError('We could not confirm your donation automatically. If payment was completed, please contact us with your donation ID.');
       }
     };
 
@@ -52,6 +59,19 @@ export default function DonationSuccess() {
   }, [sessionId, donationId]);
 
   const isSubscription = donation?.frequency === 'monthly';
+
+  if (error) {
+    return (
+      <PageContainer>
+        <SEO title="Donation Status" noindex path="/donation-success" />
+        <SuccessCard>
+          <Title style={{ color: '#cc4200' }}>Something Went Wrong</Title>
+          <Message>{error}</Message>
+          <HomeButton onClick={() => (window.location.href = '/')}>Return Home</HomeButton>
+        </SuccessCard>
+      </PageContainer>
+    );
+  }
 
   return (
     <PageContainer>

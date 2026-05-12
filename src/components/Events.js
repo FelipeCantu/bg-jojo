@@ -35,7 +35,9 @@ const Events = () => {
                   <EventTitle>{event.title}</EventTitle>
                   <EventLocation>
                     <EventVenue>{event.venue}</EventVenue> {/* Displaying the venue */}
-                    {event.location.city}, {event.location.state}
+                    {event.location?.city && event.location?.state
+                      ? `${event.location.city}, ${event.location.state}`
+                      : event.location?.city || event.location?.state || null}
                   </EventLocation>
                 </Link>
                 <EventDate>{new Date(event.date).toLocaleDateString()}</EventDate> {/* Date should now be centered to the right */}

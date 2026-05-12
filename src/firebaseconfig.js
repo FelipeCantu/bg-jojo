@@ -24,7 +24,6 @@ import {
   onSnapshot,
   orderBy,
 } from "firebase/firestore";
-import { client } from "./sanityClient";
 
 // Google Sign-In
 const signInWithGoogle = async () => {
@@ -127,25 +126,10 @@ const submitArticle = async (articleData, user) => {
       { merge: true }
     );
 
-    const response = await client.createOrReplace({
-      _type: "article",
-      title: articleData.title,
-      content: articleData.content,
-      mainImage: articleData.mainImage,
-      author: {
-        _type: "reference",
-        _ref: user.uid,
-      },
-      authorName: user.displayName || "Anonymous",
-      authorImage: user.photoURL || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Ccircle cx='64' cy='64' r='64' fill='%23e0e0e0'/%3E%3Ccircle cx='64' cy='50' r='22' fill='%23bdbdbd'/%3E%3Cellipse cx='64' cy='106' rx='36' ry='28' fill='%23bdbdbd'/%3E%3C/svg%3E",
-      publishedDate: articleData.publishedDate,
-      readingTime: articleData.readingTime || 0,
-    });
-
-    return response;
+    return;
   } catch (error) {
     console.error("Error submitting article:", error);
-    throw new Error("Error submitting article to Firestore and Sanity");
+    throw new Error("Error submitting article to Firestore");
   }
 };
 
@@ -177,8 +161,8 @@ const handleLike = async (articleId) => {
       });
 
       if (!alreadyLiked) {
-        const notificationRef = collection(firestore, "notifications");
-        await addDoc(notificationRef, {
+        const notificationRef = doc(collection(firestore, "notifications"));
+        transaction.set(notificationRef, {
           type: "like",
           senderId: user.uid,
           receiverId: articleData.authorId,

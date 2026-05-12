@@ -7,8 +7,10 @@ import {
   TrashIcon
 } from '@heroicons/react/24/outline';
 import { HeartIcon } from '@heroicons/react/24/solid';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { getApp } from 'firebase/app';
 import { auth } from '../../firebaseconfig';
-import { client, realtimeClient } from '../../sanityClient';
+import { realtimeClient } from '../../sanityClient';
 import AuthForm from '../AuthForm';
 
 const Notifications = () => {
@@ -100,7 +102,7 @@ const Notifications = () => {
 
     fetchNotifications();
 
-    const subscription = client.listen(
+    const subscription = realtimeClient.listen(
       `*[_type == "notification" && user._ref == $userId]`,
       { userId: currentUser.sanityId }
     ).subscribe({
@@ -126,19 +128,11 @@ const Notifications = () => {
 
   const markNotificationAsRead = async (notificationId) => {
     try {
-      await client.patch(notificationId)
-        .set({
-          seen: true,
-          readAt: new Date().toISOString()
-        })
-        .commit();
-
+      const functions = getFunctions(getApp(), 'us-central1');
+      const api = httpsCallable(functions, 'api');
+      await api({ endpoint: 'sanity/notification.markRead', notificationIds: [notificationId] });
       setNotifications(prev => prev.map(n =>
-        n._id === notificationId ? {
-          ...n,
-          seen: true,
-          readAt: new Date().toISOString()
-        } : n
+        n._id === notificationId ? { ...n, seen: true, readAt: new Date().toISOString() } : n
       ));
     } catch (err) {
       console.error("Error marking notification as read:", err);
@@ -150,17 +144,12 @@ const Notifications = () => {
     if (unreadNotifications.length === 0) return;
 
     try {
-      const transaction = client.transaction();
-      unreadNotifications.forEach(n => {
-        transaction.patch(n._id, {
-          set: {
-            seen: true,
-            readAt: new Date().toISOString()
-          }
-        });
+      const functions = getFunctions(getApp(), 'us-central1');
+      const api = httpsCallable(functions, 'api');
+      await api({
+        endpoint: 'sanity/notification.markRead',
+        notificationIds: unreadNotifications.map(n => n._id),
       });
-      await transaction.commit();
-
       setNotifications(prev => prev.map(n => ({
         ...n,
         seen: true,
@@ -174,7 +163,9 @@ const Notifications = () => {
   const deleteNotification = async (notificationId, e) => {
     e.stopPropagation();
     try {
-      await client.delete(notificationId);
+      const functions = getFunctions(getApp(), 'us-central1');
+      const api = httpsCallable(functions, 'api');
+      await api({ endpoint: 'sanity/notification.delete', notificationIds: [notificationId] });
       setNotifications(prev => prev.filter(n => n._id !== notificationId));
     } catch (err) {
       console.error("Error deleting notification:", err);
@@ -185,11 +176,12 @@ const Notifications = () => {
     if (notifications.length === 0) return;
 
     try {
-      const transaction = client.transaction();
-      notifications.forEach(n => {
-        transaction.delete(n._id);
+      const functions = getFunctions(getApp(), 'us-central1');
+      const api = httpsCallable(functions, 'api');
+      await api({
+        endpoint: 'sanity/notification.delete',
+        notificationIds: notifications.map(n => n._id),
       });
-      await transaction.commit();
       setNotifications([]);
     } catch (err) {
       console.error("Error deleting all notifications:", err);

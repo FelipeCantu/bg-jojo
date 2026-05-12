@@ -130,6 +130,22 @@ if (process.env.K_SERVICE) {
   if (!stripe) console.error("Failed to initialize Stripe in production");
 }
 
+// Lazy-initialize Sanity write client (requires SANITY_PROJECT_ID, SANITY_DATASET, SANITY_TOKEN secrets)
+let sanityWriteClient = null;
+const getSanityClient = () => {
+  if (!sanityWriteClient) {
+    const { createClient } = require("@sanity/client");
+    sanityWriteClient = createClient({
+      projectId: process.env.SANITY_PROJECT_ID,
+      dataset: process.env.SANITY_DATASET || "production",
+      token: process.env.SANITY_TOKEN,
+      apiVersion: "2023-05-03",
+      useCdn: false,
+    });
+  }
+  return sanityWriteClient;
+};
+
 // Firebase deployment config
 setGlobalOptions({
   region: CONFIG.region,
@@ -531,7 +547,7 @@ exports.httpApi = onRequest({
  * @throws {Error} If payment service is unavailable or invalid request
  */
 exports.api = onCall({
-  secrets: ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"],
+  secrets: ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "SANITY_PROJECT_ID", "SANITY_DATASET", "SANITY_TOKEN"],
 }, async request => {
   // Initialize Stripe if not already done
   if (!stripe) stripe = initializeStripe();
@@ -795,6 +811,9 @@ exports.api = onCall({
       if (!orderId) {
         throw new HttpsError("invalid-argument", "Missing orderId");
       }
+      if (!paymentIntentId) {
+        throw new HttpsError("invalid-argument", "Missing paymentIntentId");
+      }
 
       const db = admin.firestore();
       const orderRef = db.collection("orders").doc(orderId);
@@ -1053,6 +1072,9 @@ exports.api = onCall({
       if (!donationId) {
         throw new HttpsError("invalid-argument", "Missing donationId");
       }
+      if (!sessionId) {
+        throw new HttpsError("invalid-argument", "Missing sessionId");
+      }
 
       const db = admin.firestore();
       const donationRef = db.collection("donations").doc(donationId);
@@ -1079,21 +1101,17 @@ exports.api = onCall({
         paidAt: admin.firestore.FieldValue.serverTimestamp(),
       };
 
-      if (sessionId) {
-        const session = await stripe.checkout.sessions.retrieve(sessionId);
-        if (session.payment_status !== "paid") {
-          throw new HttpsError("failed-precondition", `Payment not complete. Status: ${session.payment_status}`);
-        }
-        updateData.stripeSessionId = sessionId;
-        updateData.stripeCustomerId = session.customer || null;
-        if (session.subscription) {
-          updateData.stripeSubscriptionId = session.subscription;
-          updateData.status = "active";
-        } else {
-          updateData.status = "paid";
-        }
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+      if (session.payment_status !== "paid") {
+        throw new HttpsError("failed-precondition", `Payment not complete. Status: ${session.payment_status}`);
+      }
+      updateData.stripeSessionId = sessionId;
+      updateData.stripeCustomerId = session.customer || null;
+      if (session.subscription) {
+        updateData.stripeSubscriptionId = session.subscription;
+        updateData.status = "active";
       } else {
-        updateData.status = donation.frequency === "monthly" ? "active" : "paid";
+        updateData.status = "paid";
       }
 
       await donationRef.update(updateData);
@@ -1450,12 +1468,17 @@ exports.api = onCall({
         throw new HttpsError("internal", "Refund could not be processed. Please try again or contact support.");
       }
 
-      await orderRef.update({
-        status: "refunded",
-        refundAmount: order.refundAmount || order.total,
-        refundedAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
+      try {
+        await orderRef.update({
+          status: "refunded",
+          refundAmount: order.refundAmount || order.total,
+          refundedAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      } catch (firestoreError) {
+        console.error("Firestore update failed after successful Stripe refund:", firestoreError);
+        // Refund succeeded on Stripe — don't throw, just log. Webhook will reconcile.
+      }
 
       return { success: true, message: "Refund processed successfully" };
     }
@@ -1471,8 +1494,8 @@ exports.api = onCall({
       if (!Array.isArray(orderIds) || orderIds.length === 0) {
         throw new HttpsError("invalid-argument", "orderIds must be a non-empty array");
       }
-      if (orderIds.length > 500) {
-        throw new HttpsError("invalid-argument", "Cannot archive more than 500 orders at once");
+      if (orderIds.length > 250) {
+        throw new HttpsError("invalid-argument", "Cannot archive more than 250 orders at once");
       }
 
       const db = admin.firestore();
@@ -1566,6 +1589,275 @@ exports.api = onCall({
         return { address: null, hours: null, instructions: null };
       }
       return pickupSnap.data();
+    }
+
+    // ─── Sanity Write Proxy ───────────────────────────────────────────────────
+    // All browser-side Sanity write operations are proxied through here so the
+    // write token never ships in the React bundle.
+
+    if (endpoint === "sanity/user.sync") {
+      // Sync Firebase user to Sanity — called on every auth state change
+      if (!request.auth?.uid) throw new HttpsError("unauthenticated", "Authentication required");
+      const { uid, name, email, photoURL, authProvider, emailVerified } = data;
+      if (uid !== request.auth.uid) throw new HttpsError("permission-denied", "Unauthorized");
+
+      const sanity = getSanityClient();
+      const existing = await sanity.fetch(`*[_type == "user" && uid == $uid][0]`, { uid });
+
+      if (!existing) {
+        const created = await sanity.createOrReplace({
+          _id: uid,
+          _type: "user",
+          uid,
+          name: name || email?.split("@")[0] || "New User",
+          email: email || null,
+          photoURL: photoURL || null,
+          role: "user",
+          authProvider: authProvider || "password",
+          emailVerified: Boolean(emailVerified),
+        });
+        return { created: true, user: created };
+      }
+
+      const updates = {};
+      if (name && name !== existing.name) updates.name = name;
+      if (photoURL && photoURL !== existing.photoURL) updates.photoURL = photoURL;
+      if (Object.keys(updates).length > 0) {
+        const updated = await sanity.patch(existing._id).set(updates).commit();
+        return { updated: true, user: updated };
+      }
+      return { updated: false, user: existing };
+    }
+
+    if (endpoint === "sanity/article.create") {
+      if (!request.auth?.uid) throw new HttpsError("unauthenticated", "Authentication required");
+      const { title, content, mainImage, isAnonymous, publishedDate, readingTime, slug } = data;
+      if (!title || !content) throw new HttpsError("invalid-argument", "Title and content are required");
+
+      const sanity = getSanityClient();
+      const slugValue = slug || title
+        .toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9\s-]/g, "")
+        .trim()
+        .replace(/\s+/g, "-")
+        .replace(/-+/g, "-");
+
+      const doc = {
+        _type: "article",
+        title,
+        slug: { current: slugValue },
+        content,
+        mainImage: mainImage || null,
+        author: { _type: "reference", _ref: request.auth.uid },
+        isAnonymous: Boolean(isAnonymous),
+        publishedDate: publishedDate || new Date().toISOString(),
+        readingTime: readingTime || 5,
+        likes: 0,
+        views: 0,
+        lastViewDate: null,
+      };
+      const created = await sanity.create(doc);
+      return { success: true, article: created };
+    }
+
+    if (endpoint === "sanity/article.update") {
+      if (!request.auth?.uid) throw new HttpsError("unauthenticated", "Authentication required");
+      const { articleId, updates } = data;
+      if (!articleId) throw new HttpsError("invalid-argument", "Missing articleId");
+
+      const sanity = getSanityClient();
+      const article = await sanity.getDocument(articleId);
+      if (!article) throw new HttpsError("not-found", "Article not found");
+      if (article.author?._ref !== request.auth.uid) {
+        throw new HttpsError("permission-denied", "Not the article author");
+      }
+
+      const allowedFields = ["title", "content", "mainImage", "isAnonymous", "tags", "readingTime"];
+      const safeUpdates = Object.fromEntries(
+        Object.entries(updates).filter(([k]) => allowedFields.includes(k))
+      );
+      const updated = await sanity.patch(articleId).set(safeUpdates).commit();
+      return { success: true, article: updated };
+    }
+
+    if (endpoint === "sanity/article.delete") {
+      if (!request.auth?.uid) throw new HttpsError("unauthenticated", "Authentication required");
+      const { articleId } = data;
+      if (!articleId) throw new HttpsError("invalid-argument", "Missing articleId");
+
+      const sanity = getSanityClient();
+      const article = await sanity.getDocument(articleId);
+      if (!article) throw new HttpsError("not-found", "Article not found");
+
+      // Only the author or an admin may delete
+      const isOwner = article.author?._ref === request.auth.uid;
+      let isAdmin = false;
+      if (!isOwner) {
+        try {
+          await requireAdmin(request.auth.uid);
+          isAdmin = true;
+        } catch (_) {
+          // not an admin
+        }
+      }
+      if (!isOwner && !isAdmin) throw new HttpsError("permission-denied", "Not the article author");
+
+      // Delete all referencing documents first (comments, likes, etc.)
+      const refs = await sanity.fetch(`*[references($id)]{_id, _type}`, { id: articleId });
+      for (const ref of refs) {
+        await sanity.delete(ref._id).catch(() => {});
+      }
+      await sanity.delete(articleId);
+      return { success: true };
+    }
+
+    if (endpoint === "sanity/article.toggleLike") {
+      if (!request.auth?.uid) throw new HttpsError("unauthenticated", "Authentication required");
+      const { articleId } = data;
+      if (!articleId) throw new HttpsError("invalid-argument", "Missing articleId");
+
+      const sanity = getSanityClient();
+      const article = await sanity.getDocument(articleId);
+      if (!article) throw new HttpsError("not-found", "Article not found");
+
+      const isLiked = article.likedBy?.some(ref => ref._ref === request.auth.uid);
+      const patch = sanity.patch(articleId).setIfMissing({ likedBy: [], likes: 0 });
+
+      if (isLiked) {
+        patch.unset([`likedBy[_ref == "${request.auth.uid}"]`]).dec({ likes: 1 });
+      } else {
+        patch.insert("after", "likedBy[-1]", [{ _type: "reference", _ref: request.auth.uid }]).inc({ likes: 1 });
+      }
+      const updated = await patch.commit();
+
+      if (!isLiked && article.author?._ref && article.author._ref !== request.auth.uid) {
+        await sanity.create({
+          _type: "notification",
+          user: { _type: "reference", _ref: article.author._ref },
+          sender: { _type: "reference", _ref: request.auth.uid },
+          type: "like",
+          article: { _type: "reference", _ref: articleId },
+          seen: false,
+          createdAt: new Date().toISOString(),
+        }).catch(() => {});
+      }
+      return { success: true, liked: !isLiked, likes: updated.likes };
+    }
+
+    if (endpoint === "sanity/article.incrementViews") {
+      const { articleId } = data;
+      if (!articleId) throw new HttpsError("invalid-argument", "Missing articleId");
+      const sanity = getSanityClient();
+      const result = await sanity.patch(articleId).setIfMissing({ views: 0 }).inc({ views: 1 }).commit();
+      return { success: true, views: result.views };
+    }
+
+    if (endpoint === "sanity/comment.create") {
+      if (!request.auth?.uid) throw new HttpsError("unauthenticated", "Authentication required");
+      const { articleId, content } = data;
+      if (!articleId || !content?.trim()) throw new HttpsError("invalid-argument", "Missing articleId or content");
+      if (content.length > 2000) throw new HttpsError("invalid-argument", "Comment too long");
+
+      const sanity = getSanityClient();
+      const article = await sanity.getDocument(articleId);
+      if (!article) throw new HttpsError("not-found", "Article not found");
+
+      const comment = await sanity.create({
+        _type: "comment",
+        article: { _type: "reference", _ref: articleId },
+        author: { _type: "reference", _ref: request.auth.uid },
+        content: content.trim(),
+        _createdAt: new Date().toISOString(),
+      });
+
+      if (article.author?._ref && article.author._ref !== request.auth.uid) {
+        await sanity.create({
+          _type: "notification",
+          user: { _type: "reference", _ref: article.author._ref },
+          sender: { _type: "reference", _ref: request.auth.uid },
+          type: "comment",
+          article: { _type: "reference", _ref: articleId },
+          comment: { _type: "reference", _ref: comment._id },
+          seen: false,
+          createdAt: new Date().toISOString(),
+        }).catch(() => {});
+      }
+      return { success: true, comment };
+    }
+
+    if (endpoint === "sanity/comment.delete") {
+      if (!request.auth?.uid) throw new HttpsError("unauthenticated", "Authentication required");
+      const { commentId } = data;
+      if (!commentId) throw new HttpsError("invalid-argument", "Missing commentId");
+
+      const sanity = getSanityClient();
+      const comment = await sanity.getDocument(commentId);
+      if (!comment) throw new HttpsError("not-found", "Comment not found");
+      if (comment.author?._ref !== request.auth.uid) {
+        throw new HttpsError("permission-denied", "Not the comment author");
+      }
+      await sanity.delete(commentId);
+      return { success: true };
+    }
+
+    if (endpoint === "sanity/notification.markRead") {
+      if (!request.auth?.uid) throw new HttpsError("unauthenticated", "Authentication required");
+      const { notificationIds } = data;
+      if (!Array.isArray(notificationIds) || notificationIds.length === 0) {
+        throw new HttpsError("invalid-argument", "Missing notificationIds array");
+      }
+
+      const sanity = getSanityClient();
+      // Only allow patching notifications belonging to this user
+      const docs = await sanity.fetch(
+        `*[_id in $ids && user._ref == $uid]{_id}`,
+        { ids: notificationIds, uid: request.auth.uid }
+      );
+      const allowedIds = docs.map(d => d._id);
+      await Promise.all(
+        allowedIds.map(id =>
+          sanity.patch(id).set({ seen: true, readAt: new Date().toISOString() }).commit()
+        )
+      );
+      return { success: true, updated: allowedIds.length };
+    }
+
+    if (endpoint === "sanity/notification.delete") {
+      if (!request.auth?.uid) throw new HttpsError("unauthenticated", "Authentication required");
+      const { notificationIds } = data;
+      if (!Array.isArray(notificationIds) || notificationIds.length === 0) {
+        throw new HttpsError("invalid-argument", "Missing notificationIds array");
+      }
+
+      const sanity = getSanityClient();
+      // Only allow deleting notifications belonging to this user
+      const docs = await sanity.fetch(
+        `*[_id in $ids && user._ref == $uid]{_id}`,
+        { ids: notificationIds, uid: request.auth.uid }
+      );
+      const allowedIds = docs.map(d => d._id);
+      await Promise.all(allowedIds.map(id => sanity.delete(id).catch(() => {})));
+      return { success: true, deleted: allowedIds.length };
+    }
+
+    if (endpoint === "sanity/media.upload") {
+      if (!request.auth?.uid) throw new HttpsError("unauthenticated", "Authentication required");
+      const { base64, filename, contentType } = data;
+      if (!base64 || !filename || !contentType) throw new HttpsError("invalid-argument", "Missing file data");
+
+      const validTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+      if (!validTypes.includes(contentType)) throw new HttpsError("invalid-argument", "Invalid file type");
+
+      const buffer = Buffer.from(base64, "base64");
+      if (buffer.length > 10 * 1024 * 1024) throw new HttpsError("invalid-argument", "File exceeds 10MB limit");
+
+      const sanity = getSanityClient();
+      const result = await sanity.assets.upload("image", buffer, { filename, contentType });
+      return {
+        success: true,
+        asset: { _type: "image", asset: { _type: "reference", _ref: result._id } },
+      };
     }
 
     throw new Error(`Unknown endpoint: ${endpoint}`);

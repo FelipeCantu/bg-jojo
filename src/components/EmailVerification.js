@@ -117,44 +117,47 @@ const EmailVerification = () => {
   const navigate = useNavigate();
   const auth = getAuth();
 
+  // Redirect if not logged in or already verified
   useEffect(() => {
     if (!currentUser) {
       navigate("/login");
       return;
     }
-
     if (isEmailVerified) {
       toast.success("Email verified successfully!");
       navigate("/profile");
     }
+  }, [currentUser, isEmailVerified, navigate]);
 
-    // Start countdown for resend button
-    let interval = null;
-    if (countdown > 0 && !canResend) {
-      interval = setInterval(() => {
-        setCountdown((prev) => prev - 1);
-      }, 1000);
-    } else {
-      setCanResend(true);
-    }
+  // Countdown timer — runs once, not recreated on every tick
+  useEffect(() => {
+    if (canResend) return;
+    const interval = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          setCanResend(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [canResend]);
 
-    // Check verification status periodically
+  // Poll for email verification — created once per user session
+  useEffect(() => {
+    if (!currentUser) return;
     const checkVerificationStatus = setInterval(() => {
-      if (currentUser) {
-        currentUser.reload().then(() => {
-          if (currentUser.emailVerified) {
-            toast.success("Email verified successfully!");
-            navigate("/profile");
-          }
-        });
-      }
+      currentUser.reload().then(() => {
+        if (currentUser.emailVerified) {
+          toast.success("Email verified successfully!");
+          navigate("/profile");
+        }
+      });
     }, 5000);
-
-    return () => {
-      clearInterval(interval);
-      clearInterval(checkVerificationStatus);
-    };
-  }, [currentUser, countdown, canResend, isEmailVerified, navigate]);
+    return () => clearInterval(checkVerificationStatus);
+  }, [currentUser, navigate]);
 
   const handleResendEmail = async () => {
     if (!canResend || isResending) return;

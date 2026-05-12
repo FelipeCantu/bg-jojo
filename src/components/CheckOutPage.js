@@ -310,7 +310,16 @@ const CheckoutPage = () => {
       setOrderId(localOrderId);
       
       const result = await paymentHandler(localOrderId);
-      
+
+      if (!result.success) {
+        const errMsg = result.error || 'Payment failed. Please try again.';
+        setPaymentError(errMsg);
+        if (localOrderId) {
+          try { await updateOrderStatus(localOrderId, 'failed'); } catch (_) {}
+        }
+        return;
+      }
+
       if (result.success) {
         clearCart();
         if (formData.fulfillmentType === 'pickup') {

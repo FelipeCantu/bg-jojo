@@ -65,7 +65,7 @@ function Home() {
         <Content>
           <HeroHeading>Reach Out For Help</HeroHeading>
           <HeroSubtext>You Are Not Alone</HeroSubtext>
-          <HotLink to='/Hotlines'>
+          <HotLink to='/hotlines'>
             <Button>
               <ButtonText>Hotlines</ButtonText>
               <ChevronRightIcon width={20} height={20} />
