@@ -547,14 +547,24 @@ exports.httpApi = onRequest({
  * @throws {Error} If payment service is unavailable or invalid request
  */
 exports.api = onCall({
-  secrets: ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "SANITY_PROJECT_ID", "SANITY_DATASET", "SANITY_TOKEN", "SHIPSTATION_API_KEY", "SHIPSTATION_SECRET_KEY"],
+  secrets: ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "SANITY_PROJECT_ID", "SANITY_DATASET", "SANITY_TOKEN"],
 }, async request => {
-  // Initialize Stripe if not already done
-  if (!stripe) stripe = initializeStripe();
-  if (!stripe) throw new Error("Payment service unavailable");
-
   // Get the endpoint from request data
   const { endpoint, ...data } = request.data;
+
+  // Stripe is only needed for payment endpoints — initialize lazily so that
+  // non-payment endpoints (e.g. getShippingRates) are never blocked by a
+  // missing or temporarily unavailable Stripe secret.
+  const stripeRequiredEndpoints = [
+    "createPaymentIntent", "createDonationPaymentIntent",
+    "confirmOrderPayment", "confirmDonationPayment",
+    "createCheckoutSession", "createDonationCheckoutSession",
+    "confirmDonationCheckout", "calculateTax",
+  ];
+  if (stripeRequiredEndpoints.includes(endpoint)) {
+    if (!stripe) stripe = initializeStripe();
+    if (!stripe) throw new Error("Payment service unavailable");
+  }
 
   try {
   // Get real-time USPS shipping rates via ShipStation
@@ -618,7 +628,14 @@ exports.api = onCall({
             method: "POST",
             headers: authHeaders,
             body: JSON.stringify({ ...rateBody, carrierCode }),
-          }).then(r => r.json())
+          }).then(async r => {
+            if (!r.ok) {
+              const errText = await r.text();
+              console.warn(`ShipStation getrates [${carrierCode}] ${r.status}:`, errText);
+              return null; // treated as non-array, dropped by flatMap guard below
+            }
+            return r.json();
+          })
         )
       );
 
@@ -641,7 +658,19 @@ exports.api = onCall({
         })
         .sort((a, b) => a.rate - b.rate);
 
-      return { rates };
+      // Pick 3 distinct options: cheapest, fastest, and one in between
+      const cheapest = rates[0];
+      const fastest = rates.reduce((a, b) => {
+        if (a.deliveryDays === null) return b;
+        if (b.deliveryDays === null) return a;
+        return a.deliveryDays <= b.deliveryDays ? a : b;
+      }, rates[0]);
+      const middle = rates.find(r => r !== cheapest && r !== fastest) || null;
+      const dedupedRates = [cheapest, middle, fastest]
+        .filter((r, i, arr) => r != null && arr.indexOf(r) === i)
+        .slice(0, 3);
+
+      return { rates: dedupedRates };
     }
 
     // Calculate tax for an order (used for display in the card payment flow)

@@ -43,6 +43,7 @@ const Drawer = styled.div`
   width: 100%;
   max-width: 420px;
   height: 100vh;
+  height: 100dvh;
   background: #fff;
   box-shadow: -8px 0 30px rgba(0, 0, 0, 0.1);
   z-index: 1000;
@@ -290,7 +291,7 @@ const DeleteBtn = styled.button`
 
 const Footer = styled.div`
   border-top: 1px solid #f8bbd0;
-  padding: 1rem 1.5rem 0.75rem;
+  padding: 1rem 1.5rem 0;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
