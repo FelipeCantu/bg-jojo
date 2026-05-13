@@ -14,7 +14,7 @@ import SEO from './SEO';
 
 // DO NOT initialize Stripe here - we'll use the instance from useStripePayment
 
-const StripeCardForm = ({ onSubmit, isSubmitting, taxLoading, total, error, setError, authReady }) => {
+const StripeCardForm = ({ onSubmit, isSubmitting, taxLoading, total, error, setError, authReady, shippingRateReady }) => {
   const stripe = useStripe();
   const elements = useElements();
 
@@ -45,7 +45,7 @@ const StripeCardForm = ({ onSubmit, isSubmitting, taxLoading, total, error, setE
       <SubmitButton
         type="button"
         onClick={handleSubmit}
-        disabled={!stripe || !authReady || isSubmitting || taxLoading}
+        disabled={!stripe || !authReady || isSubmitting || taxLoading || !shippingRateReady}
       >
         {isSubmitting ? (
           <>
@@ -135,14 +135,16 @@ const CheckoutPage = () => {
   const [taxAmount, setTaxAmount] = useState(0);
   const [taxLoading, setTaxLoading] = useState(false);
   const [shippingSettings, setShippingSettings] = useState(null);
+  const [shippingRates, setShippingRates] = useState([]);
+  const [shippingRatesLoading, setShippingRatesLoading] = useState(false);
+  const [selectedShippingRate, setSelectedShippingRate] = useState(null);
+  const [shippingRatesError, setShippingRatesError] = useState(null);
 
   const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
   const shippingCost = (() => {
     if (formData.fulfillmentType === 'pickup') return 0;
-    if (!shippingSettings?.enabled) return 0;
-    if (shippingSettings.freeShippingThreshold && subtotal >= shippingSettings.freeShippingThreshold) return 0;
-    return shippingSettings.flatRate || 0;
+    return selectedShippingRate?.rate ?? 0;
   })();
 
   const total = subtotal + taxAmount + shippingCost;
@@ -225,6 +227,63 @@ const CheckoutPage = () => {
     return () => clearTimeout(timer);
   }, [formData.zipCode, formData.state, formData.country, formData.city, formData.paymentMethod, formData.fulfillmentType, items, pickupAddress, shippingCost]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Fetch live USPS shipping rates via ShipStation whenever the destination address is complete
+  useEffect(() => {
+    if (formData.fulfillmentType === 'pickup') {
+      setShippingRates([]);
+      setSelectedShippingRate(null);
+      setShippingRatesError(null);
+      return;
+    }
+
+    const { zipCode, state, city } = formData;
+    if (!zipCode || !state || !city || items.length === 0) {
+      setShippingRates([]);
+      setSelectedShippingRate(null);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setShippingRatesLoading(true);
+      setShippingRatesError(null);
+      try {
+        const apiCallable = httpsCallable(getFunctions(getApp(), 'us-central1'), 'api');
+        const { data: result } = await apiCallable({
+          endpoint: 'getShippingRates',
+          items: items.map(item => ({
+            weightOz: item.weightOz,
+            lengthIn: item.lengthIn,
+            widthIn: item.widthIn,
+            heightIn: item.heightIn,
+            quantity: item.quantity,
+          })),
+          toAddress: {
+            zipCode,
+            state,
+            city,
+            country: formData.country || 'US',
+          },
+        });
+        const rates = result.rates || [];
+        setShippingRates(rates);
+        // Auto-select cheapest rate if nothing is selected or previous selection no longer exists
+        setSelectedShippingRate(prev => {
+          if (prev && rates.find(r => r.id === prev.id)) return prev;
+          return rates.length > 0 ? rates[0] : null;
+        });
+      } catch (err) {
+        console.warn('Could not fetch shipping rates:', err.message);
+        setShippingRatesError('Unable to fetch shipping rates. Please try again or contact us.');
+        setShippingRates([]);
+        setSelectedShippingRate(null);
+      } finally {
+        setShippingRatesLoading(false);
+      }
+    }, 700);
+
+    return () => clearTimeout(timer);
+  }, [formData.zipCode, formData.state, formData.city, formData.country, formData.fulfillmentType, items]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -276,6 +335,11 @@ const CheckoutPage = () => {
         })
       },
       ...(user && { userId: user.uid }),
+      ...(formData.fulfillmentType === 'shipping' && selectedShippingRate && {
+        shippingService: selectedShippingRate.service,
+        shippingCarrier: selectedShippingRate.carrier,
+        shippingRateId: selectedShippingRate.id,
+      }),
       createdAt: now,
       updatedAt: now,
       ...(paymentId && { paymentId })
@@ -320,7 +384,7 @@ const CheckoutPage = () => {
         return;
       }
 
-      if (result.success) {
+      if (result.success && !result.redirecting) {
         clearCart();
         if (formData.fulfillmentType === 'pickup') {
           try {
@@ -569,6 +633,55 @@ const CheckoutPage = () => {
 
               </Section>
 
+              {formData.fulfillmentType === 'shipping' && (
+                <Section>
+                  <SectionTitle>Shipping Method</SectionTitle>
+                  {shippingRatesLoading && (
+                    <ShippingRatesStatus>
+                      <InlineSpinner />
+                      Fetching shipping rates...
+                    </ShippingRatesStatus>
+                  )}
+                  {!shippingRatesLoading && shippingRatesError && (
+                    <ShippingRatesError>{shippingRatesError}</ShippingRatesError>
+                  )}
+                  {!shippingRatesLoading && !shippingRatesError && shippingRates.length === 0 && (
+                    <ShippingRatesStatus>
+                      Enter your city, state, and ZIP above to see shipping options.
+                    </ShippingRatesStatus>
+                  )}
+                  {!shippingRatesLoading && shippingRates.length > 0 && (
+                    <ShippingRatesList>
+                      {shippingRates.map(rate => (
+                        <ShippingRateOption
+                          key={rate.id}
+                          $selected={selectedShippingRate?.id === rate.id}
+                          onClick={() => setSelectedShippingRate(rate)}
+                        >
+                          <PaymentOptionRadio>
+                            <input
+                              type="radio"
+                              name="shippingRate"
+                              value={rate.id}
+                              checked={selectedShippingRate?.id === rate.id}
+                              onChange={() => setSelectedShippingRate(rate)}
+                            />
+                          </PaymentOptionRadio>
+                          <ShippingRateContent>
+                            <ShippingRateName>{rate.service}</ShippingRateName>
+                            <ShippingRateMeta>
+                              {rate.carrier}
+                              {rate.deliveryDays ? ` — est. ${rate.deliveryDays} day${rate.deliveryDays === 1 ? '' : 's'}` : ''}
+                            </ShippingRateMeta>
+                          </ShippingRateContent>
+                          <ShippingRatePrice>${rate.rate.toFixed(2)}</ShippingRatePrice>
+                        </ShippingRateOption>
+                      ))}
+                    </ShippingRatesList>
+                  )}
+                </Section>
+              )}
+
               <Section>
                 <SectionTitle>Payment Method</SectionTitle>
                 <SecureBadge>
@@ -636,6 +749,7 @@ const CheckoutPage = () => {
                     error={paymentError}
                     setError={setPaymentError}
                     authReady={authReady}
+                    shippingRateReady={formData.fulfillmentType === 'pickup' || !!selectedShippingRate}
                   />
                 )}
               </Section>
@@ -660,11 +774,15 @@ const CheckoutPage = () => {
                   <OrderTaxLine>
                     <div>Shipping</div>
                     <div>
-                      {!shippingSettings
+                      {shippingRatesLoading
                         ? '...'
-                        : shippingCost === 0
-                          ? 'Free'
-                          : `$${shippingCost.toFixed(2)}`}
+                        : selectedShippingRate
+                          ? `$${selectedShippingRate.rate.toFixed(2)}`
+                          : shippingRates.length === 0 && !shippingRatesError
+                            ? 'Enter address'
+                            : shippingRatesError
+                              ? 'Unavailable'
+                              : '$0.00'}
                     </div>
                   </OrderTaxLine>
                 )}
@@ -701,7 +819,13 @@ const CheckoutPage = () => {
                 {formData.paymentMethod === 'stripe_checkout' && (
                   <SubmitButton
                     onClick={handleStripeCheckout}
-                    disabled={!authReady || paymentLoading || items.length === 0 || isBelowMinimum}
+                    disabled={
+                      !authReady ||
+                      paymentLoading ||
+                      items.length === 0 ||
+                      isBelowMinimum ||
+                      (formData.fulfillmentType === 'shipping' && !selectedShippingRate)
+                    }
                   >
                     {paymentLoading ? (
                       <>
@@ -1052,6 +1176,82 @@ const PickupNotice = styled.p`
   padding: 0.75rem 1rem;
   color: #024947;
   font-size: 0.95rem;
+`;
+
+const ShippingRatesList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+`;
+
+const ShippingRateOption = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border: 2px solid ${props => props.$selected ? '#024947' : '#e0e0e0'};
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: ${props => props.$selected ? '#f8fffe' : '#fff'};
+
+  &:hover {
+    border-color: ${props => props.$selected ? '#024947' : '#bbb'};
+  }
+`;
+
+const ShippingRateContent = styled.div`
+  flex: 1;
+  min-width: 0;
+`;
+
+const ShippingRateName = styled.div`
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #333;
+`;
+
+const ShippingRateMeta = styled.div`
+  font-size: 0.78rem;
+  color: #888;
+  margin-top: 0.15rem;
+`;
+
+const ShippingRatePrice = styled.div`
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #024947;
+  white-space: nowrap;
+`;
+
+const ShippingRatesStatus = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #666;
+  padding: 0.5rem 0;
+`;
+
+const ShippingRatesError = styled.div`
+  font-size: 0.875rem;
+  color: #e53935;
+  padding: 0.5rem 0;
+`;
+
+const InlineSpinner = styled.div`
+  border: 2px solid #e0e0e0;
+  border-radius: 50%;
+  border-top: 2px solid #024947;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  animation: spin 1s linear infinite;
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
 `;
 
 export default CheckoutPage;

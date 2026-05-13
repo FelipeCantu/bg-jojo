@@ -193,7 +193,10 @@ const useStripePayment = () => {
       // Redirect to Stripe Checkout
       if (!data.url) throw new Error('No checkout URL received');
       window.location.href = data.url;
-      return { success: true };
+      // Return redirecting: true so the caller knows NOT to show the in-page
+      // success view — the browser is navigating away to Stripe Checkout and
+      // the success state will be handled on /success after the redirect returns.
+      return { success: true, redirecting: true };
     } catch (err) {
       const errorMessage = err.message || 'Checkout failed';
       setError(errorMessage);

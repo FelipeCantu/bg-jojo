@@ -290,10 +290,10 @@ const DeleteBtn = styled.button`
 
 const Footer = styled.div`
   border-top: 1px solid #f8bbd0;
-  padding: 1.25rem 1.5rem;
+  padding: 1rem 1.5rem 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.75rem;
   background: #fdf2f6;
 `;
 

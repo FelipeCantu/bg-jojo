@@ -547,7 +547,7 @@ exports.httpApi = onRequest({
  * @throws {Error} If payment service is unavailable or invalid request
  */
 exports.api = onCall({
-  secrets: ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "SANITY_PROJECT_ID", "SANITY_DATASET", "SANITY_TOKEN"],
+  secrets: ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "SANITY_PROJECT_ID", "SANITY_DATASET", "SANITY_TOKEN", "SHIPSTATION_API_KEY", "SHIPSTATION_SECRET_KEY"],
 }, async request => {
   // Initialize Stripe if not already done
   if (!stripe) stripe = initializeStripe();
