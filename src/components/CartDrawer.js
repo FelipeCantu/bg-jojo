@@ -290,10 +290,10 @@ const DeleteBtn = styled.button`
 
 const Footer = styled.div`
   border-top: 1px solid #f8bbd0;
-  padding: 1rem 1.5rem 1.25rem;
+  padding: 1rem 1.5rem 0.75rem;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.5rem;
   background: #fdf2f6;
 `;
 
@@ -347,7 +347,7 @@ const ContinueLink = styled.button`
   font-size: 0.85rem;
   cursor: pointer;
   text-align: center;
-  padding: 0.25rem;
+  padding: 0;
   transition: color 0.2s ease;
 
   &:hover {

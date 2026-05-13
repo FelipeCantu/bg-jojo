@@ -579,44 +579,66 @@ exports.api = onCall({
         `${process.env.SHIPSTATION_API_KEY}:${process.env.SHIPSTATION_SECRET_KEY}`
       ).toString("base64");
 
-      const ssResponse = await fetch("https://ssapi.shipstation.com/shipments/getrates", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Basic ${auth}`,
-        },
-        body: JSON.stringify({
-          carrierCode: "stamps_com",
-          serviceCode: null,
-          packageCode: null,
-          fromPostalCode: "84045",
-          toState: toAddress.state,
-          toCountry: toAddress.country || "US",
-          toPostalCode: toAddress.zipCode,
-          toCity: toAddress.city,
-          weight: { value: totalWeight, units: "ounces" },
-          dimensions: { units: "inches", length: maxLength, width: maxWidth, height: maxHeight },
-          confirmation: "none",
-          residential: true,
-        }),
+      const authHeaders = {
+        "Content-Type": "application/json",
+        "Authorization": `Basic ${auth}`,
+      };
+
+      // Fetch connected carriers so we don't hardcode one that may not be on the account
+      const carriersResponse = await fetch("https://ssapi.shipstation.com/carriers", {
+        headers: authHeaders,
       });
-
-      if (!ssResponse.ok) {
-        const err = await ssResponse.text();
-        console.error("ShipStation rates error:", err);
-        throw new HttpsError("internal", "Could not fetch shipping rates");
+      if (!carriersResponse.ok) {
+        const err = await carriersResponse.text();
+        console.error("ShipStation carriers error:", err);
+        throw new HttpsError("internal", "Could not fetch shipping carriers");
       }
+      const carriers = await carriersResponse.json();
+      const carrierCodes = (Array.isArray(carriers) ? carriers : []).map(c => c.code);
+      if (!carrierCodes.length) throw new HttpsError("internal", "No carriers connected to ShipStation account");
 
-      const ssRates = await ssResponse.json();
+      const rateBody = {
+        serviceCode: null,
+        packageCode: null,
+        fromPostalCode: "84045",
+        toState: toAddress.state,
+        toCountry: toAddress.country || "US",
+        toPostalCode: toAddress.zipCode,
+        toCity: toAddress.city,
+        weight: { value: totalWeight, units: "ounces" },
+        dimensions: { units: "inches", length: maxLength, width: maxWidth, height: maxHeight },
+        confirmation: "none",
+        residential: true,
+      };
 
-      const rates = (Array.isArray(ssRates) ? ssRates : [])
-        .map(r => ({
-          id: r.serviceCode,
-          service: r.serviceName,
-          carrier: "USPS",
-          rate: r.shipmentCost + (r.otherCost || 0),
-          deliveryDays: r.days || null,
-        }))
+      // Fetch rates for all connected carriers in parallel
+      const rateResults = await Promise.allSettled(
+        carrierCodes.map(carrierCode =>
+          fetch("https://ssapi.shipstation.com/shipments/getrates", {
+            method: "POST",
+            headers: authHeaders,
+            body: JSON.stringify({ ...rateBody, carrierCode }),
+          }).then(r => r.json())
+        )
+      );
+
+      const carrierNameMap = Object.fromEntries(
+        (Array.isArray(carriers) ? carriers : []).map(c => [c.code, c.name])
+      );
+
+      const rates = rateResults
+        .flatMap((result, i) => {
+          if (result.status !== "fulfilled" || !Array.isArray(result.value)) return [];
+          const carrierCode = carrierCodes[i];
+          const carrierName = carrierNameMap[carrierCode] || carrierCode;
+          return result.value.map(r => ({
+            id: `${carrierCode}:${r.serviceCode}`,
+            service: r.serviceName,
+            carrier: carrierName,
+            rate: r.shipmentCost + (r.otherCost || 0),
+            deliveryDays: r.days || null,
+          }));
+        })
         .sort((a, b) => a.rate - b.rate);
 
       return { rates };
