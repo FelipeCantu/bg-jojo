@@ -64,19 +64,21 @@ const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.25rem 1.5rem;
+  padding: 1rem 1.5rem;
   border-bottom: 1px solid #f0f0f0;
 `;
 
 const HeaderTitle = styled.h2`
   font-size: 1.25rem;
   margin: 0;
+  padding: 0;
   display: flex;
   align-items: center;
   gap: 0.6rem;
   font-weight: 700;
   color: #1a1a1a;
   letter-spacing: -0.3px;
+  line-height: 1;
 `;
 
 const CartIconWrapper = styled.div`
@@ -102,8 +104,8 @@ const CartBadge = styled.span`
 `;
 
 const CloseBtn = styled.button`
-  background: #fce4ec;
-  border: none;
+  background: transparent;
+  border: 1px solid #e0e0e0;
   border-radius: 50%;
   width: 36px;
   height: 36px;
@@ -111,12 +113,13 @@ const CloseBtn = styled.button`
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: #f35686;
+  color: #888;
   transition: all 0.2s ease;
 
   &:hover {
-    background: #f35686;
-    color: white;
+    background: #fce4ec;
+    border-color: #fce4ec;
+    color: #f35686;
     transform: rotate(90deg);
   }
 
@@ -151,7 +154,7 @@ const ItemList = styled.ul`
 `;
 
 const Item = styled.li`
-  padding: 1.25rem 1.5rem;
+  padding: 1rem 1.5rem;
   border-bottom: 1px solid #f5f5f5;
   display: flex;
   gap: 1rem;
@@ -168,14 +171,15 @@ const ItemImage = styled.img`
   object-fit: cover;
   border-radius: 10px;
   flex-shrink: 0;
-  background: #f5f5f5;
+  background: #f0f0f0;
+  border: 1px solid #f0f0f0;
 `;
 
 const ItemDetails = styled.div`
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.6rem;
   min-width: 0;
 `;
 
@@ -202,15 +206,15 @@ const ItemName = styled.span`
 const ItemSize = styled.span`
   font-size: 0.8rem;
   color: #999;
-  font-weight: 500;
+  font-weight: 400;
   margin-top: 0.15rem;
   display: block;
 `;
 
 const ItemPrice = styled.span`
-  font-weight: 700;
+  font-weight: 600;
   color: #1a1a1a;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   white-space: nowrap;
   flex-shrink: 0;
 `;
@@ -219,6 +223,8 @@ const ItemBottomRow = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.5rem;
+  margin-top: auto;
 `;
 
 const QuantityControls = styled.div`
@@ -275,7 +281,7 @@ const DeleteBtn = styled.button`
   align-items: center;
   justify-content: center;
   border-radius: 6px;
-  color: #bbb;
+  color: #aaa;
 
   &:hover {
     background: #fce4ec;
@@ -290,12 +296,12 @@ const DeleteBtn = styled.button`
 `;
 
 const Footer = styled.div`
-  border-top: 1px solid #f8bbd0;
-  padding: 1rem 1.5rem 0;
+  border-top: 1px solid #e8e8e8;
+  padding: 1rem 1.5rem 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  background: #fdf2f6;
+  gap: 0;
+  background: #fff;
 `;
 
 const TotalRow = styled.div`
@@ -305,16 +311,16 @@ const TotalRow = styled.div`
 `;
 
 const TotalLabel = styled.span`
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: #888;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #555;
 `;
 
 const TotalAmount = styled.span`
-  font-size: 1.5rem;
-  font-weight: 800;
+  font-size: 1.25rem;
+  font-weight: 700;
   color: #1a1a1a;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.3px;
 `;
 
 const CheckoutButton = styled.button`
@@ -328,31 +334,34 @@ const CheckoutButton = styled.button`
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.2px;
+  margin-top: 0.875rem;
 
   &:hover {
     background: #013634;
-    transform: translateY(-1px);
     box-shadow: 0 6px 16px rgba(2, 73, 71, 0.25);
   }
 
   &:active {
-    transform: translateY(0);
+    box-shadow: none;
   }
 `;
 
 const ContinueLink = styled.button`
   background: none;
   border: none;
-  color: #888;
-  font-size: 0.85rem;
+  color: #666;
+  font-size: 0.9rem;
   cursor: pointer;
   text-align: center;
   padding: 0;
+  margin-top: 0.6rem;
+  line-height: 1;
   transition: color 0.2s ease;
 
   &:hover {
     color: #024947;
+    text-decoration: underline;
   }
 `;
 
@@ -377,8 +386,8 @@ const EmptyIcon = styled.div`
   justify-content: center;
 
   svg {
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
     color: #f35686;
   }
 `;
@@ -391,7 +400,7 @@ const EmptyText = styled.p`
 
 const ShopLink = styled.button`
   background: none;
-  border: 1.5px solid #024947;
+  border: 1px solid #024947;
   color: #024947;
   padding: 0.6rem 1.5rem;
   border-radius: 8px;
@@ -447,6 +456,7 @@ export default function CartDrawer() {
               <ShoppingBagIcon />
             </EmptyIcon>
             <EmptyText>Your cart is empty</EmptyText>
+            <p style={{ fontSize: '0.875rem', color: '#bbb', margin: 0 }}>Add items from the shop to get started</p>
             <ShopLink onClick={() => { toggleCart(); navigate('/products'); }}>
               Browse Products
             </ShopLink>
@@ -503,14 +513,14 @@ export default function CartDrawer() {
             </ItemList>
             <Footer>
               <TotalRow>
-                <TotalLabel>Subtotal</TotalLabel>
+                <TotalLabel>Subtotal ({totalQty} {totalQty === 1 ? 'item' : 'items'})</TotalLabel>
                 <TotalAmount>${total.toFixed(2)}</TotalAmount>
               </TotalRow>
               <CheckoutButton onClick={() => {
                 toggleCart();
                 navigate('/checkout');
               }}>
-                CHECKOUT
+                Checkout
               </CheckoutButton>
               <ContinueLink onClick={toggleCart}>
                 Continue Shopping
