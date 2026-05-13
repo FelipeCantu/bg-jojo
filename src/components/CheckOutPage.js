@@ -134,7 +134,6 @@ const CheckoutPage = () => {
   const [pickupAddress, setPickupAddress] = useState(null);
   const [taxAmount, setTaxAmount] = useState(0);
   const [taxLoading, setTaxLoading] = useState(false);
-  const [shippingSettings, setShippingSettings] = useState(null);
   const [shippingRates, setShippingRates] = useState([]);
   const [shippingRatesLoading, setShippingRatesLoading] = useState(false);
   const [selectedShippingRate, setSelectedShippingRate] = useState(null);
@@ -160,18 +159,12 @@ const CheckoutPage = () => {
     return unsubscribe;
   }, [auth]);
 
-  // Fetch pickup location and shipping settings
+  // Fetch pickup location
   useEffect(() => {
     const db = getFirestore(getApp());
     getDoc(doc(db, 'settings', 'pickup')).then(snap => {
       if (snap.exists()) setPickupAddress(snap.data());
     }).catch(() => {});
-    getDoc(doc(db, 'settings', 'shipping')).then(snap => {
-      setShippingSettings(snap.exists() ? snap.data() : {});
-    }).catch((err) => {
-      console.warn('Could not load shipping settings:', err);
-      setShippingSettings({});
-    });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Calculate tax for card payment when address is filled in
