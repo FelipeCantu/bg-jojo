@@ -324,7 +324,7 @@ const ButtonGroup = styled.div`
     background: #fff;
     border-top: 1px solid #eee;
     box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.06);
-    z-index: 50;
+    z-index: 200;
   }
 `;
 

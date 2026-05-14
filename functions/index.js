@@ -134,9 +134,13 @@ if (process.env.K_SERVICE) {
 let sanityWriteClient = null;
 const getSanityClient = () => {
   if (!sanityWriteClient) {
+    const projectId = process.env.SANITY_PROJECT_ID;
+    if (!projectId) {
+      throw new Error("SANITY_PROJECT_ID secret is not set in Firebase Functions environment");
+    }
     const { createClient } = require("@sanity/client");
     sanityWriteClient = createClient({
-      projectId: process.env.SANITY_PROJECT_ID,
+      projectId,
       dataset: process.env.SANITY_DATASET || "production",
       token: process.env.SANITY_TOKEN,
       apiVersion: "2023-05-03",
@@ -658,17 +662,13 @@ exports.api = onCall({
         })
         .sort((a, b) => a.rate - b.rate);
 
-      // Pick 3 distinct options: cheapest, fastest, and one in between
       const cheapest = rates[0];
-      const fastest = rates.reduce((a, b) => {
-        if (a.deliveryDays === null) return b;
-        if (b.deliveryDays === null) return a;
-        return a.deliveryDays <= b.deliveryDays ? a : b;
-      }, rates[0]);
-      const middle = rates.find(r => r !== cheapest && r !== fastest) || null;
-      const dedupedRates = [cheapest, middle, fastest]
-        .filter((r, i, arr) => r != null && arr.indexOf(r) === i)
-        .slice(0, 3);
+      // Find a second option that is from a different carrier OR has different delivery days
+      const second = rates.slice(1).find(r =>
+        r.carrier !== cheapest.carrier ||
+        r.deliveryDays !== cheapest.deliveryDays
+      ) || null;
+      const dedupedRates = [cheapest, second].filter(r => r != null);
 
       return { rates: dedupedRates };
     }
