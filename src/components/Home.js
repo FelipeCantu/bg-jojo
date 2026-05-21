@@ -1,16 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import styled from 'styled-components';
+import { motion } from 'framer-motion';
 import { ChevronRightIcon } from '@heroicons/react/24/solid';
 import Mission from './Mission';
 import { Link } from 'react-router-dom';
-import LoadingContainer from './LoadingContainer';
 import SEO from './SEO';
 
 function Home() {
-  const [isLoading, setIsLoading] = useState(true);
   const videoRef = useRef(null);
 
-  // Play the video immediately on mount — before the loading overlay clears
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -28,13 +26,6 @@ function Home() {
     };
   }, []);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, []);
-
   return (
     <MainSection>
       <SEO
@@ -42,12 +33,6 @@ function Home() {
         description="Find mental health support and suicide prevention resources. Give Back Jojo provides free access to therapy, hotlines, and community support."
         path="/home"
       />
-
-      {isLoading && (
-        <LoadingOverlay>
-          <LoadingContainer />
-        </LoadingOverlay>
-      )}
 
       <VideoWrapper>
         <VideoBackground
@@ -63,14 +48,32 @@ function Home() {
           Your browser does not support the video tag.
         </VideoBackground>
         <Content>
-          <HeroHeading>Reach Out For Help</HeroHeading>
-          <HeroSubtext>You Are Not Alone</HeroSubtext>
-          <HotLink to='/hotlines'>
-            <Button>
-              <ButtonText>Hotlines</ButtonText>
-              <ChevronRightIcon width={20} height={20} />
-            </Button>
-          </HotLink>
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.45, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <HeroHeading>Reach Out For Help</HeroHeading>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.65, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <HeroSubtext>You Are Not Alone</HeroSubtext>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.85, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <HotLink to='/hotlines'>
+              <Button>
+                <ButtonText>Hotlines</ButtonText>
+                <ChevronRightIcon width={20} height={20} />
+              </Button>
+            </HotLink>
+          </motion.div>
         </Content>
       </VideoWrapper>
 
@@ -91,16 +94,6 @@ function Home() {
     </MainSection>
   );
 }
-
-const LoadingOverlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 9999;
-  background: white;
-`;
 
 // Updated styled components for the image section
 const ImageSection = styled.section`

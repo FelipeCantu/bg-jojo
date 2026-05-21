@@ -101,11 +101,10 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Brief delay only to allow fonts/styles to settle — reduced from 2000ms
     const loadingTimer = setTimeout(() => {
       setIsLoading(false);
       document.body.classList.remove('loading');
-    }, 300);
+    }, 450);
 
     document.body.classList.add('loading');
 
@@ -115,14 +114,28 @@ function App() {
     };
   }, []);
 
-  if (isLoading) {
-    return <LoadingContainer />;
-  }
-
   return (
     <ToastProvider>
     <Toaster position="top-center" toastOptions={{ duration: 4000 }} />
-    <div className="App">
+    <AnimatePresence>
+      {isLoading && (
+        <motion.div
+          key="app-loader"
+          className="LoadingContainer"
+          initial={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.5, ease: 'easeInOut' }}
+        >
+          <LoadingContainer />
+        </motion.div>
+      )}
+    </AnimatePresence>
+    <motion.div
+      className="App"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.55, delay: 0.35 }}
+    >
       <Helmet>
         <script type="application/ld+json">
           {JSON.stringify(getOrganizationSchema())}
@@ -220,7 +233,7 @@ function App() {
 
       <Footer />
       <CartDrawer />
-    </div>
+    </motion.div>
     </ToastProvider>
   );
 }

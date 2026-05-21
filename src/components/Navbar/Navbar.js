@@ -1,5 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
+import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import Menu from './Menu';
 import LoginButton from './LoginButton';
@@ -11,7 +12,11 @@ const Navbar = () => {
   return (
     <>
 
-      <Nav>
+      <Nav
+        initial={{ y: -70, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1], delay: 0.4 }}
+      >
         <NavContent>
           <LogoLink to="/home">
             <Logo src={require('../../assets/jojologo.png')} alt="Logo" />
@@ -135,7 +140,7 @@ const NavLinks = styled.div`
   }
 `;
 
-const Nav = styled.nav`
+const Nav = styled(motion.nav)`
   position: sticky;
   top: 0;
   left: 0;
