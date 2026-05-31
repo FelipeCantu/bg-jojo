@@ -1,10 +1,10 @@
 import React from 'react';
 import styled from 'styled-components';
+import { Link } from 'react-router-dom';
 import SEO from './SEO';
 
 const SupportingGiveBackJojo = () => {
     const venmoLink = 'https://account.venmo.com/u/DelilahJoy-Gallegos';
-    const zelleLink = 'https://www.zellepay.com/yourPhoneNumberOrEmail';
 
     return (
         <BackgroundWrapper>
@@ -32,11 +32,11 @@ const SupportingGiveBackJojo = () => {
                                     <PaymentTitle>Venmo</PaymentTitle>
                                 </PaymentOption>
                             </StyledLink>
-                            <StyledLink href={zelleLink} target="_blank" rel="noopener noreferrer">
-                                <PaymentOption>
+                            <ZelleLink to="/zelle">
+                                <PaymentOption as="span">
                                     <PaymentTitle>Zelle</PaymentTitle>
                                 </PaymentOption>
-                            </StyledLink>
+                            </ZelleLink>
                         </PaymentOptions>
                     </TextWrapper>
                 </ContentWrapper>
@@ -216,6 +216,16 @@ const PaymentTitle = styled.h4`
 `;
 
 const StyledLink = styled.a`
+    text-decoration: none;
+    color: inherit;
+    width: 100%;
+
+    @media (min-width: 480px) {
+        width: auto;
+    }
+`;
+
+const ZelleLink = styled(Link)`
     text-decoration: none;
     color: inherit;
     width: 100%;

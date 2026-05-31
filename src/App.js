@@ -37,6 +37,7 @@ import {
   PrivacyPolicy,
   TermsOfService,
   Contact,
+  ZellePage,
 } from './components';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
@@ -166,6 +167,7 @@ function App() {
           <Route path="/yourgift" element={<SlideUpRoute noPadding><YourGift /></SlideUpRoute>} />
           <Route path="/donate" element={<SlideUpRoute noPadding><Donate /></SlideUpRoute>} />
           <Route path="/supporting-givebackjojo" element={<SlideUpRoute noPadding><SupportingGiveBackJojo /></SlideUpRoute>} />
+          <Route path="/zelle" element={<SlideUpRoute noPadding><ZellePage /></SlideUpRoute>} />
           <Route path="/SupportingGiveBackJojo" element={<Navigate to="/supporting-givebackjojo" replace />} />
           <Route path="/products/:slug" element={<SlideUpRoute noPadding><ProductPage /></SlideUpRoute>} />
           <Route path="/products" element={<SlideUpRoute noPadding><ProductsPage /></SlideUpRoute>} />

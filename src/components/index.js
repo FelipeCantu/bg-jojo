@@ -14,6 +14,7 @@ export { default as TributeDetail } from './TributeDetail';
 export { default as Donate } from './Donate';
 export { default as YourGift } from './YourGift';
 export { default as SupportingGiveBackJojo } from './SupportingGiveBackJojo';
+export { default as ZellePage } from './ZellePage';
 export { default as ArticleForm } from './ArticleForm';
 export { default as EditArticle } from './EditArticle';
 export { default as LoadingContainer } from './LoadingContainer';
