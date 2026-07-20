@@ -17,6 +17,25 @@ Sentry.init({
   tracesSampleRate: 0.1,
   // Only send errors in production to avoid noise during development
   enabled: process.env.NODE_ENV === 'production',
+  // Errors thrown by scripts injected by in-app browsers (Instagram, Facebook,
+  // TikTok, etc.) rather than our own code — these come from the host app's
+  // native bridge, not anything we control, so they're not actionable here.
+  ignoreErrors: [
+    /window\.webkit\.messageHandlers/,
+    'sendDataToNative',
+    'sendPageHideMessage',
+    // styled-components error #17: its managed <style> tag was unmounted or
+    // altered by a third party. Seen coming from a browser extension
+    // ("obscura:bootstrap") injecting into the page — not our bug.
+    /styled-components.*errors\.md#17/,
+    // Classic third-party/extension noise that shows up across most sites
+    'ResizeObserver loop limit exceeded',
+    'ResizeObserver loop completed with undelivered notifications',
+    'Script error.',
+  ],
+  // Drop events whose top frame comes from a browser extension's own
+  // injected context rather than our bundle.
+  denyUrls: [/^(chrome|moz|safari-web)-extension:\/\//i, /obscura/i],
 });
 
 // Unregister any stale service workers from previous builds.

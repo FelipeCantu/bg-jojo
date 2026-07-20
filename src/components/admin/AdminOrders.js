@@ -167,7 +167,7 @@ const AdminOrders = () => {
     const selected = orders.filter((o) => selectedIds.has(o.id));
     if (selected.length === 0) return;
 
-    const headers = ['Name', 'Email', 'Address Line 1', 'Address Line 2', 'City', 'State', 'Zip', 'Country', 'Phone'];
+    const headers = ['Order ID', 'Fulfillment', 'Items', 'Name', 'Email', 'Address Line 1', 'Address Line 2', 'City', 'State', 'Zip', 'Country', 'Phone'];
 
     const escapeCSV = (val) => {
       const str = String(val || '');
@@ -180,7 +180,17 @@ const AdminOrders = () => {
     const rows = selected.map((order) => {
       const s = order.shippingInfo || {};
       const name = [s.firstName, s.lastName].filter(Boolean).join(' ');
+      const itemsSummary = (order.items || [])
+        .map((item) => {
+          const size = item.selectedSize ? ` (${item.selectedSize})` : '';
+          const qty = item.quantity > 1 ? ` x${item.quantity}` : '';
+          return `${item.name}${size}${qty}`;
+        })
+        .join('; ');
       return [
+        order.id,
+        order.fulfillmentType === 'pickup' ? 'Local Pickup' : 'Shipping',
+        itemsSummary,
         name,
         s.email,
         s.address,
@@ -201,12 +211,6 @@ const AdminOrders = () => {
     link.download = `orders-${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
     URL.revokeObjectURL(url);
-  };
-
-  const getItemsSummary = (items) => {
-    if (!items || items.length === 0) return 'No items';
-    if (items.length === 1) return items[0].name;
-    return `${items[0].name} +${items.length - 1} more`;
   };
 
   return (
@@ -284,7 +288,18 @@ const AdminOrders = () => {
                 </InfoRow>
                 <InfoRow>
                   <InfoLabel>Items</InfoLabel>
-                  <InfoValue>{getItemsSummary(order.items)}</InfoValue>
+                  <ItemsList>
+                    {order.items && order.items.length > 0 ? order.items.map((item, i) => (
+                      <ItemRow key={i}>
+                        <ItemName>{item.name}</ItemName>
+                        <ItemMeta>
+                          {item.selectedSize && <ItemTag>{item.selectedSize}</ItemTag>}
+                          <span>Qty: {item.quantity || 1}</span>
+                          <span>${(item.price || 0).toFixed(2)}</span>
+                        </ItemMeta>
+                      </ItemRow>
+                    )) : <InfoValue>No items</InfoValue>}
+                  </ItemsList>
                 </InfoRow>
                 <InfoRow>
                   <InfoLabel>Total</InfoLabel>
@@ -914,6 +929,56 @@ const RefundAmountRow = styled.div`
   font-size: 0.85rem;
   color: #333;
   text-align: right;
+`;
+
+const ItemsList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: 1;
+  text-align: right;
+
+  @media (max-width: 520px) {
+    text-align: left;
+  }
+`;
+
+const ItemRow = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+
+  & + & {
+    padding-top: 0.35rem;
+    border-top: 1px solid #ececec;
+  }
+`;
+
+const ItemName = styled.span`
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #333;
+`;
+
+const ItemMeta = styled.div`
+  display: flex;
+  gap: 0.6rem;
+  font-size: 0.78rem;
+  color: #888;
+  justify-content: flex-end;
+
+  @media (max-width: 520px) {
+    justify-content: flex-start;
+  }
+`;
+
+const ItemTag = styled.span`
+  background: #e8f5e9;
+  color: #2e7d32;
+  border-radius: 4px;
+  padding: 0 0.35rem;
+  font-weight: 600;
+  font-size: 0.75rem;
 `;
 
 const FulfillmentBadge = styled.span`

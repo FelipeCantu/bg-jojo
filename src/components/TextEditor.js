@@ -7,7 +7,7 @@ import Link from '@tiptap/extension-link';
 import TextAlign from '@tiptap/extension-text-align';
 import Placeholder from '@tiptap/extension-placeholder';
 import Underline from '@tiptap/extension-underline';
-import { client } from '../sanityClient';
+import { mediaAPI } from '../sanityClient';
 import { convertHtmlToPortableText } from './utils/htmlToPortableText';
 import {
   FaBold,
@@ -181,10 +181,10 @@ const TextEditor = forwardRef(({
       }
 
       toast('Uploading image...');
-      const result = await client.assets.upload('image', file);
+      const asset = await mediaAPI.upload(file);
       toast.success('Image uploaded successfully');
       return {
-        url: result.url,
+        url: asset.url,
         alt: file.name.split('.')[0] || 'Uploaded image',
         title: file.name.split('.')[0] || 'Uploaded image'
       };

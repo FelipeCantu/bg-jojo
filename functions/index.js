@@ -10,6 +10,9 @@ const crypto = require("crypto");
 const Sentry = require("@sentry/node");
 const https = require("https");
 
+const ADMIN_NOTIFICATION_EMAIL = "givebackjojo.chegallegos@gmail.com";
+const ORDER_FROM_EMAIL = "givebackjojo.chegallegos@gmail.com";
+
 // Security recommendation: Validate environment in local emulator
 if (process.env.FUNCTIONS_EMULATOR === "true") {
   require("dotenv").config();
@@ -30,9 +33,8 @@ const CONFIG = {
   maxInstances: 10,
 };
 
-// Initialize Firebase Admin with your config
+// Initialize Firebase Admin — credentials are provided automatically by the runtime
 admin.initializeApp({
-  credential: admin.credential.applicationDefault(),
   databaseURL: process.env.FIREBASE_DATABASE_URL || "https://bg-jojo.firebaseio.com",
   projectId: process.env.GCLOUD_PROJECT || "bg-jojo",
 });
@@ -93,6 +95,114 @@ const notifyDiscord = (title, description, fields = [], color = 15158332) => {
   });
 };
 
+const sendOrderEmails = async (order, orderId) => {
+  const apiKey = process.env.SENDGRID_API_KEY;
+  if (!apiKey) {
+    console.warn("SENDGRID_API_KEY not set — order emails skipped");
+    return;
+  }
+  const sgMail = require("@sendgrid/mail");
+  sgMail.setApiKey(apiKey);
+
+  const customerEmail = order.shippingInfo?.email;
+  const customerName = [order.shippingInfo?.firstName, order.shippingInfo?.lastName].filter(Boolean).join(" ") || "Customer";
+  const isPickup = order.fulfillmentType === "pickup";
+  const shortId = orderId.slice(0, 8).toUpperCase();
+  const total = (order.total || 0).toFixed(2);
+
+  const itemsHtml = (order.items || []).map(item => {
+    const size = item.selectedSize ?
+      ` <span style="background:#e8f5e9;color:#2e7d32;padding:1px 6px;border-radius:3px;font-size:12px;font-weight:600;">${item.selectedSize}</span>` :
+      "";
+    return `<tr>
+      <td style="padding:8px 0;border-bottom:1px solid #f0f0f0;">${item.name}${size}</td>
+      <td style="padding:8px 0;border-bottom:1px solid #f0f0f0;text-align:center;">x${item.quantity || 1}</td>
+      <td style="padding:8px 0;border-bottom:1px solid #f0f0f0;text-align:right;">$${(item.price || 0).toFixed(2)}</td>
+    </tr>`;
+  }).join("");
+
+  const addressText = isPickup ?
+    "Local Pickup" :
+    [
+      order.shippingInfo?.address,
+      order.shippingInfo?.addressLine2,
+      order.shippingInfo?.city,
+      order.shippingInfo?.state,
+      order.shippingInfo?.zipCode,
+      order.shippingInfo?.country,
+    ].filter(Boolean).join(", ");
+
+  const emails = [];
+
+  if (customerEmail) {
+    emails.push({
+      to: customerEmail,
+      from: ORDER_FROM_EMAIL,
+      subject: `Order Confirmed – #${shortId}`,
+      html: `
+        <div style="font-family:sans-serif;max-width:600px;margin:0 auto;color:#333;">
+          <div style="background:#044947;padding:24px;text-align:center;">
+            <h1 style="color:white;margin:0;font-size:24px;">Order Confirmed!</h1>
+            <p style="color:rgba(255,255,255,0.8);margin:8px 0 0;">Order #${shortId}</p>
+          </div>
+          <div style="padding:24px;">
+            <p>Hi ${customerName},</p>
+            <p>Thank you for your order! We've received your payment and will process it shortly.</p>
+            <h3 style="border-bottom:2px solid #eee;padding-bottom:8px;">Items Ordered</h3>
+            <table style="width:100%;border-collapse:collapse;">
+              <thead><tr style="color:#888;font-size:13px;">
+                <th style="text-align:left;padding-bottom:8px;">Item</th>
+                <th style="text-align:center;padding-bottom:8px;">Qty</th>
+                <th style="text-align:right;padding-bottom:8px;">Price</th>
+              </tr></thead>
+              <tbody>${itemsHtml}</tbody>
+            </table>
+            <p style="text-align:right;font-weight:700;margin-top:12px;font-size:16px;">Total: $${total}</p>
+            <h3 style="border-bottom:2px solid #eee;padding-bottom:8px;">${isPickup ? "Pickup" : "Shipping Address"}</h3>
+            <p style="color:#555;">${addressText}</p>
+            <p style="margin-top:24px;color:#666;font-size:13px;">Questions about your order? Reply to this email and we'll help you out.</p>
+          </div>
+          <div style="background:#f5f5f5;padding:16px;text-align:center;font-size:12px;color:#999;">
+            <p style="margin:0;">Give Back Jojo</p>
+          </div>
+        </div>`,
+    });
+  }
+
+  emails.push({
+    to: ADMIN_NOTIFICATION_EMAIL,
+    from: ORDER_FROM_EMAIL,
+    subject: `New Order – #${shortId} – $${total}`,
+    html: `
+      <div style="font-family:sans-serif;max-width:600px;margin:0 auto;color:#333;">
+        <div style="background:#044947;padding:24px;">
+          <h1 style="color:white;margin:0;font-size:20px;">New Order Received</h1>
+          <p style="color:rgba(255,255,255,0.8);margin:4px 0 0;">Order #${shortId}</p>
+        </div>
+        <div style="padding:24px;">
+          <h3 style="margin-top:0;">Customer</h3>
+          <p style="margin:0;">${customerName}</p>
+          <p style="margin:4px 0;">${customerEmail || "No email"}</p>
+          <p style="margin:4px 0;">${order.shippingInfo?.phone || ""}</p>
+          <h3>Items</h3>
+          <table style="width:100%;border-collapse:collapse;">
+            <thead><tr style="color:#888;font-size:13px;">
+              <th style="text-align:left;padding-bottom:8px;">Item</th>
+              <th style="text-align:center;padding-bottom:8px;">Qty</th>
+              <th style="text-align:right;padding-bottom:8px;">Price</th>
+            </tr></thead>
+            <tbody>${itemsHtml}</tbody>
+          </table>
+          <p style="text-align:right;font-weight:700;margin-top:12px;font-size:16px;">Total: $${total}</p>
+          <h3>${isPickup ? "Pickup" : "Ship To"}</h3>
+          <p style="color:#555;">${addressText}</p>
+        </div>
+      </div>`,
+  });
+
+  await Promise.all(emails.map(msg => sgMail.send(msg)));
+};
+
 // Stripe initialization
 let stripe;
 
@@ -134,20 +244,76 @@ if (process.env.K_SERVICE) {
 let sanityWriteClient = null;
 const getSanityClient = () => {
   if (!sanityWriteClient) {
-    const projectId = process.env.SANITY_PROJECT_ID;
+    // Secrets injected via Firebase Functions/Secret Manager can pick up stray
+    // whitespace, quotes, or trailing newlines depending on how they were set
+    // (e.g. `echo "value" | firebase functions:secrets:set ...` appends \n).
+    // Strip that here so a cosmetic issue in the secret value doesn't hard-fail
+    // the Sanity client's strict projectId validation.
+    const sanitize = value => (value || "").trim().replace(/^['"]|['"]$/g, "");
+
+    const projectId = sanitize(process.env.SANITY_PROJECT_ID);
     if (!projectId) {
       throw new Error("SANITY_PROJECT_ID secret is not set in Firebase Functions environment");
     }
+    if (!/^[a-z0-9-]+$/.test(projectId)) {
+      throw new Error(
+        `SANITY_PROJECT_ID secret contains invalid characters after trimming: "${projectId}". ` +
+        "It must only contain a-z, 0-9, and dashes — re-set the secret with " +
+        "`firebase functions:secrets:set SANITY_PROJECT_ID` and paste the value with no extra whitespace or quotes."
+      );
+    }
+
     const { createClient } = require("@sanity/client");
     sanityWriteClient = createClient({
       projectId,
-      dataset: process.env.SANITY_DATASET || "production",
-      token: process.env.SANITY_TOKEN,
+      dataset: sanitize(process.env.SANITY_DATASET) || "production",
+      token: sanitize(process.env.SANITY_TOKEN),
       apiVersion: "2023-05-03",
       useCdn: false,
     });
   }
   return sanityWriteClient;
+};
+
+// Cached ShipStation carrier list — connected carriers rarely change, and
+// ShipStation rate-limits aggressively, so avoid refetching on every checkout.
+let carriersCache = { data: null, expiresAt: 0 };
+const CARRIERS_CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
+
+/**
+ * Fetches the ShipStation connected-carrier list, using a short-lived cache
+ * and one retry on transient failures (429 rate limit or 5xx).
+ * @param {object} authHeaders Headers including the ShipStation Basic auth.
+ * @returns {Promise<Array>} Connected carriers.
+ * @throws {HttpsError} If the carrier list could not be fetched after retrying.
+ */
+const getShipStationCarriers = async authHeaders => {
+  if (carriersCache.data && carriersCache.expiresAt > Date.now()) {
+    return carriersCache.data;
+  }
+
+  let lastError = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (attempt > 0) await new Promise(resolve => setTimeout(resolve, 500));
+    try {
+      const response = await fetch("https://ssapi.shipstation.com/carriers", { headers: authHeaders });
+      if (!response.ok) {
+        const err = await response.text();
+        lastError = `${response.status}: ${err}`;
+        // Only retry transient failures — a 401/403 auth error won't fix itself
+        if (response.status !== 429 && response.status < 500) break;
+        continue;
+      }
+      const carriers = await response.json();
+      carriersCache = { data: carriers, expiresAt: Date.now() + CARRIERS_CACHE_TTL_MS };
+      return carriers;
+    } catch (err) {
+      lastError = err.message;
+    }
+  }
+
+  console.error("ShipStation carriers error:", lastError);
+  throw new HttpsError("internal", "Could not fetch shipping carriers");
 };
 
 // Firebase deployment config
@@ -261,6 +427,10 @@ app.post("/webhook", express.raw({ type: "application/json" }), async (req, res)
               paymentId: pi.id,
               updatedAt: admin.firestore.FieldValue.serverTimestamp(),
             });
+            const orderData = { ...orderSnap.data(), total: orderSnap.data().total || (pi.amount / 100) };
+            sendOrderEmails(orderData, pi.metadata.orderId).catch(err =>
+              console.error("Failed to send order emails:", err.message)
+            );
           }
         }
         break;
@@ -317,14 +487,19 @@ app.post("/webhook", express.raw({ type: "application/json" }), async (req, res)
           const orderRef = db.collection("orders").doc(session.metadata.orderId);
           const orderSnap = await orderRef.get();
           if (orderSnap.exists && orderSnap.data().status !== "paid") {
+            const total = (session.amount_total || 0) / 100;
             await orderRef.update({
               status: "paid",
               paymentId: session.id,
-              total: (session.amount_total || 0) / 100,
+              total,
               taxAmount: (session.total_details?.amount_tax || 0) / 100,
               shippingCost: (session.total_details?.amount_shipping || 0) / 100,
               updatedAt: admin.firestore.FieldValue.serverTimestamp(),
             });
+            const orderData = { ...orderSnap.data(), total };
+            sendOrderEmails(orderData, session.metadata.orderId).catch(err =>
+              console.error("Failed to send order emails:", err.message)
+            );
           }
         }
         break;
@@ -541,7 +716,7 @@ exports.httpApi = onRequest({
   minInstances: CONFIG.minInstances,
   invoker: "public",
   cors: false, // CORS is handled by Express corsOptions middleware — do not override with true
-  secrets: ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"],
+  secrets: ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "SENDGRID_API_KEY"],
 }, app);
 
 /**
@@ -598,16 +773,11 @@ exports.api = onCall({
         "Authorization": `Basic ${auth}`,
       };
 
-      // Fetch connected carriers so we don't hardcode one that may not be on the account
-      const carriersResponse = await fetch("https://ssapi.shipstation.com/carriers", {
-        headers: authHeaders,
-      });
-      if (!carriersResponse.ok) {
-        const err = await carriersResponse.text();
-        console.error("ShipStation carriers error:", err);
-        throw new HttpsError("internal", "Could not fetch shipping carriers");
-      }
-      const carriers = await carriersResponse.json();
+      // Fetch connected carriers so we don't hardcode one that may not be on the account.
+      // The connected carrier list changes rarely (only when someone reconfigures
+      // ShipStation), so cache it briefly and retry once on transient failures —
+      // ShipStation rate-limits aggressively (40 req/min) and occasionally 5xxs.
+      const carriers = await getShipStationCarriers(authHeaders);
       const carrierCodes = (Array.isArray(carriers) ? carriers : []).map(c => c.code);
       if (!carrierCodes.length) throw new HttpsError("internal", "No carriers connected to ShipStation account");
 
@@ -1907,7 +2077,7 @@ exports.api = onCall({
       const result = await sanity.assets.upload("image", buffer, { filename, contentType });
       return {
         success: true,
-        asset: { _type: "image", asset: { _type: "reference", _ref: result._id } },
+        asset: { _type: "image", asset: { _type: "reference", _ref: result._id }, url: result.url },
       };
     }
 
