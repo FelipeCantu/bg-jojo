@@ -138,32 +138,32 @@ const sendOrderEmails = async (order, orderId) => {
     emails.push({
       to: customerEmail,
       from: ORDER_FROM_EMAIL,
-      subject: `Order Confirmed – #${shortId}`,
+      subject: `We got your order! (#${shortId})`,
       html: `
         <div style="font-family:sans-serif;max-width:600px;margin:0 auto;color:#333;">
-          <div style="background:#044947;padding:24px;text-align:center;">
-            <h1 style="color:white;margin:0;font-size:24px;">Order Confirmed!</h1>
-            <p style="color:rgba(255,255,255,0.8);margin:8px 0 0;">Order #${shortId}</p>
+          <div style="background:#044947;padding:28px 24px;text-align:center;">
+            <p style="color:rgba(255,255,255,0.7);margin:0;font-size:13px;letter-spacing:1px;text-transform:uppercase;">Give Back Jojo</p>
+            <h1 style="color:white;margin:10px 0 4px;font-size:26px;">We got your order!</h1>
+            <p style="color:rgba(255,255,255,0.6);margin:0;font-size:13px;">#${shortId}</p>
           </div>
-          <div style="padding:24px;">
-            <p>Hi ${customerName},</p>
-            <p>Thank you for your order! We've received your payment and will process it shortly.</p>
-            <h3 style="border-bottom:2px solid #eee;padding-bottom:8px;">Items Ordered</h3>
-            <table style="width:100%;border-collapse:collapse;">
-              <thead><tr style="color:#888;font-size:13px;">
-                <th style="text-align:left;padding-bottom:8px;">Item</th>
-                <th style="text-align:center;padding-bottom:8px;">Qty</th>
-                <th style="text-align:right;padding-bottom:8px;">Price</th>
+          <div style="padding:28px 24px;">
+            <p style="margin-top:0;">Hey ${customerName},</p>
+            <p>Thanks so much for ordering with us! We're already getting everything ready for you, and we'll let you know as soon as it ships (or if we run into any questions along the way).</p>
+            <table style="width:100%;border-collapse:collapse;margin-top:20px;">
+              <thead><tr style="color:#aaa;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">
+                <th style="text-align:left;padding-bottom:10px;font-weight:500;">Item</th>
+                <th style="text-align:center;padding-bottom:10px;font-weight:500;">Qty</th>
+                <th style="text-align:right;padding-bottom:10px;font-weight:500;">Price</th>
               </tr></thead>
               <tbody>${itemsHtml}</tbody>
             </table>
-            <p style="text-align:right;font-weight:700;margin-top:12px;font-size:16px;">Total: $${total}</p>
-            <h3 style="border-bottom:2px solid #eee;padding-bottom:8px;">${isPickup ? "Pickup" : "Shipping Address"}</h3>
-            <p style="color:#555;">${addressText}</p>
-            <p style="margin-top:24px;color:#666;font-size:13px;">Questions about your order? Reply to this email and we'll help you out.</p>
+            <p style="text-align:right;font-weight:700;margin-top:16px;font-size:16px;color:#044947;">Total: $${total}</p>
+            <p style="margin-top:20px;color:#555;font-size:14px;">${isPickup ? "You picked local pickup. We'll reach out with details." : `Ships to: ${addressText}`}</p>
+            <p style="margin-top:28px;color:#555;">We also wanted to share a quick thank you. Your order directly helps us keep free mental health resources available in our community. That means the world to us and the people we support.</p>
+            <p style="color:#555;">Appreciate you!</p>
           </div>
-          <div style="background:#f5f5f5;padding:16px;text-align:center;font-size:12px;color:#999;">
-            <p style="margin:0;">Give Back Jojo</p>
+          <div style="background:#f7f7f7;padding:16px;text-align:center;font-size:12px;color:#bbb;">
+            Give Back Jojo  givebackjojo.org
           </div>
         </div>`,
     });
@@ -172,30 +172,96 @@ const sendOrderEmails = async (order, orderId) => {
   emails.push({
     to: ADMIN_NOTIFICATION_EMAIL,
     from: ORDER_FROM_EMAIL,
-    subject: `New Order – #${shortId} – $${total}`,
+    subject: `New order – #${shortId} – $${total}`,
     html: `
       <div style="font-family:sans-serif;max-width:600px;margin:0 auto;color:#333;">
-        <div style="background:#044947;padding:24px;">
-          <h1 style="color:white;margin:0;font-size:20px;">New Order Received</h1>
-          <p style="color:rgba(255,255,255,0.8);margin:4px 0 0;">Order #${shortId}</p>
+        <div style="background:#044947;padding:20px 24px;">
+          <h2 style="color:white;margin:0;font-size:18px;">New Order</h2>
+          <p style="color:rgba(255,255,255,0.6);margin:4px 0 0;font-size:13px;">#${shortId}</p>
         </div>
-        <div style="padding:24px;">
-          <h3 style="margin-top:0;">Customer</h3>
-          <p style="margin:0;">${customerName}</p>
-          <p style="margin:4px 0;">${customerEmail || "No email"}</p>
-          <p style="margin:4px 0;">${order.shippingInfo?.phone || ""}</p>
-          <h3>Items</h3>
-          <table style="width:100%;border-collapse:collapse;">
-            <thead><tr style="color:#888;font-size:13px;">
-              <th style="text-align:left;padding-bottom:8px;">Item</th>
-              <th style="text-align:center;padding-bottom:8px;">Qty</th>
-              <th style="text-align:right;padding-bottom:8px;">Price</th>
+        <div style="padding:20px 24px;">
+          <p style="margin-top:0;"><strong>${customerName}</strong><br>
+          <span style="color:#666;">${customerEmail || "No email"}</span><br>
+          <span style="color:#666;">${order.shippingInfo?.phone || ""}</span></p>
+          <table style="width:100%;border-collapse:collapse;margin-top:12px;">
+            <thead><tr style="color:#aaa;font-size:12px;text-transform:uppercase;">
+              <th style="text-align:left;padding-bottom:8px;font-weight:500;">Item</th>
+              <th style="text-align:center;padding-bottom:8px;font-weight:500;">Qty</th>
+              <th style="text-align:right;padding-bottom:8px;font-weight:500;">Price</th>
             </tr></thead>
             <tbody>${itemsHtml}</tbody>
           </table>
-          <p style="text-align:right;font-weight:700;margin-top:12px;font-size:16px;">Total: $${total}</p>
-          <h3>${isPickup ? "Pickup" : "Ship To"}</h3>
-          <p style="color:#555;">${addressText}</p>
+          <p style="text-align:right;font-weight:700;font-size:16px;color:#044947;">$${total}</p>
+          <p style="color:#555;font-size:14px;">${isPickup ? "Local pickup" : `Ship to: ${addressText}`}</p>
+        </div>
+      </div>`,
+  });
+
+  await Promise.all(emails.map(msg => sgMail.send(msg)));
+};
+
+const sendDonationEmails = async (donation, donationId) => {
+  const apiKey = process.env.SENDGRID_API_KEY;
+  if (!apiKey) {
+    console.warn("SENDGRID_API_KEY not set — donation emails skipped");
+    return;
+  }
+  const sgMail = require("@sendgrid/mail");
+  sgMail.setApiKey(apiKey);
+
+  const donorEmail = donation.donorEmail;
+  const donorName = donation.donorName || "Friend";
+  const amount = (donation.amount || 0).toFixed(2);
+  const isMonthly = donation.frequency === "monthly";
+  const shortId = donationId.slice(0, 8).toUpperCase();
+
+  const emails = [];
+
+  if (donorEmail) {
+    emails.push({
+      to: donorEmail,
+      from: ORDER_FROM_EMAIL,
+      subject: `Thank you so much, ${donorName}! ❤️`,
+      html: `
+        <div style="font-family:sans-serif;max-width:600px;margin:0 auto;color:#333;">
+          <div style="background:#044947;padding:28px 24px;text-align:center;">
+            <p style="color:rgba(255,255,255,0.7);margin:0;font-size:13px;letter-spacing:1px;text-transform:uppercase;">Give Back Jojo</p>
+            <h1 style="color:white;margin:10px 0 4px;font-size:26px;">Thank you ❤️</h1>
+          </div>
+          <div style="padding:28px 24px;">
+            <p style="margin-top:0;">Hey ${donorName},</p>
+            <p>I just saw your donation come through, and I really wanted to send a quick note to say thank you.</p>
+            <div style="border-left:4px solid #044947;padding:12px 16px;margin:24px 0;background:#f9f9f9;">
+              <p style="margin:0;font-size:13px;color:#888;">${isMonthly ? "Monthly donation" : "One-time donation"} &nbsp; #${shortId}</p>
+              <p style="margin:6px 0 0;font-size:28px;font-weight:700;color:#044947;">$${amount}${isMonthly ? "/mo" : ""}</p>
+            </div>
+            <p>At Give Back Jojo, we're working to make sure no one has to navigate their mental health alone, and your support makes a very real difference in making that happen. We're so glad to have you in our corner.</p>
+            ${isMonthly ? "<p>You can manage or cancel your monthly donation anytime from your account settings.</p>" : ""}
+            <p>If you ever have any questions or just want to chat about what we're up to, feel free to reply to this email. Someone on our team will reach out to you.</p>
+            <p style="margin-top:28px;">With gratitude,<br><strong>The Give Back Jojo Team</strong></p>
+          </div>
+          <div style="background:#f7f7f7;padding:16px;text-align:center;font-size:12px;color:#bbb;">
+            Give Back Jojo  givebackjojo.org
+          </div>
+        </div>`,
+    });
+  }
+
+  emails.push({
+    to: ADMIN_NOTIFICATION_EMAIL,
+    from: ORDER_FROM_EMAIL,
+    subject: `New ${isMonthly ? "monthly " : ""}donation – $${amount}`,
+    html: `
+      <div style="font-family:sans-serif;max-width:600px;margin:0 auto;color:#333;">
+        <div style="background:#044947;padding:20px 24px;">
+          <h2 style="color:white;margin:0;font-size:18px;">New ${isMonthly ? "Monthly " : ""}Donation</h2>
+          <p style="color:rgba(255,255,255,0.6);margin:4px 0 0;font-size:13px;">#${shortId}</p>
+        </div>
+        <div style="padding:20px 24px;">
+          <p style="margin-top:0;"><strong>${donorName}</strong><br>
+          <span style="color:#666;">${donorEmail || "No email"}</span></p>
+          <p style="font-size:28px;font-weight:700;color:#044947;margin:16px 0 4px;">$${amount}${isMonthly ? "/mo" : ""}</p>
+          <p style="margin:0;color:#888;font-size:14px;">${isMonthly ? "Monthly recurring" : "One-time"}</p>
         </div>
       </div>`,
   });
@@ -417,6 +483,10 @@ app.post("/webhook", express.raw({ type: "application/json" }), async (req, res)
               paidAt: admin.firestore.FieldValue.serverTimestamp(),
               updatedAt: admin.firestore.FieldValue.serverTimestamp(),
             });
+            const donationData = { ...donSnap.data(), amount: donSnap.data().amount || (pi.amount / 100) };
+            sendDonationEmails(donationData, pi.metadata.donationId).catch(err =>
+              console.error("Failed to send donation emails:", err.message)
+            );
           }
         } else if (pi.metadata?.orderId) {
           const orderRef = db.collection("orders").doc(pi.metadata.orderId);
@@ -482,6 +552,10 @@ app.post("/webhook", express.raw({ type: "application/json" }), async (req, res)
               updateData.stripeSubscriptionId = session.subscription;
             }
             await donRef.update(updateData);
+            const donationData = { ...donSnap.data(), frequency: donSnap.data().frequency || "one_time" };
+            sendDonationEmails(donationData, session.metadata.donationId).catch(err =>
+              console.error("Failed to send donation emails:", err.message)
+            );
           }
         } else if (session.metadata?.orderId) {
           const orderRef = db.collection("orders").doc(session.metadata.orderId);
