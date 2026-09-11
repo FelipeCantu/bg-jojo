@@ -32,8 +32,6 @@ import {
   CheckoutPage,
   SuccessPage,
   DonationSuccess,
-  AuthForm,
-  EmailVerification,
   PrivacyPolicy,
   TermsOfService,
   Contact,
