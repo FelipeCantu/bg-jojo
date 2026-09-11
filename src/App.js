@@ -47,6 +47,7 @@ import { Helmet } from 'react-helmet-async';
 import { getOrganizationSchema } from './utils/structuredData';
 import { analytics, logEvent } from './firestore';
 import { ToastProvider } from './context/ToastContext';
+import StickyActionBar from './components/StickyActionBar';
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -143,15 +144,26 @@ function App() {
         </script>
       </Helmet>
       <Navbar />
+      <StickyActionBar />
       <ScrollToTop />
 
       <AnimatePresence mode="wait" initial={false}>
         <Routes location={location} key={location.pathname}>
-          <Route path="/auth" element={<AuthForm />} />
-          <Route path="/login" element={<AuthForm mode="login" />} />
-          <Route path="/signup" element={<AuthForm mode="signup" />} />
-          <Route path="/email-verification" element={<SlideUpRoute noPadding><EmailVerification /></SlideUpRoute>} />
-          <Route path='/dashboard' element={<Navigate to="/profile" replace />} />
+          {/* LOGIN DISABLED: original auth routes commented out below.
+              Uncomment these and remove the redirect routes to bring login back. */}
+          {/* <Route path="/auth" element={<AuthForm />} /> */}
+          {/* <Route path="/login" element={<AuthForm mode="login" />} /> */}
+          {/* <Route path="/signup" element={<AuthForm mode="signup" />} /> */}
+          {/* <Route path="/email-verification" element={<SlideUpRoute noPadding><EmailVerification /></SlideUpRoute>} /> */}
+          <Route path="/auth" element={<Navigate to="/home" replace />} />
+          <Route path="/login" element={<Navigate to="/home" replace />} />
+          <Route path="/signup" element={<Navigate to="/home" replace />} />
+          <Route path="/email-verification" element={<Navigate to="/home" replace />} />
+
+          {/* LOGIN DISABLED: this used to go to /profile, now just goes home */}
+          {/* <Route path='/dashboard' element={<Navigate to="/profile" replace />} /> */}
+          <Route path='/dashboard' element={<Navigate to="/home" replace />} />
+
           <Route path="/" element={<Navigate to="/home" replace />} />
           <Route path="/home" element={<SlideUpRoute noPadding>{<Home />}</SlideUpRoute>} />
           <Route path="/about" element={<SlideUpRoute noPadding><About /></SlideUpRoute>} />

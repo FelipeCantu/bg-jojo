@@ -3,8 +3,9 @@ import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import Menu from './Menu';
-import LoginButton from './LoginButton';
-import NotificationBell from './NotificationBell'
+// LOGIN DISABLED: uncomment these two imports to bring login back
+// import LoginButton from './LoginButton';
+// import NotificationBell from './NotificationBell'
 
 
 
@@ -24,7 +25,7 @@ const Navbar = () => {
 
           <NavLinks>
             <StyledLink to="/home">Home</StyledLink>
-            <StyledLink to="/donate">Donate</StyledLink>
+            <StyledExternalLink href="https://www.zeffy.com/en-US/donation-form/jojos-generosity" target="_blank" rel="noopener noreferrer">Donate</StyledExternalLink>
             <StyledLink to="/hotlines">Hotlines</StyledLink>
             <StyledLink to="/events">Events</StyledLink>
             <StyledLink to="/about">About Us</StyledLink>
@@ -35,7 +36,7 @@ const Navbar = () => {
                 <StyledLink to="/getinvolved">Get Involved</StyledLink>
                 <StyledLink to="/articles">Articles</StyledLink>
                 <StyledLink to="/tributes">Remembering Loved Ones</StyledLink>
-                <StyledLink to="/products">Shop</StyledLink>
+                <StyledExternalLink href="https://www.zeffy.com/en-US/ticketing/give-back-swag" target="_blank" rel="noopener noreferrer">Shop</StyledExternalLink>
               </DropdownMenu>
             </MoreLink>
           </NavLinks>
@@ -44,12 +45,15 @@ const Navbar = () => {
             <Menu />
           </MobileMenu>
 
+          {/* LOGIN DISABLED: uncomment to bring back the notification bell + login button
           <NavbarLoginContainer>
             <NotificationBell />
             <LoginButton hideInNavbar={false} />
           </NavbarLoginContainer>
+          */}
         </NavContent>
       </Nav>
+      <NavSpacer />
     </>
   );
 };
@@ -109,6 +113,46 @@ const StyledLink = styled(Link)`
   }
 `;
 
+const StyledExternalLink = styled.a`
+  color: var(--text-color);
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 900;
+  font-family: var(--font-heading);
+  border-radius: var(--border-radius);
+  transition: all 0.3s ease;
+  cursor: pointer;
+
+  &:hover {
+    background-color: var(--accent-pink);
+  }
+
+  &.active {
+    background-color: var(--accent-pink);
+  }
+
+  ${DropdownMenu} & {
+    display: block;
+    padding: 0.75rem 1.25rem;
+    border-radius: 0;
+
+    &:hover {
+      background-color: var(--accent-pink);
+    }
+
+    &:first-child {
+      border-top-left-radius: var(--border-radius);
+      border-top-right-radius: var(--border-radius);
+    }
+
+    &:last-child {
+      border-bottom-left-radius: var(--border-radius);
+      border-bottom-right-radius: var(--border-radius);
+    }
+  }
+`;
+
 const MoreLink = styled.div`
   position: relative;
   cursor: pointer;
@@ -138,10 +182,17 @@ const NavLinks = styled.div`
   @media (max-width: 768px) {
     display: none;
   }
+
+  /* Center this group within its grid column now that the login/actions
+     group on the right has been removed (see NavContent below). */
+  @media (min-width: 769px) {
+    justify-self: center;
+  }
 `;
 
+
 const Nav = styled(motion.nav)`
-  position: sticky;
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
@@ -149,7 +200,15 @@ const Nav = styled(motion.nav)`
   justify-content: center;
   align-items: center;
   height: 70px;
-  z-index: 1000;
+  /* Framer Motion animates this element's y position, which applies a CSS
+     transform — and any transform creates a new stacking context that
+     traps all descendants, including the mobile Sidebar overlay nested
+     inside MobileMenu > Menu > Sidebar. Because of that, Sidebar's own
+     z-index only matters relative to other things inside Nav; from the
+     outside, this whole element is what gets compared against siblings
+     like StickyActionBar (z-index: 1050) in App.jsx. So this value has to
+     be the one that wins, not Sidebar's. */
+  z-index: 1200;
   background-color: var(--primary-color);
   padding: 0 1rem;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
@@ -163,12 +222,28 @@ const Nav = styled(motion.nav)`
   }
 `;
 
+const NavSpacer = styled.div`
+  height: 70px;
+
+  @media (max-width: 768px) {
+    height: 80px;
+  }
+`;
+
 const NavContent = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
   width: 100%;
   max-width: 1200px;
+
+  /* Three-column layout on desktop: logo | centered links | (empty, was
+     login/actions). Using a grid keeps the links truly centered no matter
+     how wide the logo is, instead of just being pushed to one side. */
+  @media (min-width: 769px) {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+  }
   
   @media (max-width: 768px) {
     flex-direction: row;
@@ -185,6 +260,10 @@ const LogoLink = styled(Link)`
   
   @media (max-width: 768px) {
     margin-right: auto;
+  }
+
+  @media (min-width: 769px) {
+    justify-self: start;
   }
 `;
 
@@ -212,14 +291,15 @@ const MobileMenu = styled.div`
   }
 `;
 
-const NavbarLoginContainer = styled.div`
-  display: none;
-  
-  @media (min-width: 769px) {
-    display: flex;
-    align-items: center;
-    gap: 1rem; // Add gap between NotificationBell and LoginButton
-  }
-`;
+// LOGIN DISABLED: uncomment to bring back the desktop login container styling
+// const NavbarLoginContainer = styled.div`
+//   display: none;
+//
+//   @media (min-width: 769px) {
+//     display: flex;
+//     align-items: center;
+//     gap: 1rem; // Add gap between NotificationBell and LoginButton
+//   }
+// `;
 
 export default Navbar;
