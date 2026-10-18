@@ -77,13 +77,17 @@ function App() {
   const location = useLocation();
 
   // Fade out the static splash from index.html once the app has rendered.
-  // Wait briefly for web fonts so text doesn't visibly swap, but never longer than 800ms.
+  // Wait briefly for the web fonts so text doesn't visibly swap, but never longer than 800ms.
+  // (document.fonts.ready alone resolves immediately if no font request has started yet.)
   useEffect(() => {
     const splash = document.getElementById('splash');
     if (!splash) return undefined;
 
     let removeTimer;
-    const fontsReady = document.fonts ? document.fonts.ready : Promise.resolve();
+    const fontsReady = document.fonts
+      ? Promise.all(['400 1em Roboto', '700 1em Roboto', '600 1em Montserrat']
+        .map((font) => document.fonts.load(font))).catch(() => {})
+      : Promise.resolve();
     const maxWait = new Promise((resolve) => setTimeout(resolve, 800));
 
     Promise.race([fontsReady, maxWait]).then(() => {

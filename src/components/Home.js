@@ -179,7 +179,7 @@ const VideoWrapper = styled.div`
   padding: 0;
   overflow: hidden;
   /* Sky gradient shown until the cloud video starts playing */
-  background: linear-gradient(180deg, #7fb6e8 0%, #b9d8f2 55%, #e8f3fb 100%);
+  background: linear-gradient(180deg, #4f86c6 0%, #7aa9dc 50%, #b7d3ee 100%);
 
   @media (max-width: 768px) {
     height: 90vh;

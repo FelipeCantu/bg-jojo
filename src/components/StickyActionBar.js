@@ -126,21 +126,22 @@ const IconCircle = styled.span`
 const Pill = styled.a`
   display: inline-flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0;
   padding: 0.3rem;
-  padding-right: 1rem;
   border-radius: 999px;
   background-color: rgba(255, 255, 255, 0.92);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   text-decoration: none;
-  transition: box-shadow 0.25s ease, transform 0.25s ease;
+  transition: box-shadow 0.25s ease, transform 0.25s ease, gap 0.25s ease, padding 0.25s ease;
 
   &:hover,
   &:focus-visible {
     transform: translateX(-2px);
     box-shadow: 0 8px 22px rgba(0, 0, 0, 0.2);
+    gap: 0.55rem;
+    padding-right: 1rem;
 
     ${IconCircle} {
       transform: scale(1.08);
