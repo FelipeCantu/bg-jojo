@@ -1,10 +1,44 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import styled from "styled-components";
+import { PortableText } from '@portabletext/react';
 import Carousel from './Carousel';
 import SEO from './SEO';
+import client, { urlFor } from '../sanityClient';
+
+const FALLBACK_SUBTITLE = 'Supporting Mental Health and Suicide Prevention';
+const FALLBACK_IMAGE = 'https://static.wixstatic.com/media/nsplsh_4539616574426532773430~mv2_d_4752_3168_s_4_2.jpg/v1/fill/w_319,h_319,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/Image%20by%20Sam%20Schooler.jpg';
+
+const isSafeHref = (href) => /^(https?:|mailto:)/i.test(href || '');
+
+// Renders the "About Text" written in Sanity Studio with the page's existing styles
+const aboutTextComponents = {
+  block: {
+    normal: ({ children }) => <Paragraph>{children}</Paragraph>,
+    blockquote: ({ children }) => <Paragraph>{children}</Paragraph>,
+  },
+  marks: {
+    link: ({ value, children }) => (
+      <ReportLink href={isSafeHref(value?.href) ? value.href : undefined} target="_blank" rel="noopener noreferrer">
+        {children}
+      </ReportLink>
+    ),
+  },
+};
 
 const AboutSection = () => {
   const videoRef = useRef(null);
+  // undefined = still loading, null = nothing published yet (show the built-in text)
+  const [about, setAbout] = useState(undefined);
+
+  useEffect(() => {
+    client
+      .fetch(`*[_id == "aboutPage"][0]{ subtitle, body, image, imageAlt }`)
+      .then((data) => setAbout(data || null))
+      .catch((error) => {
+        console.error('Error fetching About page:', error);
+        setAbout(null);
+      });
+  }, []);
 
   useEffect(() => {
     if (videoRef.current) {
@@ -29,11 +63,15 @@ const AboutSection = () => {
       
       <ContentContainer>
         <ContentWrapper>
-          <TextContent>
+          <TextContent $ready={about !== undefined}>
             <Divider />
-            <Subtitle>Supporting Mental Health and Suicide Prevention</Subtitle>
+            <Subtitle>{about?.subtitle || FALLBACK_SUBTITLE}</Subtitle>
             <Description>
               <AboutContainer>
+                {about?.body ? (
+                  <PortableText value={about.body} components={aboutTextComponents} />
+                ) : (
+                <>
                 <Paragraph>
                   Give Back JoJo is a non-profit organization providing free access to therapy for ages 12 and up. On the
                   <ReportLink 
@@ -61,11 +99,18 @@ const AboutSection = () => {
                   emotional healing and releasing negative emotions. It is also Joseph's favorite bird! Their bucket
                   hat and swag reflect our brother's legacy.
                 </Paragraph>
+                </>
+                )}
               </AboutContainer>
             </Description>
           </TextContent>
           <ImageContainer>
-            <StyledImage src="https://static.wixstatic.com/media/nsplsh_4539616574426532773430~mv2_d_4752_3168_s_4_2.jpg/v1/fill/w_319,h_319,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/Image%20by%20Sam%20Schooler.jpg" alt="Clouds and Sun" />
+            {about !== undefined && (
+              <StyledImage
+                src={about?.image ? urlFor(about.image).width(640).url() : FALLBACK_IMAGE}
+                alt={about?.image ? (about.imageAlt || '') : 'Clouds and Sun'}
+              />
+            )}
           </ImageContainer>
         </ContentWrapper>
       </ContentContainer>
@@ -201,6 +246,8 @@ const CarouselTitle = styled.h1`
 const TextContent = styled.div`
   flex: 2;
   padding-right: 2rem;
+  opacity: ${({ $ready }) => ($ready ? 1 : 0)};
+  transition: opacity 0.3s ease;
   
   @media (max-width: 768px) {
     width: 100%;

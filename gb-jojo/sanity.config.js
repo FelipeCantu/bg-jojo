@@ -11,6 +11,10 @@ const LEGAL_PAGES = [
 ]
 const LEGAL_TEMPLATE_IDS = LEGAL_PAGES.map((page) => `legal-${page.docType}`)
 
+// Types edited only through their fixed sidebar entries (no create/duplicate/delete).
+const SINGLE_PAGE_TYPES = ['legalDocument', 'aboutPage']
+const HIDDEN_TEMPLATE_IDS = [...LEGAL_TEMPLATE_IDS, 'aboutPage']
+
 export default defineConfig({
   name: 'default',
   title: 'gb-jojo',
@@ -24,6 +28,10 @@ export default defineConfig({
         S.list()
           .title('Content')
           .items([
+            S.listItem()
+              .title('About Page')
+              .id('aboutPage')
+              .child(S.document().schemaType('aboutPage').documentId('aboutPage').title('About Page')),
             S.listItem()
               .title('Legal Pages')
               .child(
@@ -45,7 +53,7 @@ export default defineConfig({
                   ),
               ),
             S.divider(),
-            ...S.documentTypeListItems().filter((item) => item.getId() !== 'legalDocument'),
+            ...S.documentTypeListItems().filter((item) => !SINGLE_PAGE_TYPES.includes(item.getId())),
           ]),
     }),
     visionTool(),
@@ -65,14 +73,14 @@ export default defineConfig({
   },
 
   document: {
-    // Keep legal pages out of the global "Create new" menu
+    // Keep single pages out of the global "Create new" menu
     newDocumentOptions: (prev, {creationContext}) =>
       creationContext.type === 'global'
-        ? prev.filter((item) => !LEGAL_TEMPLATE_IDS.includes(item.templateId))
+        ? prev.filter((item) => !HIDDEN_TEMPLATE_IDS.includes(item.templateId))
         : prev,
-    // Legal pages can be edited and published, not duplicated or deleted
+    // Single pages can be edited and published, not duplicated or deleted
     actions: (prev, {schemaType}) =>
-      schemaType === 'legalDocument'
+      SINGLE_PAGE_TYPES.includes(schemaType)
         ? prev.filter(({action}) => !['duplicate', 'delete'].includes(action))
         : prev,
   },
