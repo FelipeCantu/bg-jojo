@@ -5,10 +5,6 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    # Allow Firebase OAuth popups (Google/Facebook sign-in) to close themselves.
-    # Netlify's default COOP: same-origin blocks cross-origin window.close calls.
-    Cross-Origin-Opener-Policy = "same-origin-allow-popups"
-
     # Prevent clickjacking — disallow this site from being embedded in iframes
     X-Frame-Options = "DENY"
 
@@ -22,4 +18,4 @@
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
 
     # Restrict access to browser features not needed by this app
-    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(self)"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=()"
