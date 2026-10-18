@@ -1,12 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
-import DonationCheckout from './DonationCheckout';
 import SEO from './SEO';
+import { ZEFFY_DONATE_URL } from '../constants';
 
 const Donate = () => {
-  const [showCheckout, setShowCheckout] = useState(false);
-
   return (
     <BackgroundWrapper>
       <SEO
@@ -22,13 +20,9 @@ const Donate = () => {
           Give Back JoJo is a Non Profit dedicated to mental health awareness and suicide prevention. Our goal is to have a dedicated mental health clinic that offers free art/group therapy. We want to create a warm, inviting, and safe environment by providing meals to those that attend, educational and recreational books, educational stickers for suicide prevention, and aroma therapy. We ask for your help to achieve this goal! By granting us your donation, you will help us spread positive change in mental health, suicide prevention, and bringing the community together. Thank you for being here ♥
         </Description>
 
-        <DonateButton onClick={() => setShowCheckout(true)}>
+        <DonateButton href={ZEFFY_DONATE_URL} target="_blank" rel="noopener noreferrer">
           Donate Now
         </DonateButton>
-
-        {showCheckout && (
-          <DonationCheckout onClose={() => setShowCheckout(false)} />
-        )}
 
         <LinksStack>
           <AltPaymentLink to="/supporting-givebackjojo">
@@ -116,8 +110,9 @@ const Description = styled.p`
   }
 `;
 
-const DonateButton = styled.button`
+const DonateButton = styled.a`
   display: inline-block;
+  text-decoration: none;
   background: #cc4200;
   color: white;
   font-size: 1.2rem;

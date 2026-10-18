@@ -1,11 +1,12 @@
 import React from 'react';
+import { ZEFFY_DONATE_URL, ZEFFY_SHOP_URL } from '../constants';
 import styled from 'styled-components';
 
 const StickyActionBar = () => {
   return (
     <Bar aria-label="Quick actions">
       <Pill
-        href="https://www.zeffy.com/en-US/donation-form/jojos-generosity"
+        href={ZEFFY_DONATE_URL}
         target="_blank"
         rel="noopener noreferrer"
         $tone="donate"
@@ -24,7 +25,7 @@ const StickyActionBar = () => {
       </Pill>
 
       <Pill
-        href="https://www.zeffy.com/en-US/ticketing/give-back-swag"
+        href={ZEFFY_SHOP_URL}
         target="_blank"
         rel="noopener noreferrer"
         $tone="shop"

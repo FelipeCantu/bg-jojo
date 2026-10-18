@@ -26,20 +26,14 @@ import {
   ArticleForm,
   EditArticle,
   LoadingContainer,
-  CartDrawer,
   ProductPage,
   ProductsPage,
-  CheckoutPage,
-  SuccessPage,
-  DonationSuccess,
   PrivacyPolicy,
   TermsOfService,
   Contact,
   ZellePage,
 } from './components';
 import ProtectedRoute from './components/ProtectedRoute';
-import AdminRoute from './components/AdminRoute';
-import AdminOrders from './components/admin/AdminOrders';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 import { getOrganizationSchema } from './utils/structuredData';
@@ -181,9 +175,10 @@ function App() {
           <Route path="/SupportingGiveBackJojo" element={<Navigate to="/supporting-givebackjojo" replace />} />
           <Route path="/products/:slug" element={<SlideUpRoute noPadding><ProductPage /></SlideUpRoute>} />
           <Route path="/products" element={<SlideUpRoute noPadding><ProductsPage /></SlideUpRoute>} />
-          <Route path="/checkout" element={<SlideUpRoute><CheckoutPage /></SlideUpRoute>} />
-          <Route path="/success" element={<SlideUpRoute><SuccessPage /></SlideUpRoute>} />
-          <Route path="/donation-success" element={<SlideUpRoute noPadding><DonationSuccess /></SlideUpRoute>} />
+          {/* Checkout and donations moved to Zeffy; keep old links landing somewhere useful */}
+          <Route path="/checkout" element={<Navigate to="/products" replace />} />
+          <Route path="/success" element={<Navigate to="/products" replace />} />
+          <Route path="/donation-success" element={<Navigate to="/donate" replace />} />
           <Route path="/privacy" element={<SlideUpRoute noPadding><PrivacyPolicy /></SlideUpRoute>} />
           <Route path="/terms" element={<SlideUpRoute noPadding><TermsOfService /></SlideUpRoute>} />
           <Route path="/contact" element={<SlideUpRoute noPadding><Contact /></SlideUpRoute>} />
@@ -228,23 +223,12 @@ function App() {
             }
           />
 
-          <Route
-            path="/admin/orders"
-            element={
-              <AdminRoute>
-                <SlideUpRoute disableAnimation noPadding>
-                  <AdminOrders />
-                </SlideUpRoute>
-              </AdminRoute>
-            }
-          />
           <Route path="/create-article" element={<ProtectedRoute><SlideUpRoute noPadding><ArticleForm /></SlideUpRoute></ProtectedRoute>} />
           <Route path="*" element={<SlideUpRoute noPadding><NotFound /></SlideUpRoute>} />
         </Routes>
       </AnimatePresence>
 
       <Footer />
-      <CartDrawer />
     </motion.div>
     </ToastProvider>
   );

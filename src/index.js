@@ -6,7 +6,6 @@ import reportWebVitals from './reportWebVitals';
 import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider, studioTheme } from '@sanity/ui';
 import { BrowserRouter } from 'react-router-dom';
-import { CartProvider } from './CartContext';
 import { HelmetProvider } from 'react-helmet-async';
 import * as Sentry from '@sentry/react';
 
@@ -156,9 +155,7 @@ function renderApp() {
             <BrowserRouter>
               <AuthProvider>
                 <ThemeProvider theme={studioTheme}>
-                  <CartProvider>
-                    <App />
-                  </CartProvider>
+                  <App />
                 </ThemeProvider>
               </AuthProvider>
             </BrowserRouter>

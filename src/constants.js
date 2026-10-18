@@ -1,3 +1,7 @@
 export const DEFAULT_ANONYMOUS_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Ccircle cx='64' cy='64' r='64' fill='%23e0e0e0'/%3E%3Ccircle cx='64' cy='50' r='22' fill='%23bdbdbd'/%3E%3Cellipse cx='64' cy='106' rx='36' ry='28' fill='%23bdbdbd'/%3E%3C/svg%3E";
 
 export const DEFAULT_PLACEHOLDER_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23999' font-family='sans-serif' font-size='18'%3ENo Image%3C/text%3E%3C/svg%3E";
+
+// Purchases and donations are handled by Zeffy (no on-site checkout).
+export const ZEFFY_SHOP_URL = "https://www.zeffy.com/en-US/ticketing/give-back-swag";
+export const ZEFFY_DONATE_URL = "https://www.zeffy.com/en-US/donation-form/jojos-generosity";

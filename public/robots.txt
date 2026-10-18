@@ -1,8 +1,5 @@
 # https://www.robotstxt.org/robotstxt.html
 User-agent: *
-Disallow: /checkout
-Disallow: /success
-Disallow: /donation-success
 Disallow: /auth
 Disallow: /login
 Disallow: /signup

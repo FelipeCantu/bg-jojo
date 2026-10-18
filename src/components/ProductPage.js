@@ -4,13 +4,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import sanityClient from '../sanityClient';
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
-import { useCart } from '../CartContext';
-import { ShoppingBagIcon, ChevronLeftIcon } from '@heroicons/react/24/outline';
+import { ArrowTopRightOnSquareIcon, ChevronLeftIcon } from '@heroicons/react/24/outline';
 import LoadingContainer from './LoadingContainer';
 import SEO from './SEO';
 import { getProductSchema } from '../utils/structuredData';
-import { DEFAULT_PLACEHOLDER_IMAGE } from '../constants';
-import { useToast } from '../context/ToastContext';
+import { DEFAULT_PLACEHOLDER_IMAGE, ZEFFY_SHOP_URL } from '../constants';
 
 // Styled Components
 const PageBackground = styled.div`
@@ -230,84 +228,20 @@ const SizeOptions = styled.div`
   margin-bottom: 1.5rem;
 `;
 
-const SizeButton = styled.button`
+const SizeTag = styled.span`
   padding: 0.5rem 1.25rem;
-  background: ${({ $selected }) => ($selected ? '#044947' : '#fff')};
-  color: ${({ $selected }) => ($selected ? 'white' : '#333')};
-  border: 1.5px solid ${({ $selected }) => ($selected ? '#044947' : '#ddd')};
+  background: #fff;
+  color: #333;
+  border: 1.5px solid #ddd;
   border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
   font-weight: 500;
   font-size: 0.9rem;
-
-  &:hover:not(:disabled) {
-    border-color: #044947;
-  }
-
-  &:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-    border-color: #eee;
-  }
+  opacity: ${({ $outOfStock }) => ($outOfStock ? 0.4 : 1)};
 
   @media (max-width: 768px) {
     padding: 0.6rem 1rem;
     font-size: 0.85rem;
     min-width: 48px;
-  }
-`;
-
-const QuantitySelector = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0;
-  margin-bottom: 2rem;
-  border: 1.5px solid #e0e0e0;
-  border-radius: 10px;
-  overflow: hidden;
-  width: fit-content;
-
-  @media (max-width: 768px) {
-    margin-bottom: 1.5rem;
-  }
-`;
-
-const QuantityButton = styled.button`
-  background: #fff;
-  border: none;
-  font-size: 1.1rem;
-  width: 44px;
-  height: 44px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  color: #333;
-
-  &:hover {
-    background: #f5f5f5;
-  }
-
-  &:active {
-    background: #eee;
-  }
-`;
-
-const QuantityInput = styled.input`
-  width: 48px;
-  height: 44px;
-  text-align: center;
-  border: none;
-  border-left: 1.5px solid #e0e0e0;
-  border-right: 1.5px solid #e0e0e0;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #1a1a1a;
-  outline: none;
-
-  &::-webkit-inner-spin-button,
-  &::-webkit-outer-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
   }
 `;
 
@@ -328,23 +262,22 @@ const ButtonGroup = styled.div`
   }
 `;
 
-const AddToCartButton = styled.button`
+const BuyButton = styled.a`
   flex: 1;
   padding: 1rem 1.5rem;
   font-size: 1rem;
   border-radius: 10px;
-  cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  border: none;
   background: #044947;
   color: white;
   font-weight: 600;
+  text-decoration: none;
 
-  &:hover:not(:disabled) {
+  &:hover {
     background: #033634;
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(4, 73, 71, 0.3);
@@ -354,57 +287,11 @@ const AddToCartButton = styled.button`
     transform: translateY(0);
   }
 
-  &:disabled {
-    background: #ccc;
-    cursor: not-allowed;
-  }
-
   @media (max-width: 768px) {
     padding: 0.85rem 1rem;
     font-size: 0.95rem;
     border-radius: 8px;
   }
-`;
-
-const ViewCartButton = styled.button`
-  padding: 1rem 1.5rem;
-  font-size: 1rem;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  border: 1.5px solid var(--primary-color);
-  background: transparent;
-  color: var(--primary-color);
-  font-weight: 600;
-
-  &:hover {
-    background: var(--primary-color);
-    color: white;
-    transform: translateY(-1px);
-  }
-
-  &:active {
-    transform: translateY(0);
-  }
-
-  @media (max-width: 768px) {
-    padding: 0.85rem 1rem;
-    font-size: 0.95rem;
-    border-radius: 8px;
-  }
-`;
-
-const CartBadge = styled.span`
-  background: #ff5a5f;
-  color: white;
-  font-size: 0.7rem;
-  font-weight: bold;
-  border-radius: 50%;
-  padding: 0.15rem 0.45rem;
 `;
 
 const ErrorMessage = styled.div`
@@ -417,16 +304,10 @@ const ErrorMessage = styled.div`
 export default function ProductPage() {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const { addToCart, toggleCart, items } = useCart();
-  const { showToast } = useToast();
   const [product, setProduct] = useState(null);
   const [selectedImage, setSelectedImage] = useState(0);
-  const [selectedSize, setSelectedSize] = useState(null);
-  const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  const totalItems = items.reduce((acc, item) => acc + item.quantity, 0);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -437,8 +318,6 @@ export default function ProductPage() {
             name,
             price,
             category,
-            stripePriceId,
-            stripePriceIds,
             description,
             material,
             sizes,
@@ -447,11 +326,7 @@ export default function ProductPage() {
               stock
             },
             colors,
-            images[]{asset->{url}},
-            weightOz,
-            lengthIn,
-            widthIn,
-            heightIn
+            images[]{asset->{url}}
           }`,
           { slug }
         );
@@ -460,14 +335,6 @@ export default function ProductPage() {
           setError('Product not found');
         } else {
           setProduct(data);
-          if (data.category !== 'plushie' && data.category !== 'sticker') {
-            if (data.sizeOptions?.length > 0) {
-              const firstInStock = data.sizeOptions.find(opt => opt.stock > 0);
-              if (firstInStock) setSelectedSize(firstInStock.size);
-            } else if (data.sizes?.length > 0) {
-              setSelectedSize(data.sizes[0]);
-            }
-          }
         }
       } catch (err) {
         setError('Failed to fetch product details');
@@ -479,46 +346,6 @@ export default function ProductPage() {
 
     fetchProduct();
   }, [slug]);
-
-  const handleAddToCart = () => {
-    const isSizeRequired = product.category !== 'plushie' && product.category !== 'sticker';
-
-    if (isSizeRequired && !selectedSize) {
-      showToast("Please select a size before adding to cart.", "warning");
-      return;
-    }
-
-    const itemId = isSizeRequired
-      ? `${product._id}-${selectedSize}`
-      : product._id;
-
-    const stripePriceId = isSizeRequired
-      ? product.stripePriceIds?.[selectedSize] || product.stripePriceId
-      : product.stripePriceId;
-
-    if (!stripePriceId) {
-      showToast("This product is not available for purchase at the moment. Please try again later.", "error");
-      console.error("Missing Stripe price ID for product:", product.name);
-      return;
-    }
-
-    addToCart({
-      id: itemId,
-      name: product.name,
-      price: product.price,
-      quantity: quantity,
-      ...(isSizeRequired && { selectedSize }),
-      image: product.images[0]?.asset?.url,
-      stripePriceId: stripePriceId,
-      colors: product.colors,
-      material: product.material,
-      category: product.category,
-      weightOz: product.weightOz,
-      lengthIn: product.lengthIn,
-      widthIn: product.widthIn,
-      heightIn: product.heightIn
-    });
-  };
 
   if (loading) {
     return <LoadingContainer
@@ -532,7 +359,7 @@ export default function ProductPage() {
   if (error) return <ErrorMessage>{error}</ErrorMessage>;
   if (!product) return <ErrorMessage>Product not found</ErrorMessage>;
 
-  const showSizeSelector = product.category !== 'plushie' &&
+  const showSizes = product.category !== 'plushie' &&
     product.category !== 'sticker' &&
     (product.sizeOptions?.length > 0 || product.sizes?.length > 0);
 
@@ -608,76 +435,30 @@ export default function ProductPage() {
             </MetaSection>
           )}
 
-          {showSizeSelector && (
+          {showSizes && (
             <div>
-              <MetaLabel>Select Size</MetaLabel>
+              <MetaLabel>Available Sizes</MetaLabel>
               <SizeOptions>
                 {product.sizeOptions?.length > 0 ? (
                   product.sizeOptions.map((option, index) => (
-                    <SizeButton
-                      key={index}
-                      $selected={selectedSize === option.size}
-                      onClick={() => setSelectedSize(option.size)}
-                      disabled={option.stock <= 0}
-                    >
+                    <SizeTag key={index} $outOfStock={option.stock <= 0}>
                       {option.size} {option.stock <= 0 && '(Out of Stock)'}
-                    </SizeButton>
+                    </SizeTag>
                   ))
                 ) : (
                   product.sizes?.map((size, index) => (
-                    <SizeButton
-                      key={index}
-                      $selected={selectedSize === size}
-                      onClick={() => setSelectedSize(size)}
-                    >
-                      {size}
-                    </SizeButton>
+                    <SizeTag key={index}>{size}</SizeTag>
                   ))
                 )}
               </SizeOptions>
             </div>
           )}
 
-          <MetaLabel>Quantity</MetaLabel>
-          <QuantitySelector>
-            <QuantityButton
-              onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
-              aria-label="Decrease quantity"
-            >
-              -
-            </QuantityButton>
-            <QuantityInput
-              type="number"
-              min="1"
-              value={quantity}
-              onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-              aria-label="Quantity"
-            />
-            <QuantityButton
-              onClick={() => setQuantity(prev => prev + 1)}
-              aria-label="Increase quantity"
-            >
-              +
-            </QuantityButton>
-          </QuantitySelector>
-
           <ButtonGroup>
-            <AddToCartButton
-              onClick={handleAddToCart}
-              disabled={
-                showSizeSelector &&
-                (!selectedSize ||
-                  (product.sizeOptions?.length > 0 &&
-                    product.sizeOptions.find(opt => opt.size === selectedSize)?.stock <= 0))
-              }
-            >
-              Add to Cart
-            </AddToCartButton>
-            <ViewCartButton onClick={toggleCart}>
-              <ShoppingBagIcon width={18} height={18} />
-              Cart
-              {totalItems > 0 && <CartBadge>{totalItems}</CartBadge>}
-            </ViewCartButton>
+            <BuyButton href={ZEFFY_SHOP_URL} target="_blank" rel="noopener noreferrer">
+              Buy on Zeffy
+              <ArrowTopRightOnSquareIcon width={18} height={18} />
+            </BuyButton>
           </ButtonGroup>
         </ProductInfo>
       </ProductLayout>
