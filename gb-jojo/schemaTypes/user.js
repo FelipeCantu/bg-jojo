@@ -1,4 +1,4 @@
-import { defineField, defineType } from 'sanity';
+import {defineField, defineType} from 'sanity'
 
 // Kept as type "user" so existing article author references stay valid.
 // Site accounts were removed — this only holds what an article byline needs.
@@ -25,4 +25,4 @@ export const user = defineType({
       title: 'name',
     },
   },
-});
+})
