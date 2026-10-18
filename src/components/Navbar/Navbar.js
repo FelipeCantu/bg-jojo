@@ -3,9 +3,7 @@ import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import Menu from './Menu';
-// LOGIN DISABLED: uncomment these two imports to bring login back
-// import LoginButton from './LoginButton';
-// import NotificationBell from './NotificationBell'
+import { ZEFFY_DONATE_URL, ZEFFY_SHOP_URL } from '../../constants';
 
 
 
@@ -25,7 +23,7 @@ const Navbar = () => {
 
           <NavLinks>
             <StyledLink to="/home">Home</StyledLink>
-            <StyledExternalLink href="https://www.zeffy.com/en-US/donation-form/jojos-generosity" target="_blank" rel="noopener noreferrer">Donate</StyledExternalLink>
+            <StyledExternalLink href={ZEFFY_DONATE_URL} target="_blank" rel="noopener noreferrer">Donate</StyledExternalLink>
             <StyledLink to="/hotlines">Hotlines</StyledLink>
             <StyledLink to="/events">Events</StyledLink>
             <StyledLink to="/about">About Us</StyledLink>
@@ -36,7 +34,7 @@ const Navbar = () => {
                 <StyledLink to="/getinvolved">Get Involved</StyledLink>
                 <StyledLink to="/articles">Articles</StyledLink>
                 <StyledLink to="/tributes">Remembering Loved Ones</StyledLink>
-                <StyledExternalLink href="https://www.zeffy.com/en-US/ticketing/give-back-swag" target="_blank" rel="noopener noreferrer">Shop</StyledExternalLink>
+                <StyledExternalLink href={ZEFFY_SHOP_URL} target="_blank" rel="noopener noreferrer">Shop</StyledExternalLink>
               </DropdownMenu>
             </MoreLink>
           </NavLinks>
@@ -44,13 +42,6 @@ const Navbar = () => {
           <MobileMenu>
             <Menu />
           </MobileMenu>
-
-          {/* LOGIN DISABLED: uncomment to bring back the notification bell + login button
-          <NavbarLoginContainer>
-            <NotificationBell />
-            <LoginButton hideInNavbar={false} />
-          </NavbarLoginContainer>
-          */}
         </NavContent>
       </Nav>
       <NavSpacer />
@@ -290,16 +281,5 @@ const MobileMenu = styled.div`
     margin-left: auto;
   }
 `;
-
-// LOGIN DISABLED: uncomment to bring back the desktop login container styling
-// const NavbarLoginContainer = styled.div`
-//   display: none;
-//
-//   @media (min-width: 769px) {
-//     display: flex;
-//     align-items: center;
-//     gap: 1rem; // Add gap between NotificationBell and LoginButton
-//   }
-// `;
 
 export default Navbar;

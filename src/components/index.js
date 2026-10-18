@@ -15,24 +15,16 @@ export { default as Donate } from './Donate';
 export { default as YourGift } from './YourGift';
 export { default as SupportingGiveBackJojo } from './SupportingGiveBackJojo';
 export { default as ZellePage } from './ZellePage';
-export { default as ArticleForm } from './ArticleForm';
-export { default as EditArticle } from './EditArticle';
 export { default as LoadingContainer } from './LoadingContainer';
 export { default as ProductPage } from './ProductPage';
 export { default as ProductsPage } from './ProductsPage';
 
 // Navbar & Related Pages
 export { default as Navbar } from './Navbar/Navbar';
-export { default as AccountSettings } from './Navbar/AccountSettings';
-export { default as Profile } from './Navbar/Profile';
-export { default as Notifications } from './Navbar/Notifications';
-export { default as Subscriptions } from './Navbar/Subscriptions';
 
 // Common Components
 export { default as Footer } from './Footer';
 export { default as NotFound } from './NotFound';
-export { default as AuthForm } from './AuthForm';
-export { default as EmailVerification } from './EmailVerification';
 export { default as PrivacyPolicy } from './PrivacyPolicy';
 export { default as TermsOfService } from './TermsOfService';
 export { default as Contact } from './Contact';

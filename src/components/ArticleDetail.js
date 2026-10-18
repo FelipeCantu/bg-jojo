@@ -2,21 +2,19 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { articleAPI, urlFor } from "../sanityClient";
 import styled from "styled-components";
-import ArticleCounters from "./ArticleCounters";
-import CommentSection from "./CommentSection";
-import { auth, onAuthStateChanged } from "../firestore";
 import { PortableText } from "@portabletext/react";
 import { Link } from 'react-router-dom';
 import { DEFAULT_ANONYMOUS_AVATAR, DEFAULT_PLACEHOLDER_IMAGE } from '../constants';
 import SEO from './SEO';
 import { getArticleSchema } from '../utils/structuredData';
 
+const isSafeHref = (href) => /^(https?:|mailto:)/i.test(href || '');
+
 const ArticleDetail = () => {
   const { id } = useParams();
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [user, setUser] = useState(null);
 
   useEffect(() => {
     const getArticle = async () => {
@@ -37,16 +35,6 @@ const ArticleDetail = () => {
     };
 
     getArticle();
-
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser ? {
-        name: currentUser.displayName,
-        photo: currentUser.photoURL || DEFAULT_ANONYMOUS_AVATAR,
-        uid: currentUser.uid,
-      } : null);
-    });
-
-    return () => unsubscribe();
   }, [id]);
 
   if (loading) return <LoadingPlaceholder />;
@@ -116,7 +104,7 @@ const ArticleDetail = () => {
     marks: {
       link: ({ value, children }) => (
         <ExternalLink
-          href={value.href}
+          href={isSafeHref(value?.href) ? value.href : undefined}
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -191,10 +179,6 @@ const ArticleDetail = () => {
           components={components}
         />
       </ContentWrapper>
-
-      <Divider />
-      <ArticleCounters articleId={id} isDetailView={true} />
-      <CommentSection articleId={id} user={user} />
     </ArticleDetailContainer>
   );
 };
@@ -449,12 +433,6 @@ const CodeFilename = styled.div`
   background: rgba(0, 0, 0, 0.1);
   font-family: var(--font-code);
   font-size: 0.875rem;
-`;
-
-const Divider = styled.hr`
-  margin: 3rem 0;
-  border: none;
-  border-top: 1px solid var(--border-color);
 `;
 
 const ErrorMessage = styled.p`

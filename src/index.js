@@ -3,7 +3,6 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
-import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider, studioTheme } from '@sanity/ui';
 import { BrowserRouter } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
@@ -38,7 +37,7 @@ Sentry.init({
 });
 
 // Unregister any stale service workers from previous builds.
-// A leftover SW was intercepting Firebase auth network requests and breaking login.
+// A leftover SW from older builds can serve stale assets.
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then((registrations) => {
     registrations.forEach((reg) => reg.unregister());
@@ -153,11 +152,9 @@ function renderApp() {
         <ErrorBoundary>
           <HelmetProvider>
             <BrowserRouter>
-              <AuthProvider>
-                <ThemeProvider theme={studioTheme}>
-                  <App />
-                </ThemeProvider>
-              </AuthProvider>
+              <ThemeProvider theme={studioTheme}>
+                <App />
+              </ThemeProvider>
             </BrowserRouter>
           </HelmetProvider>
         </ErrorBoundary>

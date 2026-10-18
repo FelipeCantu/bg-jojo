@@ -1,8 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import { NavLink } from 'react-router-dom';
-// LOGIN DISABLED: uncomment to bring login back
-// import LoginButton from './LoginButton';
+import { ZEFFY_DONATE_URL, ZEFFY_SHOP_URL } from '../../constants';
 
 const Sidebar = ({ open, setOpen }) => {
   const handleLinkClick = () => setOpen(false);
@@ -10,21 +9,16 @@ const Sidebar = ({ open, setOpen }) => {
   return (
     <SidebarContainer open={open}>
       <SidebarContent>
-        {/* LOGIN DISABLED: uncomment to bring back the sidebar login button
-        <SidebarLoginContainer>
-          <LoginButton hideInNavbar={false} closeSidebar={handleLinkClick} />
-        </SidebarLoginContainer>
-        */}
         <NavLinks>
           <StyledLink to="/home" end onClick={handleLinkClick}>Home</StyledLink>
-          <StyledExternalLink href="https://www.zeffy.com/en-US/donation-form/jojos-generosity" target="_blank" rel="noopener noreferrer" onClick={handleLinkClick}>Donate</StyledExternalLink>
+          <StyledExternalLink href={ZEFFY_DONATE_URL} target="_blank" rel="noopener noreferrer" onClick={handleLinkClick}>Donate</StyledExternalLink>
           <StyledLink to="/about" end onClick={handleLinkClick}>About</StyledLink>
           <StyledLink to="/hotlines" end onClick={handleLinkClick}>Hotlines</StyledLink>
           <StyledLink to="/getinvolved" end onClick={handleLinkClick}>Get Involved</StyledLink>
           <StyledLink to="/events" end onClick={handleLinkClick}>Events</StyledLink>
           <StyledLink to="/articles" end onClick={handleLinkClick}>Articles</StyledLink>
           <StyledLink to="/tributes" end onClick={handleLinkClick}>Remembering Loved Ones</StyledLink>
-          <StyledExternalLink href="https://www.zeffy.com/en-US/ticketing/give-back-swag" target="_blank" rel="noopener noreferrer" onClick={handleLinkClick}>Shop</StyledExternalLink>
+          <StyledExternalLink href={ZEFFY_SHOP_URL} target="_blank" rel="noopener noreferrer" onClick={handleLinkClick}>Shop</StyledExternalLink>
         </NavLinks>
       </SidebarContent>
     </SidebarContainer>
@@ -131,13 +125,5 @@ const StyledExternalLink = styled.a`
     background-color: #333;
   }
 `;
-
-// LOGIN DISABLED: uncomment to bring back the sidebar login container styling
-// const SidebarLoginContainer = styled.div`
-//   width: 100%;
-//   display: flex;
-//   justify-content: center;
-//   margin-bottom: 20px;
-// `;
 
 export default Sidebar;

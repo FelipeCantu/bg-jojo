@@ -2,29 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import client from '../sanityClient';
-import { auth, db } from '../firestore'; // Import Firestore
-import { doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import SEO from './SEO';
 import { getEventSchema } from '../utils/structuredData';
 import LoadingContainer from './LoadingContainer';
-import { useToast } from '../context/ToastContext';
 
 const EventDetail = () => {
   const [event, setEvent] = useState(null);
   const [error, setError] = useState(null);
-  const [attendees, setAttendees] = useState([]);
-  const [user, setUser] = useState(null);
-  const { showToast } = useToast();
   const { id } = useParams(); // Event ID from URL
-
-  useEffect(() => {
-    // Get the current logged-in user
-    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
-      setUser(currentUser);
-    });
-
-    return () => unsubscribe();
-  }, []);
 
   useEffect(() => {
     // Fetch event details from Sanity
@@ -38,68 +23,7 @@ const EventDetail = () => {
         console.error('Error fetching event details:', error);
         setError('Failed to load event details.');
       });
-
-    // Fetch attendees from Firestore
-    const fetchAttendees = async () => {
-      const eventRef = doc(db, 'events', id);
-      const eventSnap = await getDoc(eventRef);
-      if (eventSnap.exists()) {
-        setAttendees(eventSnap.data().attendees || []);
-      }
-    };
-
-    fetchAttendees();
   }, [id]);
-
-  const isUserAttending = user && attendees.includes(user.uid);
-
-  // Function to add attendee to the event
-  const addAttendeeToEvent = async (eventId, userId) => {
-    const eventRef = doc(db, 'events', eventId);
-    const eventSnap = await getDoc(eventRef);
-
-    try {
-      if (eventSnap.exists()) {
-        await updateDoc(eventRef, {
-          attendees: arrayUnion(userId),
-        });
-      } else {
-        // If the event doesn't exist, create it with the attendee
-        await setDoc(eventRef, { attendees: [userId] }, { merge: true });
-      }
-    } catch (error) {
-      console.error('Error adding attendee:', error);
-    }
-  };
-
-
-  // Function to toggle attending status
-  const handleToggleAttend = async () => {
-    if (!user) return showToast('Please log in to join the event.', 'info');
-
-    const eventRef = doc(db, 'events', id);
-
-    try {
-      if (isUserAttending) {
-        // Remove user from the attendees list
-        await updateDoc(eventRef, {
-          attendees: arrayRemove(user.uid),
-        });
-      } else {
-        // Add user to the attendees list using addAttendeeToEvent
-        await addAttendeeToEvent(id, user.uid);  // Call your existing function here
-      }
-
-      // Fetch updated attendees list
-      const eventSnap = await getDoc(eventRef);
-      if (eventSnap.exists()) {
-        setAttendees(eventSnap.data().attendees || []);
-      }
-
-    } catch (error) {
-      console.error('Error updating attendees:', error);
-    }
-  };
 
   if (error) return <ErrorMessage>{error}</ErrorMessage>;
   if (!event) return <LoadingContainer message="Loading event..." />;
@@ -140,13 +64,6 @@ const EventDetail = () => {
           {event.description && (
             <EventDescription>{event.description}</EventDescription>
           )}
-
-          <AttendRow>
-            <AttendButton $attending={isUserAttending} onClick={handleToggleAttend}>
-              {isUserAttending ? '✓ You\'re Going' : 'Join Event'}
-            </AttendButton>
-            <AttendeeCount>{attendees.length} {attendees.length === 1 ? 'person' : 'people'} going</AttendeeCount>
-          </AttendRow>
         </CardBody>
       </ContentWrapper>
     </PageContainer>
@@ -231,37 +148,6 @@ const EventDescription = styled.p`
   line-height: 1.75;
   margin-bottom: 2rem;
   white-space: pre-line;
-`;
-
-const AttendRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-  padding-top: 1.25rem;
-  border-top: 1px solid #eee;
-`;
-
-const AttendButton = styled.button`
-  padding: 0.75rem 2rem;
-  background: ${(p) => (p.$attending ? '#e8f5e9' : '#024a47')};
-  color: ${(p) => (p.$attending ? '#2e7d32' : 'white')};
-  border: 2px solid ${(p) => (p.$attending ? '#a5d6a7' : '#024a47')};
-  border-radius: 50px;
-  font-size: 0.95rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:hover {
-    background: ${(p) => (p.$attending ? '#ffebee' : '#013d3b')};
-    border-color: ${(p) => (p.$attending ? '#ef9a9a' : '#013d3b')};
-    color: ${(p) => (p.$attending ? '#c62828' : 'white')};
-  }
-`;
-
-const AttendeeCount = styled.span`
-  font-size: 0.9rem;
-  color: #888;
 `;
 
 const ErrorMessage = styled.div`

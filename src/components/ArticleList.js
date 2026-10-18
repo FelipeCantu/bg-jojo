@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { articleAPI } from '../sanityClient';
-import ArticleCounters from './ArticleCounters';
-import CreateArticleButton from './CreateArticleButton';
 import styled from 'styled-components';
 import { FaSearch } from 'react-icons/fa';
 import LoadingContainer from './LoadingContainer';
@@ -63,8 +61,6 @@ const ArticleList = () => {
         />
       </SearchContainer>
 
-      <CreateArticleButton />
-
       {filteredArticles.length === 0 ? (
         <NoArticlesMessage>No articles found</NoArticlesMessage>
       ) : (
@@ -106,7 +102,6 @@ const ArticleList = () => {
                       : article.title}
                   </ArticleTitle>
 
-                  <ArticleCounters articleId={article._id} />
                 </ArticleCard>
               </LinkWrapper>
             );

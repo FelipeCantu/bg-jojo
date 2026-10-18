@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Toaster } from 'react-hot-toast';
 import './App.css';
 import { Route, Routes, Navigate, useLocation } from 'react-router-dom';
 import {
@@ -17,14 +16,8 @@ import {
   Donate,
   YourGift,
   SupportingGiveBackJojo,
-  AccountSettings,
-  Profile,
-  Notifications,
-  Subscriptions,
   Footer,
   NotFound,
-  ArticleForm,
-  EditArticle,
   LoadingContainer,
   ProductPage,
   ProductsPage,
@@ -33,12 +26,9 @@ import {
   Contact,
   ZellePage,
 } from './components';
-import ProtectedRoute from './components/ProtectedRoute';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 import { getOrganizationSchema } from './utils/structuredData';
-import { analytics, logEvent } from './firestore';
-import { ToastProvider } from './context/ToastContext';
 import StickyActionBar from './components/StickyActionBar';
 
 const ScrollToTop = () => {
@@ -46,12 +36,6 @@ const ScrollToTop = () => {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    if (analytics) {
-      logEvent(analytics, 'page_view', {
-        page_path: pathname,
-        page_title: document.title,
-      });
-    }
   }, [pathname]);
 
   return null;
@@ -109,8 +93,7 @@ function App() {
   }, []);
 
   return (
-    <ToastProvider>
-    <Toaster position="top-center" toastOptions={{ duration: 4000 }} />
+    <>
     <AnimatePresence>
       {isLoading && (
         <motion.div
@@ -141,20 +124,12 @@ function App() {
 
       <AnimatePresence mode="wait" initial={false}>
         <Routes location={location} key={location.pathname}>
-          {/* LOGIN DISABLED: original auth routes commented out below.
-              Uncomment these and remove the redirect routes to bring login back. */}
-          {/* <Route path="/auth" element={<AuthForm />} /> */}
-          {/* <Route path="/login" element={<AuthForm mode="login" />} /> */}
-          {/* <Route path="/signup" element={<AuthForm mode="signup" />} /> */}
-          {/* <Route path="/email-verification" element={<SlideUpRoute noPadding><EmailVerification /></SlideUpRoute>} /> */}
-          <Route path="/auth" element={<Navigate to="/home" replace />} />
-          <Route path="/login" element={<Navigate to="/home" replace />} />
-          <Route path="/signup" element={<Navigate to="/home" replace />} />
-          <Route path="/email-verification" element={<Navigate to="/home" replace />} />
-
-          {/* LOGIN DISABLED: this used to go to /profile, now just goes home */}
-          {/* <Route path='/dashboard' element={<Navigate to="/profile" replace />} /> */}
-          <Route path='/dashboard' element={<Navigate to="/home" replace />} />
+          {/* Accounts and user-submitted articles were removed; old links go home */}
+          {['/auth', '/login', '/signup', '/email-verification', '/dashboard', '/profile',
+            '/account-settings/*', '/notifications', '/subscriptions', '/admin/*',
+            '/create-article', '/edit-article/:articleId'].map((path) => (
+            <Route key={path} path={path} element={<Navigate to="/home" replace />} />
+          ))}
 
           <Route path="/" element={<Navigate to="/home" replace />} />
           <Route path="/home" element={<SlideUpRoute noPadding>{<Home />}</SlideUpRoute>} />
@@ -165,7 +140,6 @@ function App() {
           <Route path="/events/:id" element={<SlideUpRoute noPadding><EventDetail /></SlideUpRoute>} />
           <Route path="/articles" element={<SlideUpRoute noPadding><ArticleList /></SlideUpRoute>} />
           <Route path="/article/:id" element={<SlideUpRoute><ArticleDetail /></SlideUpRoute>} />
-          <Route path="/edit-article/:articleId" element={<ProtectedRoute><SlideUpRoute><EditArticle /></SlideUpRoute></ProtectedRoute>} />
           <Route path="/tributes" element={<SlideUpRoute noPadding><TributeGallery /></SlideUpRoute>} />
           <Route path="/tribute/:slug" element={<SlideUpRoute noPadding><TributeDetail /></SlideUpRoute>} />
           <Route path="/yourgift" element={<SlideUpRoute noPadding><YourGift /></SlideUpRoute>} />
@@ -182,55 +156,13 @@ function App() {
           <Route path="/privacy" element={<SlideUpRoute noPadding><PrivacyPolicy /></SlideUpRoute>} />
           <Route path="/terms" element={<SlideUpRoute noPadding><TermsOfService /></SlideUpRoute>} />
           <Route path="/contact" element={<SlideUpRoute noPadding><Contact /></SlideUpRoute>} />
-          <Route
-            path="/account-settings/*"
-            element={
-              <ProtectedRoute>
-                <SlideUpRoute disableAnimation noPadding>
-                  <AccountSettings />
-                </SlideUpRoute>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <SlideUpRoute disableAnimation noPadding>
-                  <Profile />
-                </SlideUpRoute>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/notifications"
-            element={
-              <ProtectedRoute>
-                <SlideUpRoute disableAnimation noPadding>
-                  <Notifications />
-                </SlideUpRoute>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/subscriptions"
-            element={
-              <ProtectedRoute>
-                <SlideUpRoute disableAnimation noPadding>
-                  <Subscriptions />
-                </SlideUpRoute>
-              </ProtectedRoute>
-            }
-          />
-
-          <Route path="/create-article" element={<ProtectedRoute><SlideUpRoute noPadding><ArticleForm /></SlideUpRoute></ProtectedRoute>} />
           <Route path="*" element={<SlideUpRoute noPadding><NotFound /></SlideUpRoute>} />
         </Routes>
       </AnimatePresence>
 
       <Footer />
     </motion.div>
-    </ToastProvider>
+    </>
   );
 }
 
