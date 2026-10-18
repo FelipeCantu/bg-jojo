@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { ChevronRightIcon } from '@heroicons/react/24/solid';
@@ -8,6 +8,7 @@ import SEO from './SEO';
 
 function Home() {
   const videoRef = useRef(null);
+  const [videoReady, setVideoReady] = useState(false);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -37,6 +38,9 @@ function Home() {
       <VideoWrapper>
         <VideoBackground
           ref={videoRef}
+          $ready={videoReady}
+          onPlaying={() => setVideoReady(true)}
+          preload="auto"
           autoPlay
           loop
           muted
@@ -51,21 +55,21 @@ function Home() {
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.45, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
           >
             <HeroHeading>Reach Out For Help</HeroHeading>
           </motion.div>
           <motion.div
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.65, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.7, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
           >
             <HeroSubtext>You Are Not Alone</HeroSubtext>
           </motion.div>
           <motion.div
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.85, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.6, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
           >
             <HotLink to='/hotlines'>
               <Button>
@@ -174,6 +178,8 @@ const VideoWrapper = styled.div`
   margin: 0;
   padding: 0;
   overflow: hidden;
+  /* Sky gradient shown until the cloud video starts playing */
+  background: linear-gradient(180deg, #7fb6e8 0%, #b9d8f2 55%, #e8f3fb 100%);
 
   @media (max-width: 768px) {
     height: 90vh;
@@ -190,8 +196,10 @@ const VideoBackground = styled.video`
   object-position: center;
   margin: 0;
   padding: 0;
-  z-index: -1;
+  z-index: 0;
   pointer-events: none;
+  opacity: ${({ $ready }) => ($ready ? 1 : 0)};
+  transition: opacity 0.8s ease;
 
   &::-webkit-media-controls {
     display: none !important;
@@ -227,6 +235,7 @@ const Content = styled.div`
   color: pink;
   padding: 0;
   margin: 0;
+  z-index: 1;
 
   @media (max-width: 768px) {
     width: 95%;

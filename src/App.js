@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import './App.css';
 import { Route, Routes, Navigate, useLocation } from 'react-router-dom';
 import {
@@ -18,7 +18,6 @@ import {
   SupportingGiveBackJojo,
   Footer,
   NotFound,
-  LoadingContainer,
   ProductPage,
   ProductsPage,
   PrivacyPolicy,
@@ -76,43 +75,27 @@ const SlideUpRoute = ({ children, disableAnimation = false, noPadding = false })
 
 function App() {
   const location = useLocation();
-  const [isLoading, setIsLoading] = useState(true);
 
+  // Fade out the static splash from index.html once the app has rendered.
+  // Wait briefly for web fonts so text doesn't visibly swap, but never longer than 800ms.
   useEffect(() => {
-    const loadingTimer = setTimeout(() => {
-      setIsLoading(false);
-      document.body.classList.remove('loading');
-    }, 450);
+    const splash = document.getElementById('splash');
+    if (!splash) return undefined;
 
-    document.body.classList.add('loading');
+    let removeTimer;
+    const fontsReady = document.fonts ? document.fonts.ready : Promise.resolve();
+    const maxWait = new Promise((resolve) => setTimeout(resolve, 800));
 
-    return () => {
-      clearTimeout(loadingTimer);
-      document.body.classList.remove('loading');
-    };
+    Promise.race([fontsReady, maxWait]).then(() => {
+      splash.classList.add('splash-hide');
+      removeTimer = setTimeout(() => splash.remove(), 450);
+    });
+
+    return () => clearTimeout(removeTimer);
   }, []);
 
   return (
-    <>
-    <AnimatePresence>
-      {isLoading && (
-        <motion.div
-          key="app-loader"
-          className="LoadingContainer"
-          initial={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.5, ease: 'easeInOut' }}
-        >
-          <LoadingContainer />
-        </motion.div>
-      )}
-    </AnimatePresence>
-    <motion.div
-      className="App"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.55, delay: 0.35 }}
-    >
+    <div className="App">
       <Helmet>
         <script type="application/ld+json">
           {JSON.stringify(getOrganizationSchema())}
@@ -161,8 +144,7 @@ function App() {
       </AnimatePresence>
 
       <Footer />
-    </motion.div>
-    </>
+    </div>
   );
 }
 

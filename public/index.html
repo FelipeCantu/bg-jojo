@@ -48,9 +48,62 @@
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 
   <title>Give Back Jojo</title>
+
+  <!-- Splash screen: painted before the JS bundle loads, removed by App.js -->
+  <style>
+    #splash {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+      transition: opacity 0.4s ease, visibility 0.4s ease;
+    }
+    #splash.splash-hide {
+      opacity: 0;
+      visibility: hidden;
+    }
+    #splash .splash-ring {
+      position: relative;
+      width: 104px;
+      height: 104px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #splash .splash-ring::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 4px solid rgba(254, 165, 0, 0.18);
+      border-top-color: #fea500;
+      animation: splash-spin 1s linear infinite;
+    }
+    #splash img {
+      width: 56px;
+      height: 56px;
+      object-fit: contain;
+    }
+    @keyframes splash-spin {
+      to { transform: rotate(360deg); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #splash .splash-ring::before { animation-duration: 3s; }
+      #splash { transition: none; }
+    }
+  </style>
+  <noscript><style>#splash { display: none; }</style></noscript>
 </head>
 <body>
   <noscript>You need to enable JavaScript to run this app.</noscript>
+  <div id="splash" aria-hidden="true">
+    <div class="splash-ring">
+      <img src="%PUBLIC_URL%/hatflamingo-192x192.png" alt="" width="56" height="56" />
+    </div>
+  </div>
   <div id="root"></div>
 </body>
 </html>
