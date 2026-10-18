@@ -16,24 +16,30 @@ export const legalDocument = defineType({
         ],
         layout: 'radio',
       },
+      // Set automatically by the Legal Pages sidebar entries
+      readOnly: true,
       validation: Rule => Rule.required(),
     }),
     defineField({
       name: 'title',
       title: 'Title',
       type: 'string',
+      description: 'Shown as the page heading.',
       validation: Rule => Rule.required(),
     }),
     defineField({
       name: 'lastUpdated',
       title: 'Last Updated',
       type: 'date',
+      description: 'Shown under the heading. Update it whenever you change the text.',
       validation: Rule => Rule.required(),
     }),
     defineField({
       name: 'content',
       title: 'Content',
       type: 'blockContent',
+      description: 'Use H2 for section titles. The title and date above are added to the page automatically.',
+      validation: Rule => Rule.required(),
     }),
   ],
   preview: {

@@ -38,7 +38,7 @@ const PrivacyPolicy = () => {
 
   useEffect(() => {
     client
-      .fetch(`*[_type == "legalDocument" && docType == "privacy"][0]{ title, lastUpdated, content }`)
+      .fetch(`*[_id == "privacyPolicy"][0]{ title, lastUpdated, content }`)
       .then(data => setDoc(data))
       .catch(console.error)
       .finally(() => setLoading(false));

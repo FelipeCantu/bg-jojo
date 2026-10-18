@@ -38,7 +38,7 @@ const TermsOfService = () => {
 
   useEffect(() => {
     client
-      .fetch(`*[_type == "legalDocument" && docType == "terms"][0]{ title, lastUpdated, content }`)
+      .fetch(`*[_id == "termsOfService"][0]{ title, lastUpdated, content }`)
       .then(data => setDoc(data))
       .catch(console.error)
       .finally(() => setLoading(false));
