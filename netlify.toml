@@ -1,5 +1,6 @@
 [build]
-  command = "npm run build"
+  # Build the site, then the Sanity Studio into build/studio (served at /studio)
+  command = "npm run build && cd gb-jojo && npm ci && npx sanity build ../build/studio --yes"
   publish = "build"
 
 [[headers]]

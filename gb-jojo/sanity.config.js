@@ -22,6 +22,9 @@ export default defineConfig({
   projectId: 'wssoiuia',
   dataset: 'production',
 
+  // Served from the main site at https://givebackjojo.org/studio (built by Netlify, see netlify.toml)
+  basePath: '/studio',
+
   plugins: [
     structureTool({
       structure: (S) =>
