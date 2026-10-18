@@ -44,19 +44,6 @@ export const product = defineType({
       validation: (Rule) => Rule.required().positive(),
     }),
     defineField({
-      name: 'stripePriceId',
-      title: 'Stripe Price ID',
-      type: 'string',
-      description: 'Paste the Price ID from your Stripe Dashboard (e.g. price_1Nxxx...)',
-      validation: (Rule) => Rule.required(),
-    }),
-    defineField({
-      name: 'stripeProductId',
-      title: 'Stripe Product ID',
-      type: 'string',
-      description: 'Optional: The Product ID from Stripe (e.g. prod_123abc)',
-    }),
-    defineField({
       name: 'description',
       title: 'Description',
       type: 'text',
@@ -141,30 +128,6 @@ export const product = defineType({
       title: 'Stock Quantity',
       type: 'number',
       description: 'Leave blank if not tracked',
-    }),
-    defineField({
-      name: 'weightOz',
-      title: 'Weight (oz)',
-      type: 'number',
-      description: 'Shipping weight in ounces (e.g. 8 for a t-shirt)',
-    }),
-    defineField({
-      name: 'lengthIn',
-      title: 'Length (in)',
-      type: 'number',
-      description: 'Package length in inches',
-    }),
-    defineField({
-      name: 'widthIn',
-      title: 'Width (in)',
-      type: 'number',
-      description: 'Package width in inches',
-    }),
-    defineField({
-      name: 'heightIn',
-      title: 'Height (in)',
-      type: 'number',
-      description: 'Package height in inches',
     }),
   ],
   preview: {

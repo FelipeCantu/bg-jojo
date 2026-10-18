@@ -53,9 +53,6 @@ export const articleAPI = {
       publishedDate,
       readingTime,
       isAnonymous,
-      likes,
-      views,
-      lastViewDate,
       "author": select(
         isAnonymous == true => {
           "name": "Anonymous",
