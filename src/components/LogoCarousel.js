@@ -182,10 +182,6 @@ const LogoCarousel = () => {
   return (
     <Section>
       <Heading>Businesses That Give Back</Heading>
-      <Hint>
-        <span className="hint-mouse">Move your mouse left or right to steer · hover a logo for details</span>
-        <span className="hint-touch">Swipe to browse · tap a logo for details</span>
-      </Hint>
       <Viewport
         ref={viewportRef}
         onPointerMove={handlePointerMove}
@@ -256,27 +252,6 @@ const Heading = styled.h2`
 
   @media (max-width: 768px) {
     font-size: 2rem;
-  }
-`;
-
-const Hint = styled.p`
-  color: #880e4f;
-  font-size: 0.95rem;
-  margin: 0 1rem 0.5rem;
-  text-align: center;
-  opacity: 0.8;
-
-  .hint-touch {
-    display: none;
-  }
-
-  @media (hover: none) {
-    .hint-mouse {
-      display: none;
-    }
-    .hint-touch {
-      display: inline;
-    }
   }
 `;
 
