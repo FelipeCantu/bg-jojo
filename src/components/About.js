@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from "react";
 import styled from "styled-components";
 import { PortableText } from '@portabletext/react';
 import Carousel from './Carousel';
+import LogoCarousel from './LogoCarousel';
 import SEO from './SEO';
 import client, { urlFor } from '../sanityClient';
 
@@ -118,6 +119,7 @@ const AboutSection = () => {
         <CarouselTitle>Get to Know Us</CarouselTitle>
         <Carousel />
       </CarouselSection>
+      <LogoCarousel />
     </SectionContainer>
   );
 };

@@ -9,6 +9,7 @@ import { product } from './product';
 import { sponsorshipLevel } from './sponsorshipLevel';
 import { legalDocument } from './legalDocument';
 import { aboutPage } from './aboutPage';
+import { businessLogo } from './businessLogo';
 
 export const schemaTypes = [
   tribute,
@@ -21,4 +22,5 @@ export const schemaTypes = [
   sponsorshipLevel,
   legalDocument,
   aboutPage,
+  businessLogo,
 ];
