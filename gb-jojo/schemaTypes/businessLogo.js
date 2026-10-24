@@ -10,7 +10,7 @@ export const businessLogo = defineType({
       name: 'name',
       title: 'Business Name',
       type: 'string',
-      description: 'Shown on the card when a visitor hovers over or taps the logo.',
+      description: 'Not shown on the card; screen readers read it out for the logo.',
       validation: (Rule) => Rule.required(),
     }),
     defineField({
@@ -33,7 +33,7 @@ export const businessLogo = defineType({
       name: 'website',
       title: 'Website',
       type: 'url',
-      description: 'Optional. Adds a "Visit website" link to the card.',
+      description: 'Optional. Clicking the logo card opens this website.',
       validation: (Rule) => Rule.uri({scheme: ['http', 'https']}),
     }),
     defineField({

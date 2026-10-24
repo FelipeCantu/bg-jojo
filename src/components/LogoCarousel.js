@@ -165,15 +165,21 @@ const LogoCarousel = () => {
     }
   };
 
-  const handleCardClick = (event, id) => {
+  const handleCardClick = (event, logo) => {
     if (motion.current.suppressClick) {
       motion.current.suppressClick = false;
       event.preventDefault();
       return;
     }
-    // Taps open a card; with a mouse, hovering already does that
-    if (window.matchMedia("(hover: none)").matches && !event.target.closest("a")) {
-      setActiveId((current) => (current === id ? null : id));
+    // On touch screens the first tap opens a card and a second tap follows its link;
+    // with a mouse, hovering already opens it
+    if (window.matchMedia("(hover: none)").matches) {
+      if (activeId !== logo._id) {
+        event.preventDefault();
+        setActiveId(logo._id);
+      } else if (!isSafeHref(logo.website)) {
+        setActiveId(null);
+      }
     }
   };
 
@@ -196,9 +202,13 @@ const LogoCarousel = () => {
               {logos.map((logo) => (
                 <Card
                   key={logo._id}
+                  {...(isSafeHref(logo.website)
+                    ? { as: "a", href: logo.website, target: "_blank", rel: "noopener noreferrer" }
+                    : {})}
+                  draggable={false}
                   $active={activeId === logo._id}
                   tabIndex={copy === 0 ? 0 : -1}
-                  onClick={(event) => handleCardClick(event, logo._id)}
+                  onClick={(event) => handleCardClick(event, logo)}
                   onFocus={() => { motion.current.target = 0; }}
                   onBlur={() => { motion.current.target = activeId ? 0 : baseSpeed(); }}
                 >
@@ -210,20 +220,11 @@ const LogoCarousel = () => {
                       draggable={false}
                     />
                   </LogoBox>
-                  <Details>
-                    <Name>{logo.name}</Name>
-                    {logo.description && <Blurb>{logo.description}</Blurb>}
-                    {isSafeHref(logo.website) && (
-                      <VisitLink
-                        href={logo.website}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        tabIndex={copy === 0 ? 0 : -1}
-                      >
-                        Visit website
-                      </VisitLink>
-                    )}
-                  </Details>
+                  {logo.description && (
+                    <Details>
+                      <Blurb>{logo.description}</Blurb>
+                    </Details>
+                  )}
                 </Card>
               ))}
             </Group>
@@ -311,7 +312,10 @@ const expanded = `
 
 const Card = styled.div`
   flex: 0 0 auto;
+  display: block;
   width: 200px;
+  color: inherit;
+  text-decoration: none;
   background: #fff;
   border: 4px solid #f8bbd0;
   border-radius: 1rem;
@@ -386,13 +390,6 @@ const LogoImage = styled.img`
   pointer-events: none;
 `;
 
-const Name = styled.h3`
-  font-size: 1rem;
-  font-weight: bold;
-  color: #880e4f;
-  margin: 0;
-`;
-
 const Blurb = styled.p`
   font-size: 0.85rem;
   line-height: 1.4;
@@ -402,18 +399,6 @@ const Blurb = styled.p`
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
-`;
-
-const VisitLink = styled.a`
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #e91e8c;
-  text-decoration: none;
-
-  &:hover,
-  &:focus-visible {
-    text-decoration: underline;
-  }
 `;
 
 export default LogoCarousel;
