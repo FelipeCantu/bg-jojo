@@ -62,7 +62,7 @@ const Contact = () => {
             </SocialIcon>
 
             <SocialIcon
-              href="https://www.youtube.com/watch?v=bqnwdX3x_l0"
+              href="https://www.youtube.com/@givebackjojo"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="YouTube"
