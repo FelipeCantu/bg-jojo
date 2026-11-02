@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import sponsorship1 from '../assets/sponsorship-1.png';
-import sponsorship2 from '../assets/sponsorship-2.png';
 import { client } from '../sanityClient';
 
 const FALLBACK_LEVELS = [
@@ -106,12 +104,6 @@ const Sponsorship = ({ onStartToday }) => {
       <Title>Jojo's Generosity</Title>
       <Subtitle>Subscribe bi-annually to get a featured display at our clinic</Subtitle>
 
-      {/* Images Section */}
-      <ImagesContainer>
-        <Image src={sponsorship1} alt="Donation Event" />
-        <Image src={sponsorship2} alt="Mental Health Support" />
-      </ImagesContainer>
-
       <Button onClick={handleStartToday}>Start Today</Button>
       {/* Sponsorship Levels Grid */}
       <SponsorshipGrid>
@@ -159,30 +151,6 @@ const Subtitle = styled.p`
   font-size: 16px;
   color: #003f52;
   margin: 10px 0 20px;
-`;
-
-// Images Container
-const ImagesContainer = styled.div`
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-  margin-bottom: 20px;
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    align-items: center;
-  }
-`;
-
-const Image = styled.img`
-  width: 45%;
-  max-width: 400px;
-  border-radius: 8px;
-  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
-
-  @media (max-width: 768px) {
-    width: 100%;
-  }
 `;
 
 const Button = styled.button`

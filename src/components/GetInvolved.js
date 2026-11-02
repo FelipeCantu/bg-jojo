@@ -3,61 +3,17 @@ import styled from "styled-components";
 import emailjs from "emailjs-com";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
-import CustomSelect from "./CustomSelect";
-import { FaFacebookF, FaInstagram } from 'react-icons/fa';
+import { FaFacebookF, FaInstagram, FaDiscord } from 'react-icons/fa';
 import SEO from './SEO';
 import Sponsorship from './Sponsorship';
 
 const MySwal = withReactContent(Swal);
 
+// TODO: paste the Discord server invite link here once the server is ready
+const DISCORD_INVITE_URL = "";
+
 
 const VolunteerForm = () => {
-  // Volunteer roles data
-  const volunteerRoles = [
-    {
-      id: 1,
-      title: "Therapist for group therapy",
-      items: [
-        "College students pursuing degrees in psychology, counseling, or social work who need hours for certification or graduation",
-        "Facilitate discussions on coping strategies, emotional regulation, and mental wellness under supervision",
-        "Ensure a safe, supportive, and confidential environment"
-      ],
-      commitment: "Committed to scheduled sessions weekly"
-    },
-    {
-      id: 2,
-      title: "Art therapy",
-      items: [
-        "Certified art therapists or skilled artists guiding participants in expressive art activities",
-        "Use creative outlets to support emotional healing and stress relief",
-        "Provide instructions for group sessions",
-        "Encourage open expression in a judgment-free space"
-      ],
-      commitment: "Committed to scheduled sessions weekly"
-    },
-    {
-      id: 3,
-      title: "Aromatherapy",
-      items: [
-        "Educate participants on the benefits of essential oils",
-        "Conduct workshops on stress relief, relaxation techniques, and mindfulness",
-        "Ensure the safe use of essential oils"
-      ],
-      commitment: "Committed to scheduled sessions weekly"
-    },
-    {
-      id: 4,
-      title: "Event Support Volunteers",
-      items: [
-        "Assist in organizing and managing mental health awareness events",
-        "Help with event setup, registration, logistics, and participant engagement",
-        "Promote events through community outreach and social media",
-        "Provide on-site support to ensure smooth execution"
-      ],
-      commitment: ""
-    }
-  ];
-
   const [showForm, setShowForm] = useState(false);
 
   // Form state
@@ -66,7 +22,6 @@ const VolunteerForm = () => {
     lastName: "",
     email: "",
     phone: "",
-    role: "",
     message: "",
   });
 
@@ -189,8 +144,7 @@ const VolunteerForm = () => {
             lastName: "",
             email: "",
             phone: "",
-            role: "",
-            message: "",
+                    message: "",
           });
           setErrors({
             firstName: false,
@@ -222,7 +176,7 @@ const VolunteerForm = () => {
     <PageContainer>
       <SEO
         title="Get Involved — Volunteer"
-        description="Volunteer as a therapist, art therapy facilitator, or event support to help prevent suicide and support mental health in your community."
+        description="Volunteer with Give Back Jojo to help prevent suicide and support mental health in your community. Join our Discord to learn about roles and how to get involved."
         path="/getinvolved"
       />
       {/* Header Image at the very top */}
@@ -329,16 +283,6 @@ const VolunteerForm = () => {
                 </InputGroup>
 
                 <InputGroup>
-                  <Label htmlFor="role">Preferred Volunteer Role</Label>
-                  <CustomSelect
-                    name="role"
-                    options={volunteerRoles}
-                    value={formData.role}
-                    onChange={handleChange}
-                  />
-                </InputGroup>
-
-                <InputGroup>
                   <Label htmlFor="message" required>Your Message</Label>
                   <TextArea
                     id="message"
@@ -362,25 +306,20 @@ const VolunteerForm = () => {
           </ModalOverlay>
         )}
 
-        <RolesTitle>Volunteer Roles</RolesTitle>
-
         <BottomSection>
-          <RolesSection>
-            <RolesGrid>
-              {volunteerRoles.map(role => (
-                <RoleCard key={role.id}>
-                  <RoleNumber>{role.id}</RoleNumber>
-                  <RoleTitle>{role.title}</RoleTitle>
-                  <RoleList>
-                    {role.items.map((item, index) => (
-                      <RoleItem key={index}>{item}</RoleItem>
-                    ))}
-                  </RoleList>
-                  {role.commitment && <Commitment>{role.commitment}</Commitment>}
-                </RoleCard>
-              ))}
-            </RolesGrid>
-          </RolesSection>
+          <DiscordSection>
+            <DiscordTitle>Join Our Discord</DiscordTitle>
+            <DiscordText>
+              Learn about our volunteer roles, how to get involved, and connect with the Give Back Jojo community.
+            </DiscordText>
+            <DiscordButton
+              href={DISCORD_INVITE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <FaDiscord /> Join the Discord
+            </DiscordButton>
+          </DiscordSection>
         </BottomSection>
       </ContentWrapper>
     </PageContainer>
@@ -425,8 +364,15 @@ const ModalOverlay = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
-  padding: 1rem;
+  /* Above StickyActionBar (1050) so the Donate/Shop pills don't cover the form,
+     but below the Navbar (1200) */
+  z-index: 1100;
+  /* Keep the form clear of the fixed navbar (70px, 80px on mobile) */
+  padding: calc(70px + 1.5rem) 1rem 1.5rem;
+
+  @media (max-width: 768px) {
+    padding: calc(80px + 1rem) 1rem 1rem;
+  }
 `;
 
 const FormContainer = styled.div`
@@ -436,13 +382,13 @@ const FormContainer = styled.div`
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   width: 100%;
   max-width: 600px;
-  max-height: 90vh;
+  max-height: calc(100vh - 70px - 3rem);
   overflow-y: auto;
   position: relative;
 
   @media (max-width: 768px) {
     padding: 1.5rem;
-    max-height: 95vh;
+    max-height: calc(100vh - 80px - 2rem);
   }
 `;
 
@@ -563,103 +509,46 @@ const Button = styled.button`
   }
 `;
 
-const RolesSection = styled.div`
-  width: 100%;
-  max-width: 1200px;
+const DiscordSection = styled.div`
+  max-width: 700px;
   margin: 0 auto;
   padding: 0 1rem;
+  text-align: center;
 `;
 
-const RolesTitle = styled.h2`
+const DiscordTitle = styled.h2`
   font-size: 2rem;
-  color: var(--text-color);
-  margin-top: 4rem;
-  text-align: center;
-
-`;
-
-const RolesGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 2rem;
-  padding: 0 1rem;
-  
-  @media (max-width: 1024px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
-  @media (max-width: 640px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-const RoleCard = styled.div`
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  padding: 1.5rem;
-  position: relative;
-  margin-top: 2rem;
-  border: 1px solid var(--border-color);
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  
-  &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-  }
-`;
-
-const RoleNumber = styled.div`
-  position: absolute;
-  top: -2rem;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 4rem;
-  height: 4rem;
-  background-color: #feedfd;
-  color: black;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  font-size: 1.25rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-`;
-
-const RoleTitle = styled.h3`
-  font-size: 1.25rem;
-  font-weight: bold;
-  color: var(--text-color);
-  margin-top: 1rem;
+  color: white;
   margin-bottom: 1rem;
-  text-align: center;
 `;
 
-const RoleList = styled.ul`
-  margin-bottom: 0.5rem;
-  padding-left: 1rem;
-  flex-grow: 1;
-`;
-
-const RoleItem = styled.li`
-  color: var(--text-color);
-  margin-bottom: 0.75rem;
+const DiscordText = styled.p`
+  color: white;
+  font-size: 1.1rem;
   line-height: 1.5;
-  font-size: 0.95rem;
+  margin-bottom: 2rem;
 `;
 
-const Commitment = styled.p`
-  color: var(--secondary-color);
+const DiscordButton = styled.a`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  background-color: #5865f2;
+  color: white;
+  padding: 0.85rem 1.75rem;
+  border-radius: 6px;
+  font-size: 1.1rem;
   font-weight: 600;
-  margin-top: auto;
-  padding-top: 1rem;
-  text-align: center;
-  font-style: italic;
-  font-size: 0.9rem;
+  text-decoration: none;
+  transition: background-color 0.3s ease;
+
+  svg {
+    font-size: 1.4rem;
+  }
+
+  &:hover {
+    background-color: #4752c4;
+  }
 `;
 
 const SocialIconsContainer = styled.div`

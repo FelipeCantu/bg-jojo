@@ -26,7 +26,7 @@ const Contact = () => {
               </IconCircle>
               <InfoLabel>Email</InfoLabel>
               <InfoValue>
-                <a href="mailto:givebackjojo@gmail.com">givebackjojo@gmail.com</a>
+                <a href="mailto:givebackjojo.chegallegos@gmail.com">givebackjojo.chegallegos@gmail.com</a>
               </InfoValue>
             </InfoItem>
 
@@ -165,6 +165,7 @@ const InfoLabel = styled.span`
 const InfoValue = styled.div`
   font-size: 0.95rem;
   color: #333;
+  overflow-wrap: anywhere;
 
   a {
     color: #003f52;
