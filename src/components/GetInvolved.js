@@ -9,8 +9,7 @@ import Sponsorship from './Sponsorship';
 
 const MySwal = withReactContent(Swal);
 
-// TODO: paste the Discord server invite link here once the server is ready
-const DISCORD_INVITE_URL = "";
+const DISCORD_INVITE_URL = "https://discord.gg/UE4RTRrcvD";
 
 
 const VolunteerForm = () => {
